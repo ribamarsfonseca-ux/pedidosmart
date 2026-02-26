@@ -1,0 +1,29 @@
+# Deploy Gratuito no Render.com
+
+Para hospedar gratuitamente, usaremos o **Render**. Ele é excelente, mas como você usa **SQLite**, os dados (restaurantes cadastrados) serão apagados toda vez que o servidor reiniciar, a menos que você use um plano pago com "Volumes". Para **testes**, o plano grátis é perfeito.
+
+## Passos para o Deploy
+
+### 1. Preparação do Repositório
+O Render precisa ler seu código do **GitHub**.
+- Você precisará criar um repositório no GitHub e subir as pastas `backend` e `frontend`.
+
+### 2. Configurações Especiais no Render
+Ao criar o serviço no Render, você deve configurar:
+- **Build Command**: `cd backend && npm install && npx prisma db push`
+- **Start Command**: `cd backend && npx tsx src/server.ts`
+- **Environment Variables**:
+  - `DATABASE_URL`: `file:./dev.db`
+  - `PORT`: `10000` (Padrão do Render)
+  - `JWT_SECRET`: (Uma senha qualquer)
+
+### 3. Ajuste no Frontend
+Para o frontend funcionar com o backend online:
+- Precisaremos trocar o `http://localhost:3000` por `https://sua-url-do-render.onrender.com` nos arquivos JS.
+
+## O que eu vou fazer agora?
+- Ajustar o `package.json` para facilitar os comandos do Render.
+- Criar um script que automatiza a troca de URL no frontend quando você for subir.
+
+---
+**Dica**: No plano grátis do Render, o site "dorme" após 15 min sem uso. O primeiro acesso pode demorar uns 30 segundos para carregar.

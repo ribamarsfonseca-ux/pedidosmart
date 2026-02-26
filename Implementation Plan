@@ -1,0 +1,31 @@
+# SaaS SmartPedidos - Plano de Implementação
+
+## Objetivo
+Desenvolver um SaaS de cardápios digitais para restaurantes com integração ao WhatsApp e sistema de assinaturas via Mercado Pago.
+
+## Pilha Tecnológica
+- **Frontend**: Next.js (App Router)
+- **Backend**: Node.js + Express + Prisma ORM
+- **Banco de Dados**: PostgreSQL (Prod) / SQLite (Dev)
+- **Pagamentos**: Mercado Pago
+- **Estilização**: Vanilla CSS / Modern UI
+
+## Mudanças Propostas
+
+### 1. Inicialização do Projeto
+#### [NEW] [task.md](file:///C:/Users/Ribamar/.gemini/antigravity/brain/73c5feb7-f92e-4f74-a940-aab7ecaa4e1d/task.md)
+Criar checklist de tarefas para acompanhamento.
+
+### 2. Backend (Node.js/Express)
+- [MODIFY] `package.json`: Adicionar dependências para Mercado Pago.
+- [NEW] Configuração do Prisma para Multi-tenancy.
+- [NEW] Rotas de Autenticação e Gestão de Produtos.
+
+### 3. Frontend (Next.js)
+- [NEW] Estrutura moderna para o Admin.
+- [NEW] Cardápio público responsivo e otimizado.
+
+## Plano de Verificação
+- Testes manuais das rotas da API via scripts.
+- Verificação visual do frontend.
+- Simulação de checkout com Mercado Pago Sandbox.

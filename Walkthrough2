@@ -1,0 +1,48 @@
+# Walkthrough: SmartPedidos 🚀
+
+O sistema foi totalmente corrigido e validado. Abaixo estão as instruções para você começar a usar agora mesmo.
+
+## ✅ O que foi corrigido?
+1. **Prisma Client**: Corrigido o erro de inicialização que impedia o servidor de subir. Voltamos para a versão estável 6.
+2. **Banco de Dados**: O arquivo `dev.db` foi sincronizado com as tabelas necessárias.
+3. **API**: Validei via scripts automatizados que todo o fluxo de Registro, Login e Gestão de Produtos está funcionando.
+
+## 🛠️ Como Iniciar o Sistema (Importante)
+
+Para que o frontend funcione, o backend **PRECISA** estar rodando.
+
+1. Abra um terminal na pasta `backend`.
+2. Execute o comando:
+   ```bash
+   npm run dev
+   ```
+   *Você verá a mensagem: `Server is running at http://localhost:3000`*
+
+## 🏁 Fluxo de Teste Sugerido
+
+Siga estes passos exatamente para ver o sistema em ação:
+
+### 1. Criar sua Loja (Passo 1)
+- Abra o arquivo `frontend/admin/register.html` no seu navegador.
+- Preencha os dados e clique em **Iniciar Teste Grátis**.
+- Você será redirecionado para o Painel (Dashboard).
+
+### 2. Cadastrar seu Cardápio (Passo 2)
+- No menu lateral, acesse **Cardápio & Produtos**.
+- Crie uma **Categoria** (ex: "Pizzas").
+- Adicione um **Produto** dentro dessa categoria.
+
+### 3. Ver o Cardápio Público (Passo 3)
+- No Painel, haverá um link para o seu cardápio (baseado no "slug" que você escolheu).
+- O link será algo como: `frontend/menu/index.html?restaurante=seu-slug`.
+- Veja como seus clientes enxergarão o menu!
+
+---
+
+## 📸 Evidência de Sucesso
+Os testes automatizados foram executados e todos os componentes (Auth, DB, Orders) comunicaram-se perfeitamente.
+
+> [!TIP]
+> Se você ver o erro "Failed to fetch" novamente, verifique se o terminal do backend não fechou ou se houve alguma queda na conexão local.
+
+Divirta-se criando seu ecossistema de pedidos! 🍕🍔

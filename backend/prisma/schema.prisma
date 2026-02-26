@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         Int      @id @default(autoincrement())
+  slug       String   @unique // The unique URL for the restaurant (e.g., /acai-do-joao)
+  name       String
+  planType           String   @default("basico") // basico, profissional, premium
+  active             Boolean  @default(true)
+  subscriptionStatus String   @default("trial") // trial, active, past_due, canceled
+  nextBillingDate    DateTime?
+  trialEndsAt        DateTime @default(dbgenerated("(datetime('now', '+7 days'))"))
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users      User[]
+  categories Category[]
+  products   Product[]
+  orders     Order[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  email     String   @unique
+  password  String
+  role      String   @default("admin") // admin, attendant
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  name      String
+  order     Int      @default(0) // Visual ordering for the menu
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products  Product[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  categoryId  Int
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model Order {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int
+  customerName   String
+  customerPhone  String
+  totalAmount    Float
+  status         String   @default("pending") // pending, accepted, preparing, ready, completed, cancelled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items          OrderItem[]
+
+  @@index([tenantId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  unitPrice Float
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}

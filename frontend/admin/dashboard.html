@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | SmartPedidos Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+
+<body class="dashboard-layout">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>SmartPedidos</h2>
+            <p id="tenantNameDisplay">Carregando...</p>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#" class="active" data-page="home">Visão Geral</a></li>
+                <li><a href="#" data-page="orders">Pedidos <span class="badge" id="newOrdersBadge">0</span></a></li>
+                <li><a href="#" data-page="catalog">Cardápio & Produtos</a></li>
+                <li><a href="#" data-page="settings">Configurações</a></li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <button id="logoutBtn" class="btn btn-outline"
+                style="width: 100%; color: var(--text-secondary);">Sair</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h1 id="pageTitle">Bem-vindo(a)</h1>
+                <p class="text-secondary" id="pageSubtitle">Acompanhe as vendas de hoje.</p>
+            </div>
+            <div>
+                <a id="publicMenuLink" href="#" target="_blank" class="btn btn-primary" style="font-size: 0.875rem;">Ver
+                    meu Cardápio Online</a>
+            </div>
+        </header>
+
+        <!-- Dynamic Context (Loaded via JS) -->
+        <section id="app-content" class="content-wrapper">
+            <!-- Loading state -->
+            <div class="loading-state">
+                <p>Carregando dados...</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="./js/dashboard.js"></script>
+</body>
+
+</html>

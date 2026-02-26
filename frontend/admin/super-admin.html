@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Gestor | SmartPedidos SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-trial {
+            background: #3b82f633;
+            color: #60a5fa;
+        }
+
+        .status-active {
+            background: #10b98133;
+            color: #34d399;
+        }
+
+        .status-expired {
+            background: #ef444433;
+            color: #f87171;
+        }
+
+        .tenant-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .tenant-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .btn-action {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-action:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <header style="padding: 2rem; border-bottom: 1px solid #334155;">
+            <h1>Gestão de Clientes SaaS</h1>
+            <p style="color: #94a3b8;">Controle de pagamentos e assinaturas de todos os restaurantes.</p>
+        </header>
+
+        <main style="padding: 2rem; max-width: 1000px; margin: 0 auto;">
+            <div id="tenantsList">
+                <div class="text-center">Carregando restaurantes...</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/super-admin';
+
+        async function loadTenants() {
+            try {
+                const response = await fetch(`${API_URL}/tenants`);
+                const tenants = await response.json();
+                const list = document.getElementById('tenantsList');
+
+                list.innerHTML = tenants.map(t => `
+          <div class="tenant-card">
+            <div>
+              <h3 style="margin: 0;">${t.name}</h3>
+              <p style="font-size: 0.875rem; color: #94a3b8; margin: 4px 0;">URL: /${t.slug}</p>
+              <div style="margin-top: 8px;">
+                <span class="status-badge ${getStatusClass(t)}">${t.subscriptionStatus.toUpperCase()}</span>
+                <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 10px;">Vence em: ${t.nextBillingDate ? new Date(t.nextBillingDate).toLocaleDateString() : 'N/A'}</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-action" onclick="toggleStatus(${t.id}, ${t.active})">
+                ${t.active ? 'Bloquear Loja' : 'Desbloquear'}
+              </button>
+              <button class="btn-action" onclick="renewSubscription(${t.id})">
+                Confirmar Pagamento
+              </button>
+            </div>
+          </div>
+        `).join('');
+            } catch (e) {
+                document.getElementById('tenantsList').innerHTML = 'Erro ao carregar dados.';
+            }
+        }
+
+        function getStatusClass(t) {
+            if (!t.active) return 'status-expired';
+            if (t.subscriptionStatus === 'trial') return 'status-trial';
+            if (t.subscriptionStatus === 'active') return 'status-active';
+            return 'status-expired';
+        }
+
+        async function toggleStatus(id, current) {
+            await fetch(`${API_URL}/tenant/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: !current })
+            });
+            loadTenants();
+        }
+
+        async function renewSubscription(id) {
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+            await fetch(`${API_URL}/tenant/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subscriptionStatus: 'active',
+                    active: true,
+                    nextBillingDate: nextMonth.toISOString()
+                })
+            });
+            alert('Assinatura renovada com sucesso!');
+            loadTenants();
+        }
+
+        loadTenants();
+    </script>
+</body>
+
+</html>

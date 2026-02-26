@@ -1,0 +1,44 @@
+# SmartPedidos SaaS - Lista de Tarefas (Node.js/Prisma)
+
+## Configuração & Arquitetura
+- [x] Criar diretórios do projeto (backend, frontend/admin, frontend/menu)
+- [x] Inicializar ambiente Backend Node.js (`package.json`, `tsconfig.json`)
+- [x] Instalar as dependências do Express, TypeScript e Prisma
+- [x] Configurar Banco de Dados (SQLite inicial com Prisma)
+
+## MVP Backend (Node.js/Express)
+- [x] Construir o schema do BD (`schema.prisma`)
+- [x] Rotas de Autenticação de Admin (JWT, bcrypt)
+- [x] Rotas de Criação/Get do Restaurante (Tenant)
+- [x] Middlewares para CORS, Error Handling e Auth
+- [x] APIs de Gerenciamento de Categorias e Produtos
+- [x] API de Gerenciamento de Pedidos (Carrinho/Status)
+
+## MVP Frontend (Painel Admin - HTML/CSS Puro)
+- [x] Autenticação (Login page)
+- [x] Dashboard Geral e Estruturação de Base
+- [x] Editor e Gestor do Restaurante
+- [x] Gestão de Categorias e Produtos (CRUD completo com a API)
+- [x] Lista/Quadros Kanban de Pedidos Recebidos
+
+## MVP Menu Público (Consumidor - HTML/CSS Puro)
+- [x] Catálogo de Produtos do Restaurante (via Slug)
+- [x] Carrinho de Compras Local (LocalStorage)
+- [x] Finalização de Pedido e Envio para WhatsApp
+- [x] Integração Visual Premium (Animações/Imagens)App" Formatando a Mensagem
+
+## Implantação & Verificação
+- [x] Finalizar ajustes de UX (Microanimações)
+- [x] Documentar Flow no Walkthrough
+- [x] Realizar testes automatizados de API (v2)
+
+## Gestão de Assinaturas & SaaS (Novo)
+- [x] Atualizar Schema com campos de vencimento e status
+- [x] Implementar middleware de bloqueio por inadimplência
+- [x] Criar rotas de Super Admin para controle manual de lojas
+- [x] Simular fluxo de cobrança e bloqueio automático
+- [x] Configurar ambiente de Produção (Security/PM2/Compression)
+- [x] Realizar Smoke Test de Produção final
+- [x] Criar Blueprint de Deploy Automático (render.yaml)
+- [x] Criar Script de Alternância de Ambiente (switch-env.cjs)
+- [x] Instruir usuário sobre push final e ativação no Render

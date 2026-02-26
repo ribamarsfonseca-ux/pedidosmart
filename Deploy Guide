@@ -1,0 +1,45 @@
+# Guia de Hospedagem e Deploy: SmartPedidos
+
+Para colocar seu sistema online e funcional para seus clientes, você precisa de um servidor (Hospedagem) e um domínio (ex: `www.smartpedidos.com`).
+
+## 1. Opções Recomendadas
+
+### Opção A: VPS (DigitalOcean / Linode / Contabo) - **Recomendado**
+É a melhor opção para o seu sistema porque você tem controle total.
+- **Custo**: Aproximadamente $5 a $10 dólares/mês.
+- **Vantagem**: O banco de dados SQLite fica no mesmo disco, o que é muito rápido e barato.
+- **Setup**: Instalamos o Node.js, clonamos o código e usamos o `PM2` para manter o servidor sempre ligado.
+
+### Opção B: Render / Fly.io / Railway
+Plataformas mais simples que o VPS, focadas em desenvolvedores.
+- **Custo**: Grátis inicialmente, mas cobram conforme o uso.
+- **Atenção**: Como você usa SQLite, você precisará configurar um "Volume Persistente" na Render ou Railway para não perder os dados cada vez que o servidor reiniciar.
+
+## 2. O que precisamos ajustar no código?
+
+Antes de subir, precisamos fazer pequenas mudanças para "Modo de Produção":
+
+1. **Variáveis de Ambiente**: Configurar o `.env` no servidor com uma `JWT_SECRET` forte.
+2. **CORS**: Ajustar para permitir apenas o seu domínio oficial.
+3. **Curinga de Porta**: Garantir que o servidor use `process.env.PORT`.
+
+## 3. Passo a Passo do Deploy (VPS)
+
+1. **Servidor**: Comprar um VPS com Ubuntu 22.04.
+2. **Acesso**: Entrar via SSH.
+3. **Instalação**: 
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   ```
+4. **Subir o Código**: Usar Git ou FTP para levar os arquivos para `/var/www/smartpedidos`.
+5. **Rodar**: 
+   ```bash
+   npm install
+   npx prisma db push
+   sudo npm install pm2 -g
+   pm2 start src/server.ts --interpreter ./node_modules/.bin/tsx
+   ```
+
+## 4. Próxima Etapa
+Você gostaria que eu preparasse os arquivos de configuração (como o `ecosystem.config.js` do PM2) para facilitar esse processo? 

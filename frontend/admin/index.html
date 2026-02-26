@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | SmartPedidos Admin</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="auth-container">
+  
+  <div class="auth-card">
+    <h1>SmartPedidos</h1>
+    <p class="subtitle">Acesse o painel do seu restaurante</p>
+
+    <!-- Alert Box Container -->
+    <div id="alertBox" class="alert"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">E-mail Corporativo</label>
+        <input type="email" id="email" name="email" placeholder="admin@seurestaurante.com" required autofocus>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary mt-4" id="loginBtn">Entrar no Painel</button>
+    </form>
+
+    <div class="text-center mt-4" style="margin-top: 2rem; font-size: 0.875rem;">
+      <p>Novo por aqui? <a href="register.html" class="link">Cadastre seu Restaurante</a></p>
+    </div>
+  </div>
+
+  <script src="./js/auth-api.js"></script>
+</body>
+</html>

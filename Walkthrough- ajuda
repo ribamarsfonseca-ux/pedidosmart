@@ -1,0 +1,65 @@
+# Walkthrough: SmartPedidos SaaS MVP
+
+Concluímos a fundação e o primeiro MVP do **SmartPedidos**. O sistema agora conta com um backend robusto em Node.js, um painel administrativo completo e um cardápio digital elegante para os clientes finais.
+
+## 🚀 O que foi construído
+
+### 1. Backend Central (Node.js + Prisma)
+- **Multi-tenancy**: Banco de dados estruturado para suportar múltiplos restaurantes de forma isolada.
+- **Segurança**: Autenticação via JWT e criptografia de senhas com bcrypt.
+- **CRUD Completo**: APIs para gerenciamento de Categorias, Produtos e Pedidos.
+
+### 2. Painel Administrativo (Admin)
+- **Login/Registro**: Fluxo completo de criação de restaurante e acesso seguro.
+- **Dashboard**: Visão geral de vendas e pedidos.
+- **Gestor de Cardápio**: Interface para criar categorias e produtos dinamicamente.
+- **Gestão de Pedidos**: Visualização e alteração de status dos pedidos recebidos.
+
+### 3. Cardápio Digital (Consumidor)
+- **Acesso via URL**: `menu/index.html#slug-do-restaurante`.
+- **Experiência Premium**: Design focado em mobile, rápido e intuitivo.
+- **Carrinho de Compras**: Adição de itens com persistência local.
+- **Checkout WhatsApp**: Envio automático do pedido formatado para o WhatsApp do restaurante.
+
+## 🛠️ Como Testar o Sistema
+
+Para validar o funcionamento completo, siga estes passos:
+
+### Passo 1: Iniciar o Backend
+No terminal, dentro da pasta `backend/`:
+```powershell
+npx tsx src/server.ts
+```
+
+### Passo 2: Criar sua Loja
+1. Abra o arquivo `frontend/admin/register.html` no seu navegador.
+2. Preencha o nome do seu restaurante (ex: "Burguer King") e defina uma senha.
+3. Clique em **Iniciar Teste Grátis**.
+
+### Passo 3: Configurar o Cardápio (No Painel Admin)
+1. Após o cadastro, você será levado ao **Dashboard**.
+2. Vá em **Cardápio & Produtos**.
+3. Clique no `+` em **Categorias** e adicione "Bebidas".
+4. Clique em **+ Novo Produto**, preencha os dados e escolha a categoria "Bebidas".
+
+### Passo 4: Fazer um Pedido (Visão do Cliente)
+1. No topo do painel, clique em **Ver meu Cardápio Online**.
+2. No menu público, adicione o produto ao carrinho.
+3. Clique no carrinho flutuante, preencha seu nome e finalize.
+4. Você será redirecionado para o WhatsApp com a mensagem pronta!
+
+### Passo 5: Gerenciar o Pedido
+1. Volte ao **Painel Admin**.
+2. Vá em **Pedidos**.
+3. Você verá o pedido que acabou de fazer. Altere o status para "Preparando" ou "Pronto".
+
+## 📁 Estrutura de Arquivos
+
+- `backend/src/`: Código fonte das APIs.
+- `frontend/admin/`: Interface do restaurante (HTML/JS/CSS).
+- `frontend/menu/`: Interface do cardápio público.
+- `prisma/`: Schema e banco de dados SQLite.
+
+---
+
+**Desenvolvido por Antigravity ✨**
