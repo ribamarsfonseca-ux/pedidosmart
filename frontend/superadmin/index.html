@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin | SmartPedidos SaaS</title>
+    <link rel="stylesheet" href="../admin/css/styles.css">
+    <style>
+        .tenant-card { margin-bottom: 1rem; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .status-active { color: #10B981; font-weight: bold; }
+        .status-blocked { color: #EF4444; font-weight: bold; }
+        .controls { display: flex; gap: 10px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    </style>
+</head>
+<body class="admin-layout" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+    <header>
+        <div>
+            <h1>Painel de Gestão SaaS</h1>
+            <p class="text-secondary">Gerencie seus clientes e mensalidades</p>
+        </div>
+        <button class="btn btn-outline" onclick="logout()" style="width: auto;">Sair</button>
+    </header>
+
+    <div id="loginSection" class="glass-card" style="max-width: 400px; margin: 5rem auto;">
+        <h3>Acesso Restrito</h3>
+        <div class="form-group mt-4">
+            <label>Senha Mestra</label>
+            <input type="password" id="masterPassword" placeholder="Digite a senha do .env">
+        </div>
+        <button class="btn btn-primary mt-4" onclick="loadTenants()">Entrar</button>
+    </div>
+
+    <div id="mainSection" style="display: none;">
+        <div class="grid-cols-3" id="stats">
+            <div class="glass-card">
+                <p class="text-secondary">Total de Clientes</p>
+                <h2 id="totalTenants">0</h2>
+            </div>
+            <div class="glass-card">
+                <p class="text-secondary">Clientes Ativos</p>
+                <h2 id="activeTenants" style="color: #10B981;">0</h2>
+            </div>
+            <div class="glass-card">
+                <p class="text-secondary">Aguardando Pagamento</p>
+                <h2 id="blockedTenants" style="color: #EF4444;">0</h2>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3>Lista de Restaurantes</h3>
+            <div id="tenantsList" class="mt-4">
+                <!-- JavaScript renders here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let masterPass = '';
+
+        async function loadTenants() {
+            const passInput = document.getElementById('masterPassword').value;
+            if (!passInput) return alert('Digite a senha');
+            
+            masterPass = passInput;
+            const res = await fetch('/api/super-admin/tenants', {
+                headers: { 'x-admin-password': masterPass }
+            });
+
+            if (!res.ok) {
+                alert('Senha incorreta ou erro no servidor');
+                return;
+            }
+
+            const tenants = await res.json();
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            renderTenants(tenants);
+        }
+
+        function renderTenants(tenants) {
+            const list = document.getElementById('tenantsList');
+            document.getElementById('totalTenants').textContent = tenants.length;
+            document.getElementById('activeTenants').textContent = tenants.filter(t => t.active).length;
+            document.getElementById('blockedTenants').textContent = tenants.filter(t => !t.active).length;
+
+            list.innerHTML = tenants.map(t => `
+                <div class="glass-card tenant-card">
+                    <div>
+                        <strong>${t.name}</strong> <small class="text-secondary">(${t.slug})</small>
+                        <p style="font-size: 0.8rem;" class="text-secondary">Criado em: ${new Date(t.createdAt).toLocaleDateString()}</p>
+                        <p style="font-size: 0.8rem;">Status: <span class="${t.active ? 'status-active' : 'status-blocked'}">${t.active ? 'ATIVO' : 'BLOQUEADO'}</span></p>
+                    </div>
+                    <div class="controls">
+                        <button class="btn ${t.active ? 'btn-outline' : 'btn-primary'}" style="width: auto; padding: 0.5rem 1rem;" onclick="toggleStatus(${t.id}, ${t.active})">
+                            ${t.active ? 'Bloquear' : 'Ativar'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function toggleStatus(id, currentActive) {
+            if (!confirm(`Deseja ${currentActive ? 'BLOQUEAR' : 'ATIVAR'} este restaurante?`)) return;
+
+            const res = await fetch(\`/api/super-admin/tenant/\${id}\`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-admin-password': masterPass 
+                },
+                body: JSON.stringify({ active: !currentActive })
+            });
+
+            if (res.ok) {
+                loadTenants();
+            } else {
+                alert('Erro ao atualizar status');
+            }
+        }
+
+        function logout() {
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
