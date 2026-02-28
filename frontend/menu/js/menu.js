@@ -229,6 +229,11 @@ window.switchTab = (tab, el) => {
     el.style.color = 'var(--primary)';
 
     if (tab === 'home') {
+        const searchInput = document.getElementById('productSearch');
+        if (searchInput) {
+            searchInput.value = '';
+            filterProducts();
+        }
         closeCart();
         toggleMyOrdersModal(false);
     } else if (tab === 'orders') {
