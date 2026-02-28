@@ -20,7 +20,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve os arquivos estáticos do frontend
-app.use(express.static(path.join(__dirname, '../../frontend')));
+const frontendPath = path.resolve(process.cwd(), '..', 'frontend');
+console.log('Serving static files from:', frontendPath);
+app.use(express.static(frontendPath));
 
 // Rota base para a API
 app.use('/api', apiRoutes);
