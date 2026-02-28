@@ -116,12 +116,6 @@ function renderMenu(data) {
         hoursEl.textContent = 'Consulte nossos horários';
     }
 
-    // Perfil da Loja
-    document.getElementById('restAddress').innerHTML = `📍 ${data.address || 'Endereço não informado'}`;
-    if (data.googleMapsUrl) {
-        document.getElementById('restMaps').innerHTML = `<a href="${data.googleMapsUrl}" target="_blank" style="color: #3b82f6; text-decoration: none;">📍 Ver no Google Maps</a>`;
-    }
-    document.getElementById('restPayments').innerHTML = `💳 <b>Pagamento:</b> ${data.paymentMethods || 'Pix, Dinheiro, Cartão'}`;
 
     const logoEl = document.getElementById('restLogo');
     if (data.logoUrl) {
@@ -175,7 +169,7 @@ function renderMenu(data) {
 }
 
 // MODAL HANDLERS
-window.toggleStoreProfileModl = (show) => {
+window.toggleStoreProfileModal = (show) => {
     document.getElementById('profileModal').style.display = show ? 'flex' : 'none';
 };
 
