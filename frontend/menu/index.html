@@ -31,8 +31,10 @@
                 da loja</button>
         </div>
 
-        <div id="storeStatus" class="status-indicator" style="margin-top: 10px;">Verificando...</div>
-        <p class="restaurant-info" id="restHours">Aberto agora • SmartPede</p>
+        <div id="storeStatus" class="status-indicator"
+            style="margin-top: 10px; color: white !important; font-weight: 700; padding: 4px 12px; border-radius: 99px; display: inline-block;">
+            Verificando...</div>
+        <p class="restaurant-info" id="restHours" style="margin-top: 5px;">Aberto agora • SmartPede</p>
 
         <!-- Search Bar -->
         <div class="search-container" style="margin-top: 15px; position: relative;">
@@ -53,6 +55,8 @@
                 <div id="profileDetails">
                     <p id="restAddressModal"></p>
                     <div id="restMapsModal" style="margin: 10px 0;"></div>
+                    <p id="restDescriptionModal"
+                        style="font-size: 0.9rem; color: #444; line-height: 1.4; margin-bottom: 15px;"></p>
                     <p id="restPhoneModal"></p>
                     <p id="restSlugModal" style="color: #666; font-size: 0.8rem;"></p>
                     <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
@@ -91,6 +95,20 @@
         <!-- Products by category will be injected here -->
     </main>
 
+    <!-- v5 Floating Cart Bar (Above Nav) -->
+    <div id="cartBarAboveNav"
+        style="position: fixed; bottom: 70px; left: 0; right: 0; padding: 0 15px; z-index: 900; display: none;">
+        <div onclick="openCart()"
+            style="background: var(--primary); color: var(--on-primary); padding: 12px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="floatingCartItems"
+                    style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-weight: 700;">0</span>
+                <strong>Ver Carrinho</strong>
+            </div>
+            <strong id="floatingCartTotal">R$ 0,00</strong>
+        </div>
+    </div>
+
     <!-- Bottom Tab Navigation -->
     <nav class="bottom-nav"
         style="position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
@@ -119,8 +137,13 @@
             <button onclick="closeCart()" style="background: none; border: none; font-size: 1.5rem;">&times;</button>
         </div>
 
-        <div class="cart-items-list" id="cartItemsList">
-            <!-- Cart items injected here -->
+        <div class="cart-items-list">
+            <div id="cartItemsList">
+                <!-- Cart items injected here -->
+            </div>
+            <button onclick="closeCart()"
+                style="width: 100%; padding: 1rem; color: var(--primary); background: none; border: 1px dashed var(--primary); border-radius: 8px; font-weight: 600; margin-top: 15px; cursor: pointer;">+
+                Adicionar mais produtos</button>
         </div>
 
         <div class="cart-footer">
@@ -147,7 +170,7 @@
                     </select>
                 </div>
 
-                <div id="addressFields">
+                <div id="addressFields" style="display: none;">
                     <div class="form-group">
                         <label>Rua</label>
                         <input type="text" id="custStreet" placeholder="Nome da rua"

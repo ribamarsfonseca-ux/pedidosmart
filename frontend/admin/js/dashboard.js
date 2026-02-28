@@ -545,6 +545,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="url" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
+                    <label>Sobre a Empresa / Descrição</label>
+                    <textarea id="set-description" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Conte um pouco sobre sua empresa para seus clientes...">${tenantData.description || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Pedido Mínimo (R$)</label>
+                    <div class="grid-cols-3" style="gap: 10px;">
+                        <div>
+                            <small>Consumo Local</small>
+                            <input type="number" id="min-dinein" step="0.01" value="${tenantData.minOrderDineIn || 0}">
+                        </div>
+                        <div>
+                            <small>Retirada</small>
+                            <input type="number" id="min-pickup" step="0.01" value="${tenantData.minOrderPickup || 0}">
+                        </div>
+                        <div>
+                            <small>Delivery</small>
+                            <input type="number" id="min-delivery" step="0.01" value="${tenantData.minOrderDelivery || 0}">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>Cor Principal do Cardápio</label>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
                         ${['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280', '#111827'].map(color => `
@@ -571,10 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-payments" value="${tenantData.paymentMethods || ''}" placeholder="Pix, Dinheiro, Cartão">
                 </div>
                 <div class="form-group">
-                    <label>Horários de Funcionamento (Se vazio, será exibido como "Fechado")</label>
-                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">
-                        💡 <b>Dica Noite/Madrugada:</b> Se o seu estabelecimento fecha na madrugada do dia seguinte (ex: das 18:00 às 02:00), coloque o horário de início maior que o de término. O sistema entenderá automaticamente!
-                    </p>
+                    <label>Horários de Funcionamento (Configuração por Turnos)</label>
                     <div id="hours-table-container" style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
                         ${renderOpeningHoursTable(tenantData.openingHours)}
                     </div>
@@ -594,21 +612,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.saveSettings = async () => {
         const logoUrl = document.getElementById('set-logo').value;
+        const description = document.getElementById('set-description').value;
+        const minOrderDineIn = parseFloat(document.getElementById('min-dinein').value) || 0;
+        const minOrderPickup = parseFloat(document.getElementById('min-pickup').value) || 0;
+        const minOrderDelivery = parseFloat(document.getElementById('min-delivery').value) || 0;
         const primaryColor = document.getElementById('set-color').value;
         const whatsapp = document.getElementById('set-whatsapp').value;
         const address = document.getElementById('set-address').value;
         const googleMapsUrl = document.getElementById('set-maps').value;
         const paymentMethods = document.getElementById('set-payments').value;
 
-        // Coletar horários
+        // Coletar horários (v5: 2 turnos)
         const hours = {};
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         days.forEach(day => {
-            const start = document.getElementById(`start-${day}`).value;
-            const end = document.getElementById(`end-${day}`).value;
-            if (start && end) {
-                hours[day] = { start, end };
-            }
+            const s1 = document.getElementById(`s1-${day}`).value;
+            const e1 = document.getElementById(`e1-${day}`).value;
+            const s2 = document.getElementById(`s2-${day}`).value;
+            const e2 = document.getElementById(`e2-${day}`).value;
+
+            hours[day] = {
+                shift1: (s1 && e1) ? { start: s1, end: e1 } : null,
+                shift2: (s2 && e2) ? { start: s2, end: e2 } : null
+            };
         });
         const openingHours = JSON.stringify(hours);
 
@@ -622,7 +648,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     address,
                     googleMapsUrl,
                     paymentMethods,
-                    openingHours
+                    openingHours,
+                    description,
+                    minOrderDineIn,
+                    minOrderPickup,
+                    minOrderDelivery
                 })
             });
 
@@ -635,6 +665,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.googleMapsUrl = googleMapsUrl;
             tenantData.paymentMethods = paymentMethods;
             tenantData.openingHours = openingHours;
+            tenantData.description = description;
+            tenantData.minOrderDineIn = minOrderDineIn;
+            tenantData.minOrderPickup = minOrderPickup;
+            tenantData.minOrderDelivery = minOrderDelivery;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
@@ -657,32 +691,53 @@ document.addEventListener('DOMContentLoaded', () => {
         let hours = {};
         try {
             if (currentHoursJson) hours = JSON.parse(currentHoursJson);
-        } catch (e) { /* Fallback if it was plain text before */ }
+        } catch (e) { }
 
         const dayLabels = {
-            'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta',
-            'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo'
+            'mon': 'Seg', 'tue': 'Ter', 'wed': 'Qua',
+            'thu': 'Qui', 'fri': 'Sex', 'sat': 'Sáb', 'sun': 'Dom'
         };
 
         return `
-            <table style="width: 100%; font-size: 0.9rem;">
+            <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
                 <thead>
-                    <tr style="text-align: left;">
-                        <th>Dia</th>
-                        <th>Início</th>
-                        <th>Término</th>
+                    <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                        <th style="padding: 8px 0;">Dia</th>
+                        <th>Turno 1 (Início - Fim)</th>
+                        <th>Turno 2 (Início - Fim)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${Object.keys(dayLabels).map(day => `
-                        <tr>
-                            <td>${dayLabels[day]}</td>
-                            <td><input type="time" id="start-${day}" value="${hours[day]?.start || ''}" style="width: 100px; padding: 2px;"></td>
-                            <td><input type="time" id="end-${day}" value="${hours[day]?.end || ''}" style="width: 100px; padding: 2px;"></td>
+                    ${Object.keys(dayLabels).map(day => {
+            const h = hours[day] || {};
+            // Legacy support for single shift if exists
+            const s1 = h.shift1 || (h.start ? { start: h.start, end: h.end } : { start: '', end: '' });
+            const s2 = h.shift2 || { start: '', end: '' };
+
+            return `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 10px 0; font-weight: 600;">${dayLabels[day]}</td>
+                            <td>
+                                <div style="display: flex; gap: 4px; align-items: center;">
+                                    <input type="time" id="s1-${day}" value="${s1.start || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <span>-</span>
+                                    <input type="time" id="e1-${day}" value="${s1.end || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 4px; align-items: center;">
+                                    <input type="time" id="s2-${day}" value="${s2.start || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <span>-</span>
+                                    <input type="time" id="e2-${day}" value="${s2.end || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </td>
                         </tr>
-                    `).join('')}
+                    `}).join('')}
                 </tbody>
             </table>
+            <p style="font-size: 0.75rem; color: #666; margin-top: 10px;">
+                💡 <b>Dica:</b> Para horários que cruzam a meia-noite (ex: 18:00 às 02:00), basta colocar o fim menor que o início.
+            </p>
         `;
     }
 

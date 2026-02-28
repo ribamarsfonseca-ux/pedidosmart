@@ -144,12 +144,28 @@ export const getOrderPublicStatus = async (req: Request, res: Response): Promise
     try {
         const { id } = req.params;
         const order = await prisma.order.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             select: {
                 id: true,
                 orderNumber: true,
                 status: true,
-                createdAt: true
+                createdAt: true,
+                totalAmount: true,
+                fulfillmentType: true,
+                paymentMethod: true,
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                name: true,
+                                price: true,
+                                imageUrl: true,
+                                description: true
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -160,6 +176,7 @@ export const getOrderPublicStatus = async (req: Request, res: Response): Promise
 
         res.json(order);
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar status' });
+        console.error('Get Public Order Error:', error);
+        res.status(500).json({ error: 'Erro ao buscar status do pedido' });
     }
 };

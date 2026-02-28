@@ -62,6 +62,11 @@ function renderMenu(data) {
         document.getElementById('restAddressModal').innerHTML = `📍 <b>Endereço:</b> ${data.address || 'Não informado'}`;
         document.getElementById('restPhoneModal').innerHTML = `📞 <b>WhatsApp:</b> ${data.whatsapp || 'Não informado'}`;
         document.getElementById('restSlugModal').innerHTML = `🔗 <b>Link:</b> smartpede.com.br/menu/#${data.slug}`;
+        if (data.description) {
+            document.getElementById('restDescriptionModal').textContent = data.description;
+        } else {
+            document.getElementById('restDescriptionModal').style.display = 'none';
+        }
 
         if (data.googleMapsUrl) {
             document.getElementById('restMapsModal').innerHTML = `<a href="${data.googleMapsUrl}" target="_blank" class="btn-action" style="display: inline-block; text-decoration: none; margin-top: 5px;">📍 Abrir no Google Maps</a>`;
@@ -95,31 +100,52 @@ function renderMenu(data) {
             const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
             const today = daysMap[now.getDay()];
             const yesterday = daysMap[now.getDay() === 0 ? 6 : now.getDay() - 1];
-
             const currentTime = now.getHours() * 100 + now.getMinutes();
 
-            // 1. Verificar se a loja ainda está aberta pelo turno de ONTEM (viva a noite!)
-            const yHours = hours[yesterday];
-            if (yHours) {
-                const yOpen = parseInt(yHours.start.replace(':', ''));
-                const yClose = parseInt(yHours.end.replace(':', ''));
-                if (yClose < yOpen) { // Cruzou a meia-noite
-                    if (currentTime <= yClose) return true;
+            const isOpenInShift = (shift, isToday) => {
+                if (!shift) return false;
+                const start = parseInt(shift.start.replace(':', ''));
+                const end = parseInt(shift.end.replace(':', ''));
+
+                if (isToday) {
+                    if (end < start) { // Crosses midnight
+                        return currentTime >= start;
+                    }
+                    return currentTime >= start && currentTime <= end;
+                } else { // Yesterday (Early morning check)
+                    if (end < start) { // Crosses midnight
+                        return currentTime <= end;
+                    }
+                    return false;
+                }
+            };
+
+            const tHours = hours[today] || {};
+            const yHours = hours[yesterday] || {};
+
+            // Shifts Support (v5)
+            if (tHours.shift1 && isOpenInShift(tHours.shift1, true)) return true;
+            if (tHours.shift2 && isOpenInShift(tHours.shift2, true)) return true;
+            if (yHours.shift1 && isOpenInShift(yHours.shift1, false)) return true;
+            if (yHours.shift2 && isOpenInShift(yHours.shift2, false)) return true;
+
+            // Legacy Support (v4)
+            if (tHours.start && !tHours.shift1) {
+                const start = parseInt(tHours.start.replace(':', ''));
+                const end = parseInt(tHours.end.replace(':', ''));
+                if (end < start) {
+                    if (currentTime >= start) return true;
+                } else {
+                    if (currentTime >= start && currentTime <= end) return true;
                 }
             }
-
-            // 2. Verificar o turno de HOJE
-            const tHours = hours[today];
-            if (!tHours) return false;
-
-            const tOpen = parseInt(tHours.start.replace(':', ''));
-            const tClose = parseInt(tHours.end.replace(':', ''));
-
-            if (tClose < tOpen) { // Cruza a meia-noite
-                return currentTime >= tOpen;
-            } else {
-                return currentTime >= tOpen && currentTime <= tClose;
+            if (yHours.start && !yHours.shift1) {
+                const start = parseInt(yHours.start.replace(':', ''));
+                const end = parseInt(yHours.end.replace(':', ''));
+                if (end < start && currentTime <= end) return true;
             }
+
+            return false;
         } catch (e) {
             console.error('Erro ao validar horário', e);
             return false;
@@ -130,13 +156,21 @@ function renderMenu(data) {
     statusEl.textContent = isOpen ? 'Aberto' : 'Fechado';
     statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
 
-    // Texto de horários amigável
+    // Horário amigável (v5 turnos)
     try {
         const hours = JSON.parse(data.openingHours);
-        const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        const today = daysMap[new Date().getDay()];
-        const tHours = hours[today];
-        hoursEl.textContent = tHours ? `Hoje: ${tHours.start} às ${tHours.end}` : 'Fechado hoje';
+        const today = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()];
+        const h = hours[today] || {};
+        const s1 = h.shift1 || (h.start ? { start: h.start, end: h.end } : null);
+        const s2 = h.shift2;
+
+        let text = h.start ? `${h.start} - ${h.end}` : 'Fechado hoje';
+        if (h.shift1) text = `${h.shift1.start} às ${h.shift1.end}${h.shift2 ? ` / ${h.shift2.start} às ${h.shift2.end}` : ''}`;
+
+        hoursEl.textContent = text;
+        // v5 Status Bar White Text
+        statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
+        statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
     } catch (e) {
         hoursEl.textContent = 'Consulte nossos horários';
     }
@@ -280,12 +314,20 @@ async function refreshMyOrders() {
         }
 
         list.innerHTML = orders.reverse().map(o => `
-            <div class="glass-card" style="margin-bottom: 10px; padding: 10px; border-left: 4px solid ${getStatusColor(o.status)}">
-                <div style="display: flex; justify-content: space-between;">
+            <div class="glass-card" style="margin-bottom: 15px; padding: 15px; border-left: 5px solid ${getStatusColor(o.status)}">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <strong>Pedido #${o.orderNumber || o.id}</strong>
-                    <span style="color: ${getStatusColor(o.status)}; font-weight: 600;">${translateStatus(o.status)}</span>
+                    <span style="color: white; background: ${getStatusColor(o.status)}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${translateStatus(o.status)}</span>
                 </div>
-                <p style="font-size: 0.8rem; margin: 5px 0;">Realizado em: ${new Date(o.createdAt).toLocaleTimeString()}</p>
+                <p style="font-size: 0.8rem; margin: 8px 0; color: #666;">Realizado em: ${new Date(o.createdAt).toLocaleString()}</p>
+                <div style="font-size: 0.85rem; margin-bottom: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                    ${o.items.map(i => `<div>${i.quantity}x ${i.product.name}</div>`).join('')}
+                    <div style="margin-top: 5px; font-weight: 700;">Total: ${o.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn-action" style="width: 100%; font-size: 0.8rem;" onclick="repeatOrder(${o.id})">🔗 Repetir Pedido</button>
+                    <button class="btn-action" style="width: 100%; font-size: 0.8rem; background: #eee; border: none; color: #333;" onclick="alert('Funcionalidade de detalhes em breve!')">📄 Detalhes</button>
+                </div>
             </div>
         `).join('');
 
@@ -346,16 +388,23 @@ function updateCartUI() {
 
     // Update Bottom Nav Badge
     const navCount = document.getElementById('navCartCount');
-    if (totalItems > 0) {
+    if (navCount) {
         navCount.textContent = totalItems;
-        navCount.style.display = 'block';
-    } else {
-        navCount.style.display = 'none';
+        navCount.style.display = totalItems > 0 ? 'block' : 'none';
+    }
+
+    // v5 Floating Bar Above Nav
+    const v5Bar = document.getElementById('cartBarAboveNav');
+    if (v5Bar) {
+        v5Bar.style.display = totalItems > 0 ? 'block' : 'none';
+        document.getElementById('floatingCartItems').textContent = totalItems;
+        document.getElementById('floatingCartTotal').textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
     if (totalItems > 0) {
-        count.textContent = totalItems;
-        totalDisp.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        if (count) count.textContent = totalItems;
+        const modalTotal = document.getElementById('modalTotal');
+        if (modalTotal) modalTotal.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     } else {
         closeCart();
     }
@@ -438,9 +487,43 @@ function closeCart() {
     }
 }
 
+function getMinOrderValue(type) {
+    if (!restaurant) return 0;
+    if (type === 'delivery') return restaurant.minOrderDelivery || 0;
+    if (type === 'pickup') return restaurant.minOrderPickup || 0;
+    return restaurant.minOrderDineIn || 0;
+}
+
+function translateFulfillment(type) {
+    const t = { 'delivery': 'Delivery', 'pickup': 'Retirada', 'dine_in': 'Consumo Local' };
+    return t[type] || type;
+}
+
+window.repeatOrder = async (id) => {
+    try {
+        const o = await fetch(`${API_URL}/orders/${id}/status_public`).then(r => r.json());
+        if (!o.items) return;
+
+        cart = o.items.map(i => ({
+            id: i.product.id,
+            name: i.product.name,
+            price: i.product.price,
+            imageUrl: i.product.imageUrl,
+            quantity: i.quantity
+        }));
+
+        updateCartUI();
+        alert('Items adicionados ao carrinho!');
+        switchTab('cart', document.getElementById('nav-cart'));
+    } catch (e) {
+        alert('Erro ao repetir pedido.');
+    }
+};
+
 window.toggleAddressFields = () => {
     const type = document.getElementById('fulfillmentType').value;
-    document.getElementById('addressFields').style.display = type === 'delivery' ? 'block' : 'none';
+    const fields = document.getElementById('addressFields');
+    if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
 };
 
 async function checkout() {
@@ -452,6 +535,13 @@ async function checkout() {
 
     if (!name || !phone) {
         alert('Por favor, preencha seu nome e telefone.');
+        return;
+    }
+
+    const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const minVal = getMinOrderValue(fulfillmentType);
+    if (totalPrice < minVal) {
+        alert(`O valor mínimo para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
         return;
     }
 
@@ -524,6 +614,8 @@ async function checkout() {
 
         const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         message += `\n*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
+        message += `--------------------------\n`;
+        message += `*Acompanhe seu pedido aqui:* \n🔗 ${window.location.host}/menu/#${restaurant.slug}\n`;
         message += `--------------------------\n`;
         message += `_Pedido realizado via SmartPede_`;
 

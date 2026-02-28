@@ -118,6 +118,10 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 slug: true,
                 logoUrl: true,
                 planType: true,
+                description: true,
+                minOrderDineIn: true,
+                minOrderPickup: true,
+                minOrderDelivery: true,
                 whatsapp: true,
                 address: true,
                 googleMapsUrl: true,
@@ -157,7 +161,11 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             googleMapsUrl,
             paymentMethods,
             openingHours,
-            primaryColor
+            primaryColor,
+            description,
+            minOrderDineIn,
+            minOrderPickup,
+            minOrderDelivery
         } = req.body;
 
         if (!tenantId) {
@@ -174,7 +182,11 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 googleMapsUrl,
                 paymentMethods,
                 openingHours,
-                primaryColor
+                primaryColor,
+                description,
+                minOrderDineIn,
+                minOrderPickup,
+                minOrderDelivery
             }
         });
 
