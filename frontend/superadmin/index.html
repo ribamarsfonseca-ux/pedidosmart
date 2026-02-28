@@ -1,18 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin | SmartPedidos SaaS</title>
     <link rel="stylesheet" href="../admin/css/styles.css">
     <style>
-        .tenant-card { margin-bottom: 1rem; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        .status-active { color: #10B981; font-weight: bold; }
-        .status-blocked { color: #EF4444; font-weight: bold; }
-        .controls { display: flex; gap: 10px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .tenant-card {
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-active {
+            color: #10B981;
+            font-weight: bold;
+        }
+
+        .status-blocked {
+            color: #EF4444;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
     </style>
 </head>
+
 <body class="admin-layout" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
     <header>
         <div>
@@ -60,22 +86,35 @@
 
         async function loadTenants() {
             const passInput = document.getElementById('masterPassword').value;
-            if (!passInput) return alert('Digite a senha');
-            
-            masterPass = passInput;
-            const res = await fetch('/api/super-admin/tenants', {
-                headers: { 'x-admin-password': masterPass }
-            });
+            const btn = document.querySelector('#loginSection .btn');
 
-            if (!res.ok) {
-                alert('Senha incorreta ou erro no servidor');
-                return;
+            if (!passInput) return alert('Por favor, digite a senha mestra.');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Verificando...';
+
+                masterPass = passInput;
+                const res = await fetch('/api/super-admin/tenants', {
+                    headers: { 'x-admin-password': masterPass }
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido no servidor' }));
+                    throw new Error(errorData.error || `Erro HTTP: ${res.status}`);
+                }
+
+                const tenants = await res.json();
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('mainSection').style.display = 'block';
+                renderTenants(tenants);
+            } catch (error) {
+                console.error('Login Error:', error);
+                alert('Erro ao entrar: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Entrar';
             }
-
-            const tenants = await res.json();
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('mainSection').style.display = 'block';
-            renderTenants(tenants);
         }
 
         function renderTenants(tenants) {
@@ -103,11 +142,11 @@
         async function toggleStatus(id, currentActive) {
             if (!confirm(`Deseja ${currentActive ? 'BLOQUEAR' : 'ATIVAR'} este restaurante?`)) return;
 
-            const res = await fetch(\`/api/super-admin/tenant/\${id}\`, {
+            const res = await fetch(`/api/super-admin/tenant/${id}`, {
                 method: 'PUT',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-password': masterPass 
+                    'x-admin-password': masterPass
                 },
                 body: JSON.stringify({ active: !currentActive })
             });
@@ -124,4 +163,5 @@
         }
     </script>
 </body>
+
 </html>
