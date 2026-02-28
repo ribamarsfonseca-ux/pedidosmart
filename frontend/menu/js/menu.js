@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         restaurant = data;
         renderMenu(data);
         document.getElementById('loading').style.display = 'none';
+        checkOrdersStatus(); // Check on load
+        setInterval(checkOrdersStatus, 30000); // Polling every 30s
     } catch (error) {
         console.error(error);
         document.getElementById('loading').innerHTML = `<p style="color: red;">Erro ao carregar cardápio: ${error.message}</p>`;
@@ -236,11 +238,14 @@ window.switchTab = (tab, el) => {
         }
         closeCart();
         toggleMyOrdersModal(false);
+        toggleStoreProfileModal(false); // New: Close profile on home
     } else if (tab === 'orders') {
         closeCart();
+        toggleStoreProfileModal(false);
         toggleMyOrdersModal(true);
     } else if (tab === 'cart') {
         toggleMyOrdersModal(false);
+        toggleStoreProfileModal(false);
         openCart();
     }
 };
@@ -353,6 +358,43 @@ function updateCartUI() {
         totalDisp.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     } else {
         closeCart();
+    }
+
+    // Check orders on every cart update too
+    checkOrdersStatus();
+}
+
+async function checkOrdersStatus() {
+    const orderIds = JSON.parse(localStorage.getItem('my_orders') || '[]');
+    const statusDot = document.getElementById('orderStatusDot');
+    if (!statusDot) return;
+
+    if (orderIds.length === 0) {
+        statusDot.style.display = 'none';
+        return;
+    }
+
+    try {
+        let hasActive = false;
+        let lastStatus = 'pending';
+
+        // Check only the most recent order for the dot color
+        const lastId = orderIds[orderIds.length - 1];
+        const res = await fetch(`${API_URL}/orders/${lastId}/status_public`).then(r => r.json());
+
+        if (res.id && res.status !== 'finished' && res.status !== 'cancelled' && res.status !== 'completed') {
+            hasActive = true;
+            lastStatus = res.status;
+        }
+
+        if (hasActive) {
+            statusDot.style.display = 'block';
+            statusDot.style.background = getStatusColor(lastStatus);
+        } else {
+            statusDot.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('Error checking orders', e);
     }
 }
 

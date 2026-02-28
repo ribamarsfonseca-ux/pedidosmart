@@ -118,6 +118,12 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 slug: true,
                 logoUrl: true,
                 planType: true,
+                whatsapp: true,
+                address: true,
+                googleMapsUrl: true,
+                openingHours: true,
+                paymentMethods: true,
+                primaryColor: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
