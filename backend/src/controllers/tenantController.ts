@@ -144,7 +144,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
 export const updateTenant = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
-        const { logoUrl } = req.body;
+        const { logoUrl, address, googleMapsUrl, openingHours, paymentMethods, whatsapp } = req.body;
 
         if (!tenantId) {
             res.status(401).json({ error: 'Não autorizado' });
@@ -153,7 +153,14 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
 
         const updatedTenant = await prisma.tenant.update({
             where: { id: tenantId },
-            data: { logoUrl }
+            data: {
+                logoUrl,
+                address,
+                googleMapsUrl,
+                openingHours,
+                paymentMethods,
+                whatsapp
+            }
         });
 
         res.json({ message: 'Configurações atualizadas', tenant: updatedTenant });

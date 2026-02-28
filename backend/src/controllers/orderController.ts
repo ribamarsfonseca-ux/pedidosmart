@@ -33,10 +33,19 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             });
         }
 
+        // 2. Gerar Número do Pedido (Sequencial por Tenant)
+        const lastOrder = await prisma.order.findFirst({
+            where: { tenantId },
+            orderBy: { orderNumber: 'desc' },
+        });
+
+        const nextOrderNumber = (lastOrder?.orderNumber || 0) + 1;
+
         // Criar o pedido (Nested Write Prisma)
         const order = await prisma.order.create({
             data: {
                 tenantId,
+                orderNumber: nextOrderNumber,
                 customerName,
                 customerPhone,
                 totalAmount,
@@ -93,7 +102,7 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
 
         // Verify if order belongs to the tenant
         const existingOrder = await prisma.order.findFirst({
-            where: { id: parseInt(id), tenantId },
+            where: { id: parseInt(id as string), tenantId },
         });
 
         if (!existingOrder) {
@@ -102,8 +111,8 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
         }
 
         const order = await prisma.order.update({
-            where: { id: parseInt(id) },
-            data: { status },
+            where: { id: parseInt(id as string) },
+            data: { status: status as string },
         });
 
         res.json(order);

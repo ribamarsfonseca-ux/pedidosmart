@@ -28,6 +28,39 @@ function renderMenu(data) {
     document.title = `${data.name} | Cardápio Digital`;
     document.getElementById('restName').textContent = data.name;
 
+    // Status e Horário Dinâmico
+    const statusEl = document.getElementById('storeStatus');
+    const hoursEl = document.getElementById('restHours');
+
+    function checkOpen() {
+        if (!data.openingHours) return true; // Se não configurado, assume aberto
+        try {
+            // Lógica simplificada: procura por algo como "08:00" e "22:00" no texto
+            const now = new Date();
+            const currentTime = now.getHours() * 100 + now.getMinutes();
+            const times = data.openingHours.match(/(\d{2}:\d{2})/g);
+
+            if (times && times.length >= 2) {
+                const openTime = parseInt(times[0].replace(':', ''));
+                const closeTime = parseInt(times[1].replace(':', ''));
+                return currentTime >= openTime && currentTime <= closeTime;
+            }
+        } catch (e) { console.error('Erro ao validar horário', e); }
+        return true;
+    }
+
+    const isOpen = checkOpen();
+    statusEl.textContent = isOpen ? 'Aberto' : 'Fechado';
+    statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
+    hoursEl.textContent = data.openingHours || 'Seg a Sex: 08h às 22h';
+
+    // Perfil da Loja
+    document.getElementById('restAddress').innerHTML = `📍 ${data.address || 'Endereço não informado'}`;
+    if (data.googleMapsUrl) {
+        document.getElementById('restMaps').innerHTML = `<a href="${data.googleMapsUrl}" target="_blank" style="color: #3b82f6; text-decoration: none;">📍 Ver no Google Maps</a>`;
+    }
+    document.getElementById('restPayments').innerHTML = `💳 <b>Pagamento:</b> ${data.paymentMethods || 'Pix, Dinheiro, Cartão'}`;
+
     const logoEl = document.getElementById('restLogo');
     if (data.logoUrl) {
         logoEl.innerHTML = `<img src="${data.logoUrl}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
@@ -213,7 +246,8 @@ async function checkout() {
         if (!response.ok) throw new Error(result.error);
 
         // 2. Format WhatsApp Message
-        let message = `*Novo Pedido: #${result.order.id}*\n`;
+        const orderNum = result.order.orderNumber || result.order.id;
+        let message = `*Novo Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
         message += `*Cliente:* ${name}\n`;
         message += `*Telefone:* ${phone}\n\n`;
@@ -226,12 +260,12 @@ async function checkout() {
         const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         message += `\n*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
         message += `--------------------------\n`;
-        message += `_Pedido realizado via SmartPedidos_`;
+        message += `_Pedido realizado via SmartPede_`;
 
         // 3. Open WhatsApp
         const encodedMessage = encodeURIComponent(message);
-        // Using a dummy phone for now or we could get from restaurant settings if added
-        const waLink = `https://wa.me/5511999999999?text=${encodedMessage}`;
+        const whatsappNumber = restaurant.whatsapp || '5511999999999';
+        const waLink = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
         window.open(waLink, '_blank');
 

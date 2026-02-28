@@ -17,6 +17,11 @@ model Tenant {
   nextBillingDate    DateTime?
   trialEndsAt        DateTime @default(dbgenerated("(datetime('now', '+7 days'))"))
   logoUrl            String?
+  address            String?
+  googleMapsUrl      String?
+  openingHours       String? // JSON string: { "seg": { "open": "08:00", "close": "22:00" }, ... }
+  paymentMethods     String? // Comma separated: pix,dinheiro,cartao
+  whatsapp           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -81,6 +86,7 @@ model Product {
 
 model Order {
   id             Int      @id @default(autoincrement())
+  orderNumber    Int?     // Sequential number for the establishment
   tenantId       Int
   customerName   String
   customerPhone  String

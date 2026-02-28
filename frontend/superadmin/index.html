@@ -127,6 +127,7 @@
                 <div class="glass-card tenant-card">
                     <div>
                         <strong>${t.name}</strong> <small class="text-secondary">(${t.slug})</small>
+                        <p><a href="http://${window.location.host}/menu/#${t.slug}" target="_blank" class="link">Ver Cardápio</a></p>
                         <p style="font-size: 0.8rem;" class="text-secondary">Criado em: ${new Date(t.createdAt).toLocaleDateString()}</p>
                         <p style="font-size: 0.8rem;">Status: <span class="${t.active ? 'status-active' : 'status-blocked'}">${t.active ? 'ATIVO' : 'BLOQUEADO'}</span></p>
                     </div>

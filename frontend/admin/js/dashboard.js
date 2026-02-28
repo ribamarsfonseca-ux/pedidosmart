@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="order-card glass-card" style="border: 1px solid ${getStatusColor(order.status)}44; border-left: 4px solid ${getStatusColor(order.status)}">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
                         <div>
-                            <strong>#${order.id} - ${order.customerName}</strong>
+                            <strong>#${order.orderNumber || order.id} - ${order.customerName}</strong>
                             <p class="text-secondary">${new Date(order.createdAt).toLocaleString()}</p>
                         </div>
                         <span class="status-badge" style="background: ${getStatusColor(order.status)}">${translateStatus(order.status)}</span>
@@ -267,6 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'accepted': '#3B82F6',
             'preparing': '#8B5CF6',
             'ready': '#10B981',
+            'finished': '#6B7280',
             'completed': '#6B7280',
             'cancelled': '#EF4444'
         };
@@ -277,9 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const translations = {
             'pending': 'Pendente',
             'accepted': 'Aceito',
-            'preparing': 'Preparando',
+            'preparing': 'Em Preparo',
             'ready': 'Pronto',
-            'completed': 'Entregue',
+            'finished': 'Finalizado',
+            'completed': 'Finalizado',
             'cancelled': 'Cancelado'
         };
         return translations[status] || status;
@@ -288,9 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderStatusActions(order) {
         const actions = {
             'pending': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'accepted')">Aceitar</button>`,
-            'accepted': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'preparing')">Preparar</button>`,
-            'preparing': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'ready')">Pronto</button>`,
-            'ready': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'completed')">Finalizar</button>`
+            'accepted': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'preparing')">Iniciar Preparo</button>`,
+            'preparing': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'ready')">Marcar Pronto</button>`,
+            'ready': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'finished')">Finalizar</button>`
         };
         return actions[order.status] || '';
     }
@@ -524,6 +526,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="url" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
+                    <label>WhatsApp de Contato (Ex: 5511999999999)</label>
+                    <input type="text" id="set-whatsapp" value="${tenantData.whatsapp || ''}" placeholder="55 + DDD + Número">
+                </div>
+                <div class="form-group">
+                    <label>Endereço</label>
+                    <input type="text" id="set-address" value="${tenantData.address || ''}" placeholder="Rua exemplo, 123">
+                </div>
+                <div class="form-group">
+                    <label>Link Google Maps</label>
+                    <input type="url" id="set-maps" value="${tenantData.googleMapsUrl || ''}" placeholder="https://goo.gl/maps/...">
+                </div>
+                <div class="form-group">
+                    <label>Formas de Pagamento (Separe por vírgula)</label>
+                    <input type="text" id="set-payments" value="${tenantData.paymentMethods || ''}" placeholder="Pix, Dinheiro, Cartão">
+                </div>
+                <div class="form-group">
+                    <label>Horários de Funcionamento (Texto livre por enquanto)</label>
+                    <textarea id="set-hours" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem;" placeholder="Seg a Sex: 08h às 22h">${tenantData.openingHours || ''}</textarea>
+                </div>
+                <div class="form-group">
                     <label>Slug (URL)</label>
                     <input type="text" value="${tenantData.slug}" disabled>
                 </div>
@@ -538,19 +560,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.saveSettings = async () => {
         const logoUrl = document.getElementById('set-logo').value;
+        const whatsapp = document.getElementById('set-whatsapp').value;
+        const address = document.getElementById('set-address').value;
+        const googleMapsUrl = document.getElementById('set-maps').value;
+        const paymentMethods = document.getElementById('set-payments').value;
+        const openingHours = document.getElementById('set-hours').value;
+
         try {
-            // Note: We'll need a backend route for updating tenant settings if not already there, 
-            // but for now we'll simulate or use the register endpoint if it supports PUT.
-            // Actually, let's just update the local storage and inform the user they need to refresh 
-            // or we could add a simple backend route.
             const response = await apiFetch(`/tenants/update`, {
                 method: 'PUT',
-                body: JSON.stringify({ logoUrl })
+                body: JSON.stringify({
+                    logoUrl,
+                    whatsapp,
+                    address,
+                    googleMapsUrl,
+                    paymentMethods,
+                    openingHours
+                })
             });
 
             if (response.error) throw new Error(response.error);
 
             tenantData.logoUrl = logoUrl;
+            tenantData.whatsapp = whatsapp;
+            tenantData.address = address;
+            tenantData.googleMapsUrl = googleMapsUrl;
+            tenantData.paymentMethods = paymentMethods;
+            tenantData.openingHours = openingHours;
+
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
             window.location.reload();
