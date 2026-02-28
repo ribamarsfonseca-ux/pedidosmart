@@ -4,7 +4,18 @@ import prisma from '../prismaClient';
 // Public Route: Create an Order (By Customer in the Menu)
 export const createOrder = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { tenantId, customerName, customerPhone, items } = req.body;
+        const {
+            tenantId,
+            customerName,
+            customerPhone,
+            items,
+            fulfillmentType,
+            paymentMethod,
+            addressStreet,
+            addressNumber,
+            addressDistrict,
+            addressComplement
+        } = req.body;
 
         if (!tenantId || !customerName || !customerPhone || !items || !items.length) {
             res.status(400).json({ error: 'Dados do pedido incompletos' });
@@ -50,6 +61,12 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
                 customerPhone,
                 totalAmount,
                 status: 'pending',
+                fulfillmentType: fulfillmentType || 'delivery',
+                paymentMethod: paymentMethod || 'money',
+                addressStreet,
+                addressNumber,
+                addressDistrict,
+                addressComplement,
                 items: {
                     create: orderItemsData
                 }

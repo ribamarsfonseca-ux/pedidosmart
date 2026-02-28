@@ -33,26 +33,41 @@ function renderMenu(data) {
     const hoursEl = document.getElementById('restHours');
 
     function checkOpen() {
-        if (!data.openingHours) return true; // Se não configurado, assume aberto
+        if (!data.openingHours) return false; // Fechado por padrão sem horário
         try {
-            // Lógica simplificada: procura por algo como "08:00" e "22:00" no texto
+            const hours = JSON.parse(data.openingHours);
             const now = new Date();
-            const currentTime = now.getHours() * 100 + now.getMinutes();
-            const times = data.openingHours.match(/(\d{2}:\d{2})/g);
+            const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const today = daysMap[now.getDay()];
 
-            if (times && times.length >= 2) {
-                const openTime = parseInt(times[0].replace(':', ''));
-                const closeTime = parseInt(times[1].replace(':', ''));
-                return currentTime >= openTime && currentTime <= closeTime;
-            }
-        } catch (e) { console.error('Erro ao validar horário', e); }
-        return true;
+            const todayHours = hours[today];
+            if (!todayHours) return false;
+
+            const currentTime = now.getHours() * 100 + now.getMinutes();
+            const openTime = parseInt(todayHours.start.replace(':', ''));
+            const closeTime = parseInt(todayHours.end.replace(':', ''));
+
+            return currentTime >= openTime && currentTime <= closeTime;
+        } catch (e) {
+            console.error('Erro ao validar horário', e);
+            return false;
+        }
     }
 
     const isOpen = checkOpen();
     statusEl.textContent = isOpen ? 'Aberto' : 'Fechado';
     statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
-    hoursEl.textContent = data.openingHours || 'Seg a Sex: 08h às 22h';
+
+    // Texto de horários amigável
+    try {
+        const hours = JSON.parse(data.openingHours);
+        const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const today = daysMap[new Date().getDay()];
+        const tHours = hours[today];
+        hoursEl.textContent = tHours ? `Hoje: ${tHours.start} às ${tHours.end}` : 'Fechado hoje';
+    } catch (e) {
+        hoursEl.textContent = 'Consulte nossos horários';
+    }
 
     // Perfil da Loja
     document.getElementById('restAddress').innerHTML = `📍 ${data.address || 'Endereço não informado'}`;
@@ -211,14 +226,36 @@ function closeCart() {
     document.body.style.overflow = '';
 }
 
+window.toggleAddressFields = () => {
+    const type = document.getElementById('fulfillmentType').value;
+    document.getElementById('addressFields').style.display = type === 'delivery' ? 'block' : 'none';
+};
+
 async function checkout() {
     const name = document.getElementById('custName').value.trim();
     const phone = document.getElementById('custPhone').value.trim();
+    const fulfillmentType = document.getElementById('fulfillmentType').value;
+    const paymentMethod = document.getElementById('paymentMethod').value;
     const btn = document.getElementById('checkoutBtn');
 
     if (!name || !phone) {
         alert('Por favor, preencha seu nome e telefone.');
         return;
+    }
+
+    // Coletar campos de endereço se for delivery
+    let addressData = {};
+    if (fulfillmentType === 'delivery') {
+        addressData = {
+            addressStreet: document.getElementById('custStreet').value.trim(),
+            addressNumber: document.getElementById('custNumber').value.trim(),
+            addressDistrict: document.getElementById('custDistrict').value.trim(),
+            addressComplement: document.getElementById('custComplement').value.trim()
+        };
+        if (!addressData.addressStreet || !addressData.addressNumber) {
+            alert('Por favor, preencha a rua e o número.');
+            return;
+        }
     }
 
     try {
@@ -230,6 +267,9 @@ async function checkout() {
             tenantId: restaurant.id,
             customerName: name,
             customerPhone: phone,
+            fulfillmentType,
+            paymentMethod,
+            ...addressData,
             items: cart.map(item => ({
                 productId: item.id,
                 quantity: item.quantity
@@ -247,12 +287,25 @@ async function checkout() {
 
         // 2. Format WhatsApp Message
         const orderNum = result.order.orderNumber || result.order.id;
+        const translateFulfillment = { 'delivery': 'Delivery 🚀', 'pickup': 'Retirada 🥡', 'dine_in': 'Consumo no Local 🍽️' };
+        const translatePayment = { 'pix': 'Pix 💎', 'card': 'Cartão 💳', 'money': 'Dinheiro 💵' };
+
         let message = `*Novo Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
         message += `*Cliente:* ${name}\n`;
-        message += `*Telefone:* ${phone}\n\n`;
-        message += `*Itens:*\n`;
+        message += `*Telefone:* ${phone}\n`;
+        message += `*Tipo:* ${translateFulfillment[fulfillmentType]}\n`;
+        message += `*Pagamento:* ${translatePayment[paymentMethod]}\n\n`;
 
+        if (fulfillmentType === 'delivery') {
+            message += `*Endereço de Entrega:*\n`;
+            message += `📍 ${addressData.addressStreet}, ${addressData.addressNumber}\n`;
+            message += `📍 Bairro: ${addressData.addressDistrict}\n`;
+            if (addressData.addressComplement) message += `📍 Comp: ${addressData.addressComplement}\n`;
+            message += `\n`;
+        }
+
+        message += `*Itens:*\n`;
         cart.forEach(item => {
             message += `- ${item.quantity}x ${item.name} (${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
         });

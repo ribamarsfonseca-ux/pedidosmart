@@ -240,12 +240,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="status-badge" style="background: ${getStatusColor(order.status)}">${translateStatus(order.status)}</span>
                     </div>
                     <div class="order-items" style="margin-bottom: 1rem; font-size: 0.9rem;">
-                        ${order.items.map(item => `
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>${item.quantity}x ${item.product.name}</span>
-                                <span>${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            </div>
-                        `).join('')}
+                        <p><strong>Tipo:</strong> ${translateFulfillment(order.fulfillmentType)} | <strong>Pagamento:</strong> ${translatePayment(order.paymentMethod)}</p>
+                        ${order.fulfillmentType === 'delivery' ? `
+                            <p style="background: #f3f4f6; padding: 5px; border-radius: 4px; margin: 5px 0;">
+                                📍 ${order.addressStreet}, ${order.addressNumber}${order.addressDistrict ? ` - ${order.addressDistrict}` : ''}
+                                ${order.addressComplement ? `<br><small>(${order.addressComplement})</small>` : ''}
+                            </p>
+                        ` : ''}
+                        <div style="border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px;">
+                            ${order.items.map(item => `
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>${item.quantity}x ${item.product.name}</span>
+                                    <span>${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem;">
                         <strong>Total: ${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
@@ -285,6 +294,16 @@ document.addEventListener('DOMContentLoaded', () => {
             'cancelled': 'Cancelado'
         };
         return translations[status] || status;
+    }
+
+    function translateFulfillment(type) {
+        const t = { 'delivery': 'Delivery', 'pickup': 'Retirada', 'dine_in': 'Consumo Local' };
+        return t[type] || type;
+    }
+
+    function translatePayment(method) {
+        const t = { 'pix': 'Pix', 'card': 'Cartão', 'money': 'Dinheiro' };
+        return t[method] || method;
     }
 
     function renderStatusActions(order) {
@@ -542,8 +561,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-payments" value="${tenantData.paymentMethods || ''}" placeholder="Pix, Dinheiro, Cartão">
                 </div>
                 <div class="form-group">
-                    <label>Horários de Funcionamento (Texto livre por enquanto)</label>
-                    <textarea id="set-hours" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem;" placeholder="Seg a Sex: 08h às 22h">${tenantData.openingHours || ''}</textarea>
+                    <label>Horários de Funcionamento (Se vazio, será exibido como "Fechado")</label>
+                    <div id="hours-table-container" style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                        ${renderOpeningHoursTable(tenantData.openingHours)}
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Slug (URL)</label>
@@ -564,7 +585,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const address = document.getElementById('set-address').value;
         const googleMapsUrl = document.getElementById('set-maps').value;
         const paymentMethods = document.getElementById('set-payments').value;
-        const openingHours = document.getElementById('set-hours').value;
+
+        // Coletar horários
+        const hours = {};
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        days.forEach(day => {
+            const start = document.getElementById(`start-${day}`).value;
+            const end = document.getElementById(`end-${day}`).value;
+            if (start && end) {
+                hours[day] = { start, end };
+            }
+        });
+        const openingHours = JSON.stringify(hours);
 
         try {
             const response = await apiFetch(`/tenants/update`, {
@@ -595,6 +627,39 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Erro ao salvar: ' + error.message);
         }
     };
+
+    function renderOpeningHoursTable(currentHoursJson) {
+        let hours = {};
+        try {
+            if (currentHoursJson) hours = JSON.parse(currentHoursJson);
+        } catch (e) { /* Fallback if it was plain text before */ }
+
+        const dayLabels = {
+            'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta',
+            'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo'
+        };
+
+        return `
+            <table style="width: 100%; font-size: 0.9rem;">
+                <thead>
+                    <tr style="text-align: left;">
+                        <th>Dia</th>
+                        <th>Início</th>
+                        <th>Término</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.keys(dayLabels).map(day => `
+                        <tr>
+                            <td>${dayLabels[day]}</td>
+                            <td><input type="time" id="start-${day}" value="${hours[day]?.start || ''}" style="width: 100px; padding: 2px;"></td>
+                            <td><input type="time" id="end-${day}" value="${hours[day]?.end || ''}" style="width: 100px; padding: 2px;"></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
 
     // Init Base View
     loadView('home');

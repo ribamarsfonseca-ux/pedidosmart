@@ -91,7 +91,16 @@ model Order {
   customerName   String
   customerPhone  String
   totalAmount    Float
-  status         String   @default("pending") // pending, accepted, preparing, ready, completed, cancelled
+  status         String   @default("pending") // pending, accepted, preparing, ready, finished
+  
+  // v3 Fields
+  fulfillmentType String   @default("delivery") // delivery, pickup, dine_in
+  paymentMethod   String   @default("money")    // pix, card, money
+  addressStreet   String?
+  addressNumber   String?
+  addressDistrict String?
+  addressComplement String?
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
