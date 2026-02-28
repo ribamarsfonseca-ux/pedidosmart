@@ -32,22 +32,69 @@ function renderMenu(data) {
     const statusEl = document.getElementById('storeStatus');
     const hoursEl = document.getElementById('restHours');
 
+    // Perfil da Loja
+    const populateProfile = () => {
+        document.getElementById('restAddressModal').innerHTML = `📍 <b>Endereço:</b> ${data.address || 'Não informado'}`;
+        document.getElementById('restPhoneModal').innerHTML = `📞 <b>WhatsApp:</b> ${data.whatsapp || 'Não informado'}`;
+        document.getElementById('restSlugModal').innerHTML = `🔗 <b>Link:</b> smartpede.com.br/menu/#${data.slug}`;
+
+        if (data.googleMapsUrl) {
+            document.getElementById('restMapsModal').innerHTML = `<a href="${data.googleMapsUrl}" target="_blank" class="btn-action" style="display: inline-block; text-decoration: none; margin-top: 5px;">📍 Abrir no Google Maps</a>`;
+        }
+
+        document.getElementById('restPaymentsModal').textContent = data.paymentMethods || 'Pix, Dinheiro, Cartão';
+
+        // Tabela de Horários no Modal
+        try {
+            const hours = JSON.parse(data.openingHours);
+            const dayLabels = { 'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta', 'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo' };
+            const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+            document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => `
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>${dayLabels[day]}</span>
+                    <span>${hours[day] ? `${hours[day].start} - ${hours[day].end}` : '<span style="color: #ef4444;">Fechado</span>'}</span>
+                </div>
+            `).join('');
+        } catch (e) {
+            document.getElementById('restHoursTableModal').textContent = data.openingHours || 'Consulte o estabelecimento';
+        }
+    };
+    populateProfile();
+
     function checkOpen() {
-        if (!data.openingHours) return false; // Fechado por padrão sem horário
+        if (!data.openingHours) return false;
         try {
             const hours = JSON.parse(data.openingHours);
             const now = new Date();
             const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
             const today = daysMap[now.getDay()];
-
-            const todayHours = hours[today];
-            if (!todayHours) return false;
+            const yesterday = daysMap[now.getDay() === 0 ? 6 : now.getDay() - 1];
 
             const currentTime = now.getHours() * 100 + now.getMinutes();
-            const openTime = parseInt(todayHours.start.replace(':', ''));
-            const closeTime = parseInt(todayHours.end.replace(':', ''));
 
-            return currentTime >= openTime && currentTime <= closeTime;
+            // 1. Verificar se a loja ainda está aberta pelo turno de ONTEM (viva a noite!)
+            const yHours = hours[yesterday];
+            if (yHours) {
+                const yOpen = parseInt(yHours.start.replace(':', ''));
+                const yClose = parseInt(yHours.end.replace(':', ''));
+                if (yClose < yOpen) { // Cruzou a meia-noite
+                    if (currentTime <= yClose) return true;
+                }
+            }
+
+            // 2. Verificar o turno de HOJE
+            const tHours = hours[today];
+            if (!tHours) return false;
+
+            const tOpen = parseInt(tHours.start.replace(':', ''));
+            const tClose = parseInt(tHours.end.replace(':', ''));
+
+            if (tClose < tOpen) { // Cruza a meia-noite
+                return currentTime >= tOpen;
+            } else {
+                return currentTime >= tOpen && currentTime <= tClose;
+            }
         } catch (e) {
             console.error('Erro ao validar horário', e);
             return false;
@@ -127,21 +174,58 @@ function renderMenu(data) {
     `).join('');
 }
 
-function scrollToCategory(id, el) {
-    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
+// MODAL HANDLERS
+window.toggleStoreProfileModl = (show) => {
+    document.getElementById('profileModal').style.display = show ? 'flex' : 'none';
+};
 
-    const element = document.getElementById(id);
-    const offset = 80;
-    const bodyRect = document.body.getBoundingClientRect().top;
-    const elementRect = element.getBoundingClientRect().top;
-    const elementPosition = elementRect - bodyRect;
-    const offsetPosition = elementPosition - offset;
+window.toggleMyOrdersModal = (show) => {
+    const modal = document.getElementById('myOrdersModal');
+    modal.style.display = show ? 'flex' : 'none';
+    if (show) refreshMyOrders();
+};
 
-    window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-    });
+async function refreshMyOrders() {
+    const list = document.getElementById('myOrdersList');
+    const orderIds = JSON.parse(localStorage.getItem('my_orders') || '[]');
+
+    if (orderIds.length === 0) {
+        list.innerHTML = '<p class="text-secondary">Nenhum pedido realizado recentemente.</p>';
+        return;
+    }
+
+    list.innerHTML = '<p class="text-secondary">Atualizando status...</p>';
+
+    try {
+        const orders = [];
+        for (const id of orderIds) {
+            const res = await fetch(`${API_URL}/orders/${id}/status_public`).then(r => r.json());
+            if (res.id) orders.push(res);
+        }
+
+        list.innerHTML = orders.reverse().map(o => `
+            <div class="glass-card" style="margin-bottom: 10px; padding: 10px; border-left: 4px solid ${getStatusColor(o.status)}">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>Pedido #${o.orderNumber || o.id}</strong>
+                    <span style="color: ${getStatusColor(o.status)}; font-weight: 600;">${translateStatus(o.status)}</span>
+                </div>
+                <p style="font-size: 0.8rem; margin: 5px 0;">Realizado em: ${new Date(o.createdAt).toLocaleTimeString()}</p>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        list.innerHTML = '<p class="error">Erro ao atualizar status. Tente novamente.</p>';
+    }
+}
+
+function getStatusColor(status) {
+    const colors = { 'pending': '#F59E0B', 'accepted': '#3B82F6', 'preparing': '#8B5CF6', 'ready': '#10B981', 'finished': '#6B7280', 'completed': '#6B7280', 'cancelled': '#EF4444' };
+    return colors[status] || '#6B7280';
+}
+
+function translateStatus(status) {
+    const t = { 'pending': 'Pendente', 'accepted': 'Aceito', 'preparing': 'Em Preparo', 'ready': 'Pronto!', 'finished': 'Finalizado', 'completed': 'Finalizado', 'cancelled': 'Cancelado' };
+    return t[status] || status;
 }
 
 // CART LOGIC
@@ -322,7 +406,11 @@ async function checkout() {
 
         window.open(waLink, '_blank');
 
-        // 4. Clear Cart
+        // 4. Clear Cart & Save Order ID
+        const currentOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
+        currentOrders.push(result.order.id);
+        localStorage.setItem('my_orders', JSON.stringify(currentOrders));
+
         cart = [];
         updateCartUI();
         alert('Pedido enviado com sucesso!');

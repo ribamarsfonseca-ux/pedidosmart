@@ -562,6 +562,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="form-group">
                     <label>Horários de Funcionamento (Se vazio, será exibido como "Fechado")</label>
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">
+                        💡 <b>Dica Noite/Madrugada:</b> Se o seu estabelecimento fecha na madrugada do dia seguinte (ex: das 18:00 às 02:00), coloque o horário de início maior que o de término. O sistema entenderá automaticamente!
+                    </p>
                     <div id="hours-table-container" style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
                         ${renderOpeningHoursTable(tenantData.openingHours)}
                     </div>

@@ -27,18 +27,51 @@
         <h1 class="restaurant-name" id="restName">Carregando...</h1>
         <div id="storeStatus" class="status-indicator">Verificando...</div>
         <p class="restaurant-info" id="restHours">Aberto agora • SmartPede</p>
+
+        <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+            <button class="btn-action" onclick="toggleStoreProfileModl(true)">🏢 Sobre a Loja</button>
+            <button class="btn-action" onclick="toggleMyOrdersModal(true)">📋 Meus Pedidos</button>
+        </div>
     </header>
 
-    <!-- Store Info Section -->
-    <section class="store-profile" id="storeProfile" style="padding: 1rem; border-bottom: 1px solid #eee;">
-        <div style="background: #f9fafb; padding: 1rem; border-radius: 12px; font-size: 0.9rem;">
-            <p id="restAddress"></p>
-            <div id="restMaps" style="margin: 5px 0;"></div>
-            <p id="restPayments"
-                style="color: #666; font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 5px; margin-top: 5px;">
-            </p>
+    <!-- Store Profile Modal -->
+    <div class="modal-overlay" id="profileModal" style="display: none;">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Sobre a Loja</h3>
+                <button onclick="toggleStoreProfileModl(false)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="profileDetails">
+                    <p id="restAddressModal"></p>
+                    <div id="restMapsModal" style="margin: 10px 0;"></div>
+                    <p id="restPhoneModal"></p>
+                    <p id="restSlugModal" style="color: #666; font-size: 0.8rem;"></p>
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <strong>Horários de Funcionamento:</strong>
+                        <div id="restHoursTableModal" style="font-size: 0.85rem; margin-top: 5px;"></div>
+                    </div>
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                        <strong>Formas de Pagamento:</strong>
+                        <p id="restPaymentsModal" style="font-size: 0.85rem; color: #666;"></p>
+                    </div>
+                </div>
+            </div>
         </div>
-    </section>
+    </div>
+
+    <!-- My Orders Modal -->
+    <div class="modal-overlay" id="myOrdersModal" style="display: none;">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Acompanhar Pedido</h3>
+                <button onclick="toggleMyOrdersModal(false)">&times;</button>
+            </div>
+            <div class="modal-body" id="myOrdersList">
+                <p class="text-secondary">Você ainda não realizou pedidos nesta sessão.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Categories Nav -->
     <nav class="categories-nav" id="catNav">
@@ -87,9 +120,9 @@
                     <label>Como deseja receber?</label>
                     <select id="fulfillmentType" onchange="toggleAddressFields()"
                         style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #ddd;">
-                        <option value="delivery">Delivery</option>
+                        <option value="dine_in" selected>Consumo no Local</option>
                         <option value="pickup">Retirada no Local</option>
-                        <option value="dine_in">Consumo no Local</option>
+                        <option value="delivery">Delivery</option>
                     </select>
                 </div>
 

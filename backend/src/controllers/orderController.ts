@@ -138,3 +138,28 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
         res.status(500).json({ error: 'Erro ao atualizar status do pedido' });
     }
 };
+
+// Public Route: Get Order Status (for customer tracking)
+export const getOrderPublicStatus = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const order = await prisma.order.findUnique({
+            where: { id: parseInt(id) },
+            select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                createdAt: true
+            }
+        });
+
+        if (!order) {
+            res.status(404).json({ error: 'Pedido não encontrado' });
+            return;
+        }
+
+        res.json(order);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar status' });
+    }
+};
