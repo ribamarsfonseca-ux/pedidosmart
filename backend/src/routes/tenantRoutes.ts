@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { registerTenant, loginAdmin, getTenantBySlug } from '../controllers/tenantController';
+import { registerTenant, loginAdmin, getTenantBySlug, updateTenant } from '../controllers/tenantController';
+import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
 
@@ -9,5 +10,8 @@ router.post('/login', loginAdmin);
 
 // Public Menu Route (accessed by customers via /:slug URL)
 router.get('/menu/:slug', getTenantBySlug);
+
+// Private Settings Route
+router.put('/update', authenticateToken, updateTenant);
 
 export default router;

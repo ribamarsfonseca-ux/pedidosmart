@@ -77,6 +77,7 @@ if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const tenantName = document.getElementById('tenantName').value;
+        const logoUrl = document.getElementById('logoUrl').value;
         const slug = document.getElementById('slug').value;
         const adminEmail = document.getElementById('adminEmail').value;
         const adminPassword = document.getElementById('adminPassword').value;
@@ -92,7 +93,7 @@ if (registerForm) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ tenantName, slug, adminEmail, adminPassword })
+                body: JSON.stringify({ tenantName, slug, adminEmail, adminPassword, logoUrl })
             });
 
             const data = await response.json();

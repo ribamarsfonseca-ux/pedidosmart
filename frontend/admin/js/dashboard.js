@@ -13,7 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const tenantData = JSON.parse(tenantDataRaw);
 
     // 2. Setup Base UI Elements
-    document.getElementById('tenantNameDisplay').textContent = tenantData.name;
+    const renderLogo = () => {
+        if (tenantData.logoUrl) {
+            return `<img src="${tenantData.logoUrl}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;">`;
+        }
+        return ``;
+    };
+
+    document.getElementById('tenantNameDisplay').innerHTML = `${renderLogo()} ${tenantData.name}`;
     const publicMenuLink = document.getElementById('publicMenuLink');
     // Consider dynamic domain instead of local path later
     publicMenuLink.href = `../menu/index.html#${tenantData.slug}`;
@@ -171,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
         <div class="glass-card">
-            <h3>Bem-vindo ao SmartPedidos</h3>
+            <h3>Bem-vindo ao SmartPede</h3>
             <p class="text-secondary mt-4">Sua loja <b>${tenantData.name}</b> está configurada.</p>
             <p class="text-secondary">O link para seus clientes acessarem seu cardápio é:</p>
             <div class="mt-4" style="background: #F9FAFB; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
@@ -510,7 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>Dados do Restaurante</h3>
                 <div class="form-group mt-4">
                     <label>Nome do Estabelecimento</label>
-                    <input type="text" value="${tenantData.name}" disabled>
+                    <input type="text" id="set-name" value="${tenantData.name}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Logotipo (URL da Imagem)</label>
+                    <input type="url" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
                     <label>Slug (URL)</label>
@@ -520,11 +531,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label>Tipo de Plano</label>
                     <p><strong>${tenantData.planType.toUpperCase()}</strong></p>
                 </div>
-                <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border);">
-                <p class="text-secondary">Em breve: Altere as cores do seu cardápio, logo e horário de funcionamento.</p>
+                <button class="btn btn-primary mt-4" onclick="saveSettings()">Salvar Alterações</button>
             </div>
          `;
     }
+
+    window.saveSettings = async () => {
+        const logoUrl = document.getElementById('set-logo').value;
+        try {
+            // Note: We'll need a backend route for updating tenant settings if not already there, 
+            // but for now we'll simulate or use the register endpoint if it supports PUT.
+            // Actually, let's just update the local storage and inform the user they need to refresh 
+            // or we could add a simple backend route.
+            const response = await apiFetch(`/tenants/update`, {
+                method: 'PUT',
+                body: JSON.stringify({ logoUrl })
+            });
+
+            if (response.error) throw new Error(response.error);
+
+            tenantData.logoUrl = logoUrl;
+            localStorage.setItem('tenant_data', JSON.stringify(tenantData));
+            alert('Configurações salvas! Recarregando...');
+            window.location.reload();
+        } catch (error) {
+            alert('Erro ao salvar: ' + error.message);
+        }
+    };
 
     // Init Base View
     loadView('home');

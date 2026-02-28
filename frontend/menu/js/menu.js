@@ -27,7 +27,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 function renderMenu(data) {
     document.title = `${data.name} | Cardápio Digital`;
     document.getElementById('restName').textContent = data.name;
-    document.getElementById('restLogo').textContent = data.name.substring(0, 2).toUpperCase();
+
+    const logoEl = document.getElementById('restLogo');
+    if (data.logoUrl) {
+        logoEl.innerHTML = `<img src="${data.logoUrl}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        logoEl.style.background = 'none';
+    } else {
+        logoEl.textContent = data.name.substring(0, 2).toUpperCase();
+    }
 
     const catNav = document.getElementById('catNav');
     const menuContent = document.getElementById('menuContent');

@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
 export const registerTenant = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { tenantName, slug, adminEmail, adminPassword } = req.body;
+        const { tenantName, slug, adminEmail, adminPassword, logoUrl } = req.body;
 
         // Validate inputs
         if (!tenantName || !slug || !adminEmail || !adminPassword) {
@@ -34,7 +34,7 @@ export const registerTenant = async (req: Request, res: Response): Promise<void>
         // Create Tenant and Admin User transactionally
         const result = await prisma.$transaction(async (tx) => {
             const tenant = await tx.tenant.create({
-                data: { name: tenantName, slug },
+                data: { name: tenantName, slug, logoUrl },
             });
 
             const user = await tx.user.create({
@@ -110,12 +110,13 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
     try {
         const { slug } = req.params;
 
-        const tenant = await prisma.tenant.findUnique({
-            where: { slug, active: true },
+        const tenant = await prisma.tenant.findFirst({
+            where: { slug: slug as string, active: true },
             select: {
                 id: true,
                 name: true,
                 slug: true,
+                logoUrl: true,
                 planType: true,
                 categories: {
                     orderBy: { order: 'asc' },
@@ -137,5 +138,27 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
     } catch (error) {
         console.error('Get Tenant Error:', error);
         res.status(500).json({ error: 'Erro ao buscar dados do restaurante' });
+    }
+};
+
+export const updateTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        const { logoUrl } = req.body;
+
+        if (!tenantId) {
+            res.status(401).json({ error: 'Não autorizado' });
+            return;
+        }
+
+        const updatedTenant = await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { logoUrl }
+        });
+
+        res.json({ message: 'Configurações atualizadas', tenant: updatedTenant });
+    } catch (error) {
+        console.error('Update Tenant Error:', error);
+        res.status(500).json({ error: 'Erro ao atualizar configurações' });
     }
 };
