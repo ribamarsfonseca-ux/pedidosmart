@@ -1,11 +1,11 @@
 :root {
-    --primary: #FF4B2B;
-    --primary-gradient: linear-gradient(to right, #FF4B2B, #FF416C);
+    --primary: #3b82f6;
+    --on-primary: #ffffff;
     --secondary: #10B981;
-    --dark: #1F2937;
+    --dark: #111827;
     --light: #F9FAFB;
     --white: #ffffff;
-    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -19,83 +19,80 @@
 body {
     background-color: var(--light);
     color: var(--dark);
-    padding-bottom: 100px;
-    /* Space for floating cart */
+    padding-bottom: 80px;
+    /* Space for bottom nav */
 }
 
 /* Hero & Header */
 .menu-header {
     background: var(--white);
-    padding: 2rem 1.5rem;
-    text-align: center;
+    padding: 1.5rem;
     box-shadow: var(--shadow);
-    border-bottom-left-radius: 24px;
-    border-bottom-right-radius: 24px;
+    border-bottom: 1px solid #eee;
 }
 
 .restaurant-logo {
-    width: 80px;
-    height: 80px;
-    background: var(--primary-gradient);
-    border-radius: 20px;
-    margin: 0 auto 1rem;
+    width: 50px;
+    height: 50px;
+    background: var(--primary);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 2rem;
+    color: var(--on-primary);
+    font-size: 1.2rem;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .restaurant-name {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 0.25rem;
+    color: var(--dark);
 }
 
-.restaurant-info {
-    font-size: 0.875rem;
-    color: #6B7280;
+/* Search Bar */
+.search-container input:focus {
+    border-color: var(--primary) !important;
 }
 
 /* Categories Slider */
 .categories-nav {
-    padding: 1.5rem 0;
+    padding: 1rem 0;
     overflow-x: auto;
     white-space: nowrap;
     position: sticky;
     top: 0;
-    background: #f9fafbda;
+    background: #f9fafbe3;
     backdrop-filter: blur(10px);
     z-index: 100;
     scrollbar-width: none;
-}
-
-.categories-nav::-webkit-scrollbar {
-    display: none;
+    border-bottom: 1px solid #eee;
 }
 
 .category-pill {
     display: inline-block;
-    padding: 0.6rem 1.2rem;
-    margin: 0 0.5rem;
+    padding: 0.5rem 1rem;
+    margin: 0 0.4rem;
     background: var(--white);
-    border-radius: 99px;
-    box-shadow: var(--shadow);
-    font-size: 0.9rem;
-    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid #eee;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    color: #666;
 }
 
 .category-pill.active {
-    background: var(--primary-gradient);
-    color: white;
+    background: var(--primary);
+    color: var(--on-primary);
+    border-color: var(--primary);
 }
 
 /* Product Grid */
 .menu-section {
-    padding: 1rem 1.5rem;
+    padding: 1rem;
 }
 
 .section-title {
@@ -168,43 +165,24 @@ body {
 }
 
 .btn-add {
-    background: var(--primary-gradient);
-    color: white;
+    background: var(--primary);
+    color: var(--on-primary);
     border: none;
     width: 32px;
     height: 32px;
-    border-radius: 10px;
-    font-size: 1.2rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
     font-weight: bold;
     cursor: pointer;
 }
 
-/* Floating Cart */
-.cart-floating {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 1.5rem;
-    z-index: 1000;
-    display: none;
-    /* Shown via JS */
+/* Bottom Nav Utils */
+.nav-item.active {
+    color: var(--primary) !important;
 }
 
-.cart-bar {
-    background: var(--dark);
-    color: white;
-    border-radius: 16px;
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-}
-
-.cart-bar:active {
-    transform: scale(0.98);
+.nav-item.active span {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 /* Cart Modal/View */

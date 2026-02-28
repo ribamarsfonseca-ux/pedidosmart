@@ -144,7 +144,15 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
 export const updateTenant = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
-        const { logoUrl, address, googleMapsUrl, openingHours, paymentMethods, whatsapp } = req.body;
+        const {
+            logoUrl,
+            whatsapp,
+            address,
+            googleMapsUrl,
+            paymentMethods,
+            openingHours,
+            primaryColor
+        } = req.body;
 
         if (!tenantId) {
             res.status(401).json({ error: 'Não autorizado' });
@@ -155,11 +163,12 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             where: { id: tenantId },
             data: {
                 logoUrl,
+                whatsapp,
                 address,
                 googleMapsUrl,
-                openingHours,
                 paymentMethods,
-                whatsapp
+                openingHours,
+                primaryColor
             }
         });
 

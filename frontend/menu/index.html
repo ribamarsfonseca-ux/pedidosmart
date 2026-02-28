@@ -21,16 +21,24 @@
 
     <!-- Header -->
     <header class="menu-header">
-        <div id="logoContainer">
-            <div class="restaurant-logo" id="restLogo">#</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div id="logoContainer" style="display: flex; align-items: center; gap: 10px;">
+                <div class="restaurant-logo" id="restLogo">#</div>
+                <h1 class="restaurant-name" id="restName" style="margin: 0; font-size: 1.2rem;">Carregando...</h1>
+            </div>
+            <button class="btn-profile-top" onclick="toggleStoreProfileModal(true)"
+                style="background: none; border: none; font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer;">Perfil
+                da loja</button>
         </div>
-        <h1 class="restaurant-name" id="restName">Carregando...</h1>
-        <div id="storeStatus" class="status-indicator">Verificando...</div>
+
+        <div id="storeStatus" class="status-indicator" style="margin-top: 10px;">Verificando...</div>
         <p class="restaurant-info" id="restHours">Aberto agora • SmartPede</p>
 
-        <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
-            <button class="btn-action" onclick="toggleStoreProfileModal(true)">🏢 Sobre a Loja</button>
-            <button class="btn-action" onclick="toggleMyOrdersModal(true)">📋 Meus Pedidos</button>
+        <!-- Search Bar -->
+        <div class="search-container" style="margin-top: 15px; position: relative;">
+            <input type="text" id="productSearch" placeholder="Buscar produtos..." oninput="filterProducts()"
+                style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 25px; border: 1px solid #ddd; outline: none; font-size: 0.9rem;">
+            <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888;">🔍</span>
         </div>
     </header>
 
@@ -83,13 +91,24 @@
         <!-- Products by category will be injected here -->
     </main>
 
-    <!-- Floating Cart Bar -->
-    <div class="cart-floating" id="cartFloating">
-        <div class="cart-bar" onclick="openCart()">
-            <span><span id="cartCount">0</span> itens no carrinho</span>
-            <strong id="cartTotal">R$ 0,00</strong>
-        </div>
-    </div>
+    <!-- Bottom Tab Navigation -->
+    <nav class="bottom-nav"
+        style="position: fixed; bottom: 0; left: 0; right: 0; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
+        <button class="nav-item active" id="nav-home" onclick="switchTab('home', this)"
+            style="background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--primary); font-size: 0.75rem; font-weight: 500; cursor: pointer;">
+            <span style="font-size: 1.2rem;">🏠</span> Início
+        </button>
+        <button class="nav-item" id="nav-orders" onclick="switchTab('orders', this)"
+            style="background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #888; font-size: 0.75rem; font-weight: 500; cursor: pointer;">
+            <span style="font-size: 1.2rem;">📋</span> Pedidos
+        </button>
+        <button class="nav-item" id="nav-cart" onclick="switchTab('cart', this)"
+            style="background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #888; font-size: 0.75rem; font-weight: 500; position: relative; cursor: pointer;">
+            <span style="font-size: 1.2rem;">🛒</span> Carrinho
+            <span id="navCartCount"
+                style="position: absolute; top: -5px; right: 5px; background: #ef4444; color: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; display: none;">0</span>
+        </button>
+    </nav>
 
     <!-- Cart Modal -->
     <div class="cart-modal" id="cartModal">

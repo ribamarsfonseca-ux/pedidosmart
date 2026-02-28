@@ -21,6 +21,7 @@ model Tenant {
   googleMapsUrl      String?
   openingHours       String? // JSON string: { "seg": { "open": "08:00", "close": "22:00" }, ... }
   paymentMethods     String? // Comma separated: pix,dinheiro,cartao
+  primaryColor       String   @default("#3b82f6")
   whatsapp           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

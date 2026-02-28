@@ -545,6 +545,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="url" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
+                    <label>Cor Principal do Cardápio</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                        ${['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280', '#111827'].map(color => `
+                            <div onclick="selectThemeColor('${color}')" id="color-${color}" style="width: 35px; height: 35px; border-radius: 50%; background: ${color}; cursor: pointer; border: 3px solid ${tenantData.primaryColor === color ? '#fff' : 'transparent'}; box-shadow: 0 0 5px rgba(0,0,0,0.2);"></div>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="set-color" value="${tenantData.primaryColor || '#3b82f6'}">
+                    <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Escolha uma cor para personalizar o visual do seu cardápio online.</p>
+                </div>
+                <div class="form-group">
                     <label>WhatsApp de Contato (Ex: 5511999999999)</label>
                     <input type="text" id="set-whatsapp" value="${tenantData.whatsapp || ''}" placeholder="55 + DDD + Número">
                 </div>
@@ -584,6 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.saveSettings = async () => {
         const logoUrl = document.getElementById('set-logo').value;
+        const primaryColor = document.getElementById('set-color').value;
         const whatsapp = document.getElementById('set-whatsapp').value;
         const address = document.getElementById('set-address').value;
         const googleMapsUrl = document.getElementById('set-maps').value;
@@ -606,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'PUT',
                 body: JSON.stringify({
                     logoUrl,
+                    primaryColor,
                     whatsapp,
                     address,
                     googleMapsUrl,
@@ -617,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.error) throw new Error(response.error);
 
             tenantData.logoUrl = logoUrl;
+            tenantData.primaryColor = primaryColor;
             tenantData.whatsapp = whatsapp;
             tenantData.address = address;
             tenantData.googleMapsUrl = googleMapsUrl;
@@ -629,6 +642,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             alert('Erro ao salvar: ' + error.message);
         }
+    };
+
+    window.selectThemeColor = (color) => {
+        document.getElementById('set-color').value = color;
+        // Visual feedback
+        document.querySelectorAll('[id^="color-"]').forEach(el => {
+            el.style.border = '3px solid transparent';
+        });
+        document.getElementById(`color-${color}`).style.border = '3px solid #fff';
     };
 
     function renderOpeningHoursTable(currentHoursJson) {

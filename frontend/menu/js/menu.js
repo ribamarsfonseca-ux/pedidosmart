@@ -24,7 +24,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+function applyTheme(color) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const contrastColor = brightness > 128 ? '#111827' : '#ffffff';
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        :root {
+            --primary: ${color};
+            --on-primary: ${contrastColor};
+        }
+        .active { color: var(--primary) !important; border-bottom-color: var(--primary) !important; }
+        .category-pill.active { background: var(--primary) !important; color: var(--on-primary) !important; }
+        .btn-add { background: var(--primary) !important; color: var(--on-primary) !important; }
+        .btn-checkout { background: var(--primary) !important; color: var(--on-primary) !important; }
+        .btn-action { color: var(--primary) !important; border-color: var(--primary) !important; }
+    `;
+    document.head.appendChild(style);
+}
+
 function renderMenu(data) {
+    applyTheme(data.primaryColor || '#3b82f6');
     document.title = `${data.name} | Cardápio Digital`;
     document.getElementById('restName').textContent = data.name;
 
@@ -166,7 +189,56 @@ function renderMenu(data) {
             </div>
         </section>
     `).join('');
+
+    // Pre-save products for search
+    window.allProducts = data.categories.flatMap(c => c.products.map(p => ({ ...p, categoryId: c.id })));
 }
+
+window.filterProducts = () => {
+    const term = document.getElementById('productSearch').value.toLowerCase();
+    const sections = document.querySelectorAll('.menu-section');
+    const pills = document.querySelectorAll('.category-pill');
+
+    sections.forEach(section => {
+        const cards = section.querySelectorAll('.product-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const name = card.querySelector('.product-title').textContent.toLowerCase();
+            const matches = name.includes(term);
+            card.style.display = matches ? 'flex' : 'none';
+            if (matches) visibleCount++;
+        });
+
+        section.style.display = visibleCount > 0 ? 'block' : 'none';
+
+        // Sync category pills
+        const catId = section.id;
+        const pill = document.querySelector(`[onclick*="${catId}"]`);
+        if (pill) pill.style.display = visibleCount > 0 ? 'inline-block' : 'none';
+    });
+};
+
+window.switchTab = (tab, el) => {
+    // UI Updates
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        item.style.color = '#888';
+    });
+    el.classList.add('active');
+    el.style.color = 'var(--primary)';
+
+    if (tab === 'home') {
+        closeCart();
+        toggleMyOrdersModal(false);
+    } else if (tab === 'orders') {
+        closeCart();
+        toggleMyOrdersModal(true);
+    } else if (tab === 'cart') {
+        toggleMyOrdersModal(false);
+        openCart();
+    }
+};
 
 // MODAL HANDLERS
 window.toggleStoreProfileModal = (show) => {
@@ -256,19 +328,25 @@ function removeFromCart(id) {
 }
 
 function updateCartUI() {
-    const floating = document.getElementById('cartFloating');
     const count = document.getElementById('cartCount');
     const totalDisp = document.getElementById('cartTotal');
 
     const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
     const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
+    // Update Bottom Nav Badge
+    const navCount = document.getElementById('navCartCount');
     if (totalItems > 0) {
-        floating.style.display = 'block';
+        navCount.textContent = totalItems;
+        navCount.style.display = 'block';
+    } else {
+        navCount.style.display = 'none';
+    }
+
+    if (totalItems > 0) {
         count.textContent = totalItems;
         totalDisp.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     } else {
-        floating.style.display = 'none';
         closeCart();
     }
 }
@@ -302,6 +380,15 @@ function openCart() {
 function closeCart() {
     document.getElementById('cartModal').style.display = 'none';
     document.body.style.overflow = '';
+    // Sync Bottom Nav UI if closing via X button
+    const navCart = document.getElementById('nav-cart');
+    const navHome = document.getElementById('nav-home');
+    if (navCart.classList.contains('active')) {
+        navCart.classList.remove('active');
+        navCart.style.color = '#888';
+        navHome.classList.add('active');
+        navHome.style.color = 'var(--primary)';
+    }
 }
 
 window.toggleAddressFields = () => {
