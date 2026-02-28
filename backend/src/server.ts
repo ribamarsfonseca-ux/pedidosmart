@@ -19,9 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve os arquivos estáticos do frontend
-const frontendPath = path.resolve(process.cwd(), '..', 'frontend');
-console.log('Serving static files from:', frontendPath);
+// Serve os arquivos estáticos do frontend (Ajustado para VPS)
+const frontendPath = path.join(__dirname, '..', '..', 'frontend');
 app.use(express.static(frontendPath));
 
 // Rota base para a API

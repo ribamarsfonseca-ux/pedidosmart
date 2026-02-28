@@ -175,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="text-secondary mt-4">Sua loja <b>${tenantData.name}</b> está configurada.</p>
             <p class="text-secondary">O link para seus clientes acessarem seu cardápio é:</p>
             <div class="mt-4" style="background: #F9FAFB; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                <code>http://localhost:3000/menu/#${tenantData.slug}</code>
-                <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem;" onclick="navigator.clipboard.writeText('http://localhost:3000/menu/#${tenantData.slug}'); alert('Link copiado!')">Copiar</button>
+                <code>http://${window.location.host}/menu/#${tenantData.slug}</code>
+                <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem;" onclick="navigator.clipboard.writeText('http://' + window.location.host + '/menu/#' + '${tenantData.slug}'); alert('Link copiado!')">Copiar</button>
             </div>
         </div>
         `;
