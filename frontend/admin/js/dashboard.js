@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('activeProducts').textContent = products.filter(p => p.active).length;
             document.getElementById('openOrders').textContent = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready').length;
 
-            const completedOrders = orders.filter(o => o.status === 'completed');
+            const finishedOrders = orders.filter(o => o.status === 'finished');
 
             // Data de hoje ajustada para fuso de Brasília (UTC-3)
             const now = new Date();
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const todayISO = brazilNow.toISOString().split('T')[0];
 
             // Total Vendas Hoje
-            const todaySales = completedOrders.filter(o => {
+            const todaySales = finishedOrders.filter(o => {
                 const orderDate = new Date(new Date(o.createdAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().split('T')[0];
                 return orderDate === todayISO;
             });
