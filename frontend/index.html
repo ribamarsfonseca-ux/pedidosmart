@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPede - Sua Loja no Digital de Forma Inteligente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #64748b;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.8);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Navbar */
+        nav {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Hero Section */
+        header {
+            padding: 160px 0 100px;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent),
+                radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.05), transparent);
+            text-align: center;
+        }
+
+        .hero-tag {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            color: var(--dark);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 span {
+            color: var(--primary);
+        }
+
+        .hero-p {
+            font-size: 1.25rem;
+            color: var(--secondary);
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Features */
+        .features {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: var(--secondary);
+        }
+
+        /* Contact Section */
+        .contact {
+            background: var(--dark);
+            color: var(--white);
+            padding: 100px 0;
+            border-radius: 40px 40px 0 0;
+            text-align: center;
+        }
+
+        .contact h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact p {
+            color: #94a3b8;
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .whatsapp-btn {
+            background: #25d366;
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(37, 211, 102, 0.2);
+        }
+
+        .whatsapp-btn:hover {
+            background: #128c7e;
+            transform: scale(1.05);
+        }
+
+        footer {
+            padding: 2rem 0;
+            background: var(--dark);
+            color: #64748b;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="container" style="display: flex; justify-content: space-between; width: 100%;">
+            <a href="#" class="logo">
+                <span style="font-size: 2rem;">🚀</span> SmartPede
+            </a>
+            <div class="nav-links">
+                <a href="#funcionalidades">Funcionalidades</a>
+                <a href="/admin/index.html" class="btn btn-outline">Acessar Painel</a>
+                <a href="/admin/register.html" class="btn btn-primary">Criar Minha Loja</a>
+            </div>
+        </div>
+    </nav>
+
+    <header id="inicio">
+        <div class="container">
+            <div class="hero-tag">A evolução do Pedido Digital</div>
+            <h1>A plataforma definitiva para <span>turbinar seu restaurante</span></h1>
+            <p class="hero-p">Cardápio digital inteligente, gestão de pedidos em tempo real e integração total com
+                WhatsApp. Tudo o que você precisa para crescer sem pagar comissões abusivas.</p>
+            <div class="hero-btns">
+                <a href="/admin/register.html" class="btn btn-primary"
+                    style="padding: 1rem 2.5rem; font-size: 1.1rem;">Começar Agora - É Grátis</a>
+                <a href="/menu/index.html#teststore" class="btn btn-outline"
+                    style="padding: 1rem 2.5rem; font-size: 1.1rem;">Ver Demonstração</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="features" id="funcionalidades">
+        <div class="container">
+            <div class="section-header">
+                <h2>Por que escolher o SmartPede?</h2>
+                <p class="text-secondary">Desenvolvemos cada ferramenta pensando na agilidade do seu dia a dia.</p>
+            </div>
+            <div class="grid">
+                <div class="feature-card">
+                    <div class="icon-box">📋</div>
+                    <h3>Pedidos via WhatsApp</h3>
+                    <p>Receba pedidos formatados e organizados diretamente no seu WhatsApp, prontos para a cozinha.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">📊</div>
+                    <h3>Dashboard de Vendas</h3>
+                    <p>Acompanhe seu desempenho em tempo real com gráficos e histórico de vendas diárias.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">🛵</div>
+                    <h3>Gestão de Delivery</h3>
+                    <p>Configure taxas de entrega, horários por turno e acompanhe o status de cada envio.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">🎨</div>
+                    <h3>Marca Própria</h3>
+                    <p>Sua identidade visual no cardápio: cores, logo e descrição totalmente personalizáveis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">🕒</div>
+                    <h3>Horários Inteligentes</h3>
+                    <p>Suporte a múltiplos turnos e horários que atravessam a madrugada. Sua loja nunca para.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon-box">🛡️</div>
+                    <h3>Controle Total</h3>
+                    <p>Ative ou desative produtos na hora, gerencie categorias e mantenha seu cardápio sempre
+                        atualizado.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact" id="contato">
+        <div class="container">
+            <h2>Pronto para levar seu negócio ao próximo nível?</h2>
+            <p>Dúvidas ou quer uma consultoria personalizada? Fale diretamente com o desenvolvedor.</p>
+            <a href="https://wa.me/5598988838223?text=Olá, gostaria de saber mais sobre o SmartPede" target="_blank"
+                class="btn whatsapp-btn">
+                <span>💬</span> Chamar no WhatsApp: (98) 98883-8223
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 SmartPede - Todos os direitos reservados.</p>
+            <p style="font-size: 0.8rem; margin-top: 5px;">Transformando tecnologia em vendas.</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>

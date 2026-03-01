@@ -1,4 +1,4 @@
-const API_URL = 'http://187.77.226.40:3000/api';
+const API_URL = '/api';
 
 // Utility to show messages on screen
 const showAlert = (message, type = 'error') => {

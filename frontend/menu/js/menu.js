@@ -1,12 +1,25 @@
-const API_URL = 'http://187.77.226.40:3000/api';
+const API_URL = '/api';
 let cart = [];
 let restaurant = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Get Slug from Hash (#slug)
-    const slug = window.location.hash.substring(1);
+    // 1. Get Slug from Subdomain or Hash
+    let slug = window.location.hash.substring(1);
+
+    // Check for subdomain (e.g., loja.smartpede.com.br)
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+
+    // If it's something like loja.smartpede.com.br or loja.localhost
+    if (!slug && parts.length >= 2) {
+        const firstPart = parts[0];
+        if (firstPart !== 'www' && firstPart !== 'smartpede' && firstPart !== 'localhost') {
+            slug = firstPart;
+        }
+    }
+
     if (!slug) {
-        document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Loja não encontrada</h1><p>Verifique o link acessado.</p></div>';
+        document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Loja não encontrada</h1><p>Verifique o link acessado ou use o ID da loja após o #.</p></div>';
         return;
     }
 
@@ -73,6 +86,26 @@ function renderMenu(data) {
         }
 
         document.getElementById('restPaymentsModal').textContent = data.paymentMethods || 'Pix, Dinheiro, Cartão';
+
+        // Redes Sociais e Contato
+        let socialHtml = '';
+        if (data.instagramUrl) socialHtml += `<a href="${data.instagramUrl}" target="_blank" style="text-decoration: none; font-size: 1.5rem; margin-right: 15px;">📸</a>`;
+        if (data.facebookUrl) socialHtml += `<a href="${data.facebookUrl}" target="_blank" style="text-decoration: none; font-size: 1.5rem; margin-right: 15px;">🌐</a>`;
+        if (data.contactEmail) socialHtml += `<p style="font-size: 0.85rem; color: #666; margin-top: 5px;">📧 ${data.contactEmail}</p>`;
+
+        const socialContainer = document.createElement('div');
+        socialContainer.style.marginTop = '15px';
+        socialContainer.style.borderTop = '1px solid #eee';
+        socialContainer.style.paddingTop = '10px';
+        socialContainer.innerHTML = '<strong>Redes Sociais e Contato:</strong><div style="margin-top: 5px;">' + (socialHtml || '<p class="text-secondary">Não informado</p>') + '</div>';
+
+        // Append or replace? Let's check the container in index.html
+        // I'll insert it before the hours table.
+        const profileDetails = document.getElementById('profileDetails');
+        if (profileDetails && !document.getElementById('socialLinksModal')) {
+            socialContainer.id = 'socialLinksModal';
+            profileDetails.insertBefore(socialContainer, document.getElementById('restHoursTableModal').parentNode);
+        }
 
         // Tabela de Horários no Modal
         try {

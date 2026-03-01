@@ -1,4 +1,4 @@
-const API_URL = 'http://187.77.226.40:3000/api';
+const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Auth Check
@@ -221,8 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const completedOrders = orders.filter(o => o.status === 'completed');
 
+            // Data de hoje ajustada para fuso de Brasília (UTC-3)
+            const now = new Date();
+            const brazilNow = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+            const todayISO = brazilNow.toISOString().split('T')[0];
+
             // Total Vendas Hoje
-            const totalSales = completedOrders.reduce((acc, curr) => acc + curr.totalAmount, 0);
+            const todaySales = completedOrders.filter(o => {
+                const orderDate = new Date(new Date(o.createdAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().split('T')[0];
+                return orderDate === todayISO;
+            });
+            const totalSales = todaySales.reduce((acc, curr) => acc + curr.totalAmount, 0);
             document.getElementById('todaySales').textContent = totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             // Histórico de Vendas Diárias
@@ -691,6 +700,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-payments" value="${tenantData.paymentMethods || ''}" placeholder="Pix, Dinheiro, Cartão">
                 </div>
                 <div class="form-group">
+                    <label>Redes Sociais e Contato</label>
+                    <div class="grid-cols-3" style="gap: 10px;">
+                        <div>
+                            <small>Instagram (URL)</small>
+                            <input type="url" id="set-instagram" value="${tenantData.instagramUrl || ''}" placeholder="https://instagram.com/sualoja">
+                        </div>
+                        <div>
+                            <small>Facebook (URL)</small>
+                            <input type="url" id="set-facebook" value="${tenantData.facebookUrl || ''}" placeholder="https://facebook.com/sualoja">
+                        </div>
+                        <div>
+                            <small>E-mail de Contato</small>
+                            <input type="email" id="set-email" value="${tenantData.contactEmail || ''}" placeholder="contato@sualoja.com">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>Template de Mensagem "Pedido Pronto"</label>
                     <textarea id="set-ready-msg" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Ex: Olá {cliente}, seu pedido está pronto para {tipo}! 🚀">${tenantData.readyMessage || "Olá {cliente}, seu pedido está pronto para {tipo}! 🚀"}</textarea>
                     <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Variáveis disponíveis: {cliente}, {tipo}, {pedido}</p>
@@ -726,6 +752,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const address = document.getElementById('set-address').value;
         const googleMapsUrl = document.getElementById('set-maps').value;
         const paymentMethods = document.getElementById('set-payments').value;
+        const instagramUrl = document.getElementById('set-instagram').value;
+        const facebookUrl = document.getElementById('set-facebook').value;
+        const contactEmail = document.getElementById('set-email').value;
 
         // Coletar horários (v5: 2 turnos)
         const hours = {};
@@ -759,7 +788,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     minOrderPickup,
                     minOrderDelivery,
                     deliveryFee,
-                    readyMessage: document.getElementById('set-ready-msg').value
+                    readyMessage: document.getElementById('set-ready-msg').value,
+                    instagramUrl,
+                    facebookUrl,
+                    contactEmail
                 })
             });
 
@@ -778,6 +810,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.minOrderDelivery = minOrderDelivery;
             tenantData.deliveryFee = deliveryFee;
             tenantData.readyMessage = document.getElementById('set-ready-msg').value;
+            tenantData.instagramUrl = instagramUrl;
+            tenantData.facebookUrl = facebookUrl;
+            tenantData.contactEmail = contactEmail;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
@@ -819,31 +854,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tbody>
                     ${Object.keys(dayLabels).map(day => {
             const h = hours[day] || {};
-            // Legacy support for single shift if exists
             const s1 = h.shift1 || (h.start ? { start: h.start, end: h.end } : { start: '', end: '' });
             const s2 = h.shift2 || { start: '', end: '' };
+
+            const hasShift1 = s1.start && s1.end;
+            const hasShift2 = s2.start && s2.end;
 
             return `
                         <tr style="border-bottom: 1px solid #eee;">
                             <td style="padding: 10px 0; font-weight: 600;">${dayLabels[day]}</td>
                             <td>
-                                <div style="display: flex; gap: 4px; align-items: center;">
-                                    <input type="time" id="s1-${day}" value="${s1.start || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="checkbox" id="chk1-${day}" ${hasShift1 ? 'checked' : ''} onchange="toggleTimeInputs('${day}', 1)">
+                                    <input type="time" id="s1-${day}" value="${s1.start || ''}" ${!hasShift1 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift1 ? 1 : 0.5};">
                                     <span>-</span>
-                                    <input type="time" id="e1-${day}" value="${s1.end || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <input type="time" id="e1-${day}" value="${s1.end || ''}" ${!hasShift1 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift1 ? 1 : 0.5};">
                                 </div>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 4px; align-items: center;">
-                                    <input type="time" id="s2-${day}" value="${s2.start || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="checkbox" id="chk2-${day}" ${hasShift2 ? 'checked' : ''} onchange="toggleTimeInputs('${day}', 2)">
+                                    <input type="time" id="s2-${day}" value="${s2.start || ''}" ${!hasShift2 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift2 ? 1 : 0.5};">
                                     <span>-</span>
-                                    <input type="time" id="e2-${day}" value="${s2.end || ''}" style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <input type="time" id="e2-${day}" value="${s2.end || ''}" ${!hasShift2 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift2 ? 1 : 0.5};">
                                 </div>
                             </td>
                         </tr>
                     `}).join('')}
                 </tbody>
             </table>
+            <script>
+                window.toggleTimeInputs = (day, shift) => {
+                    const chk = document.getElementById('chk' + shift + '-' + day);
+                    const s = document.getElementById('s' + shift + '-' + day);
+                    const e = document.getElementById('e' + shift + '-' + day);
+                    s.disabled = !chk.checked;
+                    e.disabled = !chk.checked;
+                    s.style.opacity = chk.checked ? 1 : 0.5;
+                    e.style.opacity = chk.checked ? 1 : 0.5;
+                    if (!chk.checked) { s.value = ''; e.value = ''; }
+                };
+            </script>
             <p style="font-size: 0.75rem; color: #666; margin-top: 10px;">
                 💡 <b>Dica:</b> Para horários que cruzam a meia-noite (ex: 18:00 às 02:00), basta colocar o fim menor que o início.
             </p>
