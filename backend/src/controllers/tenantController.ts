@@ -129,6 +129,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 openingHours: true,
                 paymentMethods: true,
                 primaryColor: true,
+                readyMessage: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
@@ -167,7 +168,8 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             minOrderDineIn,
             minOrderPickup,
             minOrderDelivery,
-            deliveryFee
+            deliveryFee,
+            readyMessage
         } = req.body;
 
         if (!tenantId) {
@@ -188,8 +190,9 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 description,
                 minOrderDineIn,
                 minOrderPickup,
-                minOrderDelivery,
-                deliveryFee
+                minOrderDelivery: minOrderDelivery ? parseFloat(minOrderDelivery.toString()) : 0,
+                deliveryFee: deliveryFee ? parseFloat(deliveryFee.toString()) : 0,
+                readyMessage
             }
         });
 

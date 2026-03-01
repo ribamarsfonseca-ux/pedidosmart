@@ -361,10 +361,33 @@ document.addEventListener('DOMContentLoaded', () => {
             'pending': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'accepted')">Aceitar</button>`,
             'accepted': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'preparing')">Iniciar Preparo</button>`,
             'preparing': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'ready')">Marcar Pronto</button>`,
-            'ready': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'finished')">Finalizar</button>`
+            'ready': `
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn btn-primary btn-sm" style="background: #25D366; border-color: #25D366;" onclick="sendReadyNotification(${order.id})">📲 Notificar</button>
+                    <button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'finished')">Finalizar</button>
+                </div>
+            `
         };
         return actions[order.status] || '';
     }
+
+    window.sendReadyNotification = async (orderId) => {
+        try {
+            const orders = await apiFetch('/orders');
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            let msg = tenantData.readyMessage || "Olá {cliente}, seu pedido está pronto para {tipo}! 🚀";
+            msg = msg.replace('{cliente}', order.customerName)
+                .replace('{tipo}', translateFulfillment(order.fulfillmentType))
+                .replace('{pedido}', order.orderNumber || order.id);
+
+            const waLink = `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+            window.open(waLink, '_blank');
+        } catch (e) {
+            alert('Erro ao gerar notificação: ' + e.message);
+        }
+    };
 
     window.updateStatus = async (orderId, newStatus) => {
         try {
@@ -462,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${filtered.map(p => `
+                         ${filtered.map(p => `
                             <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -472,7 +495,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </td>
                                 <td>${p.category.name}</td>
                                 <td>${p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                <td><span class="status-pill ${p.active ? 'active' : 'inactive'}">${p.active ? 'Ativo' : 'Inativo'}</span></td>
+                                <td>
+                                    <label class="switch" style="position: relative; display: inline-block; width: 40px; height: 20px;">
+                                        <input type="checkbox" ${p.active ? 'checked' : ''} onchange="toggleProductActive(${p.id}, this.checked)" style="opacity: 0; width: 0; height: 0;">
+                                        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${p.active ? 'var(--primary)' : '#ccc'}; transition: .4s; border-radius: 20px;">
+                                            <span style="position: absolute; content: ''; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: ${p.active ? 'translateX(20px)' : 'translateX(0)'};"></span>
+                                        </span>
+                                    </label>
+                                    <span style="font-size: 0.75rem; margin-left: 5px; color: ${p.active ? 'var(--primary)' : '#666'};">${p.active ? 'Ativo' : 'Inativo'}</span>
+                                </td>
                                 <td>
                                     <button class="btn-text" onclick="deleteProduct(${p.id})">Remover</button>
                                 </td>
@@ -485,6 +516,20 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = `<p class="error">${error.message}</p>`;
         }
     }
+
+    window.toggleProductActive = async (productId, active) => {
+        try {
+            await apiFetch(`/products/${productId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ active })
+            });
+            // Update local state without full reload
+            loadProducts();
+        } catch (error) {
+            alert('Erro ao mudar status: ' + error.message);
+            loadProducts(); // Sync back
+        }
+    };
 
     window.filterByCategory = (id, el) => {
         document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
@@ -646,6 +691,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-payments" value="${tenantData.paymentMethods || ''}" placeholder="Pix, Dinheiro, Cartão">
                 </div>
                 <div class="form-group">
+                    <label>Template de Mensagem "Pedido Pronto"</label>
+                    <textarea id="set-ready-msg" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Ex: Olá {cliente}, seu pedido está pronto para {tipo}! 🚀">${tenantData.readyMessage || "Olá {cliente}, seu pedido está pronto para {tipo}! 🚀"}</textarea>
+                    <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Variáveis disponíveis: {cliente}, {tipo}, {pedido}</p>
+                </div>
+                <div class="form-group">
                     <label>Horários de Funcionamento (Configuração por Turnos)</label>
                     <div id="hours-table-container" style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
                         ${renderOpeningHoursTable(tenantData.openingHours)}
@@ -707,7 +757,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     description,
                     minOrderDineIn,
                     minOrderPickup,
-                    minOrderDelivery
+                    minOrderDelivery,
+                    deliveryFee,
+                    readyMessage: document.getElementById('set-ready-msg').value
                 })
             });
 
@@ -724,6 +776,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.minOrderDineIn = minOrderDineIn;
             tenantData.minOrderPickup = minOrderPickup;
             tenantData.minOrderDelivery = minOrderDelivery;
+            tenantData.deliveryFee = deliveryFee;
+            tenantData.readyMessage = document.getElementById('set-ready-msg').value;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');

@@ -86,24 +86,30 @@ function renderMenu(data) {
                 document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => {
                     const h = hours[day];
                     if (!h) return `
-                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                        <span>${dayLabels[day]}</span>
-                        <span><span style="color: #ef4444;">Fechado</span></span>
-                    </div>
-                `;
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span>${dayLabels[day]}</span>
+                            <span><span style="color: #ef4444;">Fechado</span></span>
+                        </div>
+                    `;
+
+                    const formatTime = (t) => {
+                        if (!t) return '';
+                        const [h, m] = t.split(':');
+                        return `${h}h${m}min`;
+                    };
 
                     let text = '';
-                    if (h.shift1) text += `${h.shift1.start} às ${h.shift1.end}`;
-                    if (h.shift2) text += (text ? ' / ' : '') + `${h.shift2.start} às ${h.shift2.end}`;
+                    if (h.shift1) text += `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}`;
+                    if (h.shift2) text += (text ? ' / ' : '') + `${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}`;
 
-                    if (!text && h.start && h.end) text = `${h.start} às ${h.end}`;
+                    if (!text && h.start && h.end) text = `${formatTime(h.start)} às ${formatTime(h.end)}`;
 
                     return `
-                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                        <span>${dayLabels[day]}</span>
-                        <span>${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
-                    </div>
-                `;
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="text-transform: capitalize;">${dayLabels[day].toLowerCase()}:</span>
+                            <span style="font-size: 0.85rem;">${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
+                        </div>
+                    `;
                 }).join('');
             }
         } catch (e) {

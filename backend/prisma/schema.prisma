@@ -23,6 +23,7 @@ model Tenant {
   paymentMethods     String? // Comma separated: pix,dinheiro,cartao
   primaryColor       String   @default("#3b82f6")
   description        String?
+  readyMessage       String?
   minOrderDineIn     Float    @default(0)
   minOrderPickup     Float    @default(0)
   minOrderDelivery   Float    @default(0)
