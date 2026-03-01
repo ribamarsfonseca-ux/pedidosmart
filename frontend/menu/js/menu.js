@@ -76,34 +76,39 @@ function renderMenu(data) {
 
         // Tabela de Horários no Modal
         try {
-            const hours = JSON.parse(data.openingHours);
-            const dayLabels = { 'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta', 'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo' };
-            const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+            if (!data.openingHours || data.openingHours === '[]' || data.openingHours === '{}') {
+                document.getElementById('restHoursTableModal').innerHTML = '<p class="text-secondary">Horários não cadastrados.</p>';
+            } else {
+                const hours = typeof data.openingHours === 'string' ? JSON.parse(data.openingHours) : data.openingHours;
+                const dayLabels = { 'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta', 'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo' };
+                const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-            document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => {
-                const h = hours[day];
-                if (!h) return `
+                document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => {
+                    const h = hours[day];
+                    if (!h) return `
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
                         <span>${dayLabels[day]}</span>
                         <span><span style="color: #ef4444;">Fechado</span></span>
                     </div>
                 `;
 
-                let text = '';
-                if (h.shift1) text += `${h.shift1.start} às ${h.shift1.end}`;
-                if (h.shift2) text += (text ? ' / ' : '') + `${h.shift2.start} às ${h.shift2.end}`;
+                    let text = '';
+                    if (h.shift1) text += `${h.shift1.start} às ${h.shift1.end}`;
+                    if (h.shift2) text += (text ? ' / ' : '') + `${h.shift2.start} às ${h.shift2.end}`;
 
-                if (!text && h.start && h.end) text = `${h.start} às ${h.end}`;
+                    if (!text && h.start && h.end) text = `${h.start} às ${h.end}`;
 
-                return `
+                    return `
                     <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
                         <span>${dayLabels[day]}</span>
                         <span>${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
                     </div>
                 `;
-            }).join('');
+                }).join('');
+            }
         } catch (e) {
-            document.getElementById('restHoursTableModal').textContent = data.openingHours || 'Consulte o estabelecimento';
+            console.error('Erro ao renderizar horários no modal:', e);
+            document.getElementById('restHoursTableModal').textContent = 'Horários não disponíveis no momento.';
         }
     };
     populateProfile();
