@@ -183,11 +183,33 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="text-secondary">O link para seus clientes acessarem seu cardápio é:</p>
             <div class="mt-4" style="background: #F9FAFB; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
                 <code>http://${window.location.host}/menu/#${tenantData.slug}</code>
-                <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem;" onclick="navigator.clipboard.writeText('http://' + window.location.host + '/menu/#' + '${tenantData.slug}'); alert('Link copiado!')">Copiar</button>
+                <input type="hidden" id="linkToCopy" value="http://${window.location.host}/menu/#${tenantData.slug}">
+                <button class="btn btn-outline" style="width: auto; padding: 0.5rem 1rem;" onclick="copyMenuLink()">Copiar</button>
+            </div>
+        </div>
+        
+        <div class="glass-card" style="margin-top: 1rem;">
+            <h3>Histórico de Vendas Diárias</h3>
+            <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;" id="salesHistoryList">
+                <p class="text-secondary" style="font-size: 0.9rem;">Processando vendas passadas...</p>
             </div>
         </div>
         `;
     }
+
+    window.copyMenuLink = () => {
+        const copyText = document.getElementById("linkToCopy");
+        copyText.type = 'text'; // temporarily un-hide for mobile copy
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            alert("Link copiado: " + copyText.value);
+        } catch (e) {
+            alert("Erro ao copiar, tente selecionar o texto e copiar manualmente.");
+        }
+        copyText.type = 'hidden';
+    };
 
     window.initHomeView = async () => {
         try {
@@ -197,11 +219,39 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('activeProducts').textContent = products.filter(p => p.active).length;
             document.getElementById('openOrders').textContent = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'ready').length;
 
-            const totalSales = orders
-                .filter(o => o.status === 'completed')
-                .reduce((acc, curr) => acc + curr.totalAmount, 0);
+            const completedOrders = orders.filter(o => o.status === 'completed');
 
+            // Total Vendas Hoje
+            const totalSales = completedOrders.reduce((acc, curr) => acc + curr.totalAmount, 0);
             document.getElementById('todaySales').textContent = totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Histórico de Vendas Diárias
+            const salesByDate = {};
+            completedOrders.forEach(order => {
+                const dateStr = new Date(order.createdAt).toLocaleDateString('pt-BR');
+                if (!salesByDate[dateStr]) salesByDate[dateStr] = { count: 0, total: 0 };
+                salesByDate[dateStr].count += 1;
+                salesByDate[dateStr].total += order.totalAmount;
+            });
+
+            const historyContainer = document.getElementById('salesHistoryList');
+            if (Object.keys(salesByDate).length === 0) {
+                historyContainer.innerHTML = '<p class="text-secondary" style="font-size: 0.9rem;">Nenhuma venda finalizada ainda.</p>';
+            } else {
+                const dates = Object.keys(salesByDate).sort((a, b) => {
+                    const [d1, m1, y1] = a.split('/');
+                    const [d2, m2, y2] = b.split('/');
+                    return new Date(y2, m2 - 1, d2).getTime() - new Date(y1, m1 - 1, d1).getTime();
+                });
+
+                historyContainer.innerHTML = dates.map(date => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px dashed #eee;">
+                        <span><strong>${date}</strong> <span class="text-secondary" style="font-size: 0.8rem; margin-left: 10px;">(${salesByDate[date].count} pedidos)</span></span>
+                        <span style="color: var(--primary); font-weight: bold;">${salesByDate[date].total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    </div>
+                `).join('');
+            }
+
         } catch (error) {
             console.error('Home View Error:', error);
         }
@@ -549,8 +599,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea id="set-description" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Conte um pouco sobre sua empresa para seus clientes...">${tenantData.description || ''}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Pedido Mínimo (R$)</label>
-                    <div class="grid-cols-3" style="gap: 10px;">
+                    <label>Pedido Mínimo e Taxas (R$)</label>
+                    <div class="grid-cols-4" style="gap: 10px;">
                         <div>
                             <small>Consumo Local</small>
                             <input type="number" id="min-dinein" step="0.01" value="${tenantData.minOrderDineIn || 0}">
@@ -560,8 +610,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <input type="number" id="min-pickup" step="0.01" value="${tenantData.minOrderPickup || 0}">
                         </div>
                         <div>
-                            <small>Delivery</small>
+                            <small>Min. Delivery</small>
                             <input type="number" id="min-delivery" step="0.01" value="${tenantData.minOrderDelivery || 0}">
+                        </div>
+                        <div>
+                            <small>Taxa de Entrega</small>
+                            <input type="number" id="delivery-fee" step="0.01" value="${tenantData.deliveryFee || 0}">
                         </div>
                     </div>
                 </div>
@@ -616,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const minOrderDineIn = parseFloat(document.getElementById('min-dinein').value) || 0;
         const minOrderPickup = parseFloat(document.getElementById('min-pickup').value) || 0;
         const minOrderDelivery = parseFloat(document.getElementById('min-delivery').value) || 0;
+        const deliveryFee = parseFloat(document.getElementById('delivery-fee').value) || 0;
         const primaryColor = document.getElementById('set-color').value;
         const whatsapp = document.getElementById('set-whatsapp').value;
         const address = document.getElementById('set-address').value;

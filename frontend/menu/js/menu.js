@@ -80,12 +80,28 @@ function renderMenu(data) {
             const dayLabels = { 'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta', 'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo' };
             const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-            document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => `
-                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                    <span>${dayLabels[day]}</span>
-                    <span>${hours[day] ? `${hours[day].start} - ${hours[day].end}` : '<span style="color: #ef4444;">Fechado</span>'}</span>
-                </div>
-            `).join('');
+            document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => {
+                const h = hours[day];
+                if (!h) return `
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
+                        <span>${dayLabels[day]}</span>
+                        <span><span style="color: #ef4444;">Fechado</span></span>
+                    </div>
+                `;
+
+                let text = '';
+                if (h.shift1) text += `${h.shift1.start} às ${h.shift1.end}`;
+                if (h.shift2) text += (text ? ' / ' : '') + `${h.shift2.start} às ${h.shift2.end}`;
+
+                if (!text && h.start && h.end) text = `${h.start} às ${h.end}`;
+
+                return `
+                    <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
+                        <span>${dayLabels[day]}</span>
+                        <span>${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
+                    </div>
+                `;
+            }).join('');
         } catch (e) {
             document.getElementById('restHoursTableModal').textContent = data.openingHours || 'Consulte o estabelecimento';
         }
@@ -524,6 +540,17 @@ window.toggleAddressFields = () => {
     const type = document.getElementById('fulfillmentType').value;
     const fields = document.getElementById('addressFields');
     if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
+
+    // Update Modal Total dynamically with Delivery Fee
+    const modalTotal = document.getElementById('modalTotal');
+    const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const fee = (type === 'delivery' && restaurant.deliveryFee) ? restaurant.deliveryFee : 0;
+
+    if (modalTotal) {
+        modalTotal.innerHTML = fee > 0
+            ? `R$ ${(itemsPrice).toFixed(2).replace('.', ',')} <small class="text-secondary">+ R$ ${fee.toFixed(2).replace('.', ',')} (entrega)</small>`
+            : (itemsPrice + fee).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
 };
 
 async function checkout() {
@@ -538,12 +565,15 @@ async function checkout() {
         return;
     }
 
-    const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const minVal = getMinOrderValue(fulfillmentType);
-    if (totalPrice < minVal) {
-        alert(`O valor mínimo para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
+    if (itemsPrice < minVal) {
+        alert(`O valor mínimo dos itens para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
         return;
     }
+
+    const fee = (fulfillmentType === 'delivery' && restaurant.deliveryFee) ? restaurant.deliveryFee : 0;
+    const totalPrice = itemsPrice + fee;
 
     // Coletar campos de endereço se for delivery
     let addressData = {};
@@ -572,6 +602,7 @@ async function checkout() {
             fulfillmentType,
             paymentMethod,
             ...addressData,
+            totalAmount: totalPrice, // explicit total sent to DB just in case
             items: cart.map(item => ({
                 productId: item.id,
                 quantity: item.quantity
@@ -589,15 +620,15 @@ async function checkout() {
 
         // 2. Format WhatsApp Message
         const orderNum = result.order.orderNumber || result.order.id;
-        const translateFulfillment = { 'delivery': 'Delivery 🚀', 'pickup': 'Retirada 🥡', 'dine_in': 'Consumo no Local 🍽️' };
-        const translatePayment = { 'pix': 'Pix 💎', 'card': 'Cartão 💳', 'money': 'Dinheiro 💵' };
+        const localTranslateFulfillment = { 'delivery': 'Delivery 🚀', 'pickup': 'Retirada 🥡', 'dine_in': 'Consumo no Local 🍽️' };
+        const localTranslatePayment = { 'pix': 'Pix 💎', 'card': 'Cartão 💳', 'money': 'Dinheiro 💵' };
 
         let message = `*Novo Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
         message += `*Cliente:* ${name}\n`;
         message += `*Telefone:* ${phone}\n`;
-        message += `*Tipo:* ${translateFulfillment[fulfillmentType]}\n`;
-        message += `*Pagamento:* ${translatePayment[paymentMethod]}\n\n`;
+        message += `*Tipo:* ${localTranslateFulfillment[fulfillmentType]}\n`;
+        message += `*Pagamento:* ${localTranslatePayment[paymentMethod]}\n\n`;
 
         if (fulfillmentType === 'delivery') {
             message += `*Endereço de Entrega:*\n`;
@@ -612,8 +643,9 @@ async function checkout() {
             message += `- ${item.quantity}x ${item.name} (${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
         });
 
-        const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-        message += `\n*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
+        message += `\n*Subtotal:* ${itemsPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+        if (fee > 0) message += `*Taxa de Entrega:* ${fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+        message += `*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
         message += `--------------------------\n`;
         message += `*Acompanhe seu pedido aqui:* \n🔗 ${window.location.host}/menu/#${restaurant.slug}\n`;
         message += `--------------------------\n`;

@@ -26,6 +26,7 @@ model Tenant {
   minOrderDineIn     Float    @default(0)
   minOrderPickup     Float    @default(0)
   minOrderDelivery   Float    @default(0)
+  deliveryFee        Float    @default(0)
   whatsapp           String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

@@ -122,6 +122,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 minOrderDineIn: true,
                 minOrderPickup: true,
                 minOrderDelivery: true,
+                deliveryFee: true,
                 whatsapp: true,
                 address: true,
                 googleMapsUrl: true,
@@ -165,7 +166,8 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             description,
             minOrderDineIn,
             minOrderPickup,
-            minOrderDelivery
+            minOrderDelivery,
+            deliveryFee
         } = req.body;
 
         if (!tenantId) {
@@ -186,7 +188,8 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 description,
                 minOrderDineIn,
                 minOrderPickup,
-                minOrderDelivery
+                minOrderDelivery,
+                deliveryFee
             }
         });
 
