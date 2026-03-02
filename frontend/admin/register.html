@@ -4,59 +4,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Restaurante | SmartPede</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Solicitar Acesso | SmartPede</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+        }
+
+        .logo-area h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #4f46e5;
+            margin: 0.5rem 0 0.25rem;
+        }
+
+        .logo-area p {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 1.5rem 0;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-box p {
+            font-size: 0.875rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #1e293b;
+        }
+
+        .steps {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem;
+        }
+
+        .steps li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            color: #475569;
+        }
+
+        .step-n {
+            background: #4f46e5;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .contact-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn-whatsapp {
+            background: #25d366;
+            color: white;
+        }
+
+        .btn-whatsapp:hover {
+            background: #128c7e;
+            transform: translateY(-2px);
+        }
+
+        .btn-email {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-email:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .back-link a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
 </head>
 
-<body class="auth-container">
+<body>
+    <div class="card">
+        <div class="logo-area">
+            <div class="logo-icon">🚀</div>
+            <h1>SmartPede</h1>
+            <p>Cardápio digital inteligente para o seu negócio</p>
+        </div>
 
-    <div class="auth-card">
-        <h1>Crie seu Restaurante</h1>
-        <p class="subtitle">Em minutos você começa a receber pedidos.</p>
+        <div class="info-box">
+            <p>O acesso ao SmartPede é liberado <strong>exclusivamente pelo desenvolvedor</strong>. Para solicitar sua
+                loja, entre em contato enviando as informações abaixo:</p>
+        </div>
 
-        <!-- Alert Box -->
-        <div id="alertBox" class="alert"></div>
+        <ul class="steps">
+            <li>
+                <div class="step-n">1</div><span><strong>Seu nome completo</strong></span>
+            </li>
+            <li>
+                <div class="step-n">2</div><span><strong>Nome da loja / estabelecimento</strong></span>
+            </li>
+            <li>
+                <div class="step-n">3</div><span><strong>Seu e-mail e WhatsApp para contato</strong></span>
+            </li>
+            <li>
+                <div class="step-n">4</div><span>O desenvolvedor criará seu acesso e enviará as credenciais em até
+                    24h.</span>
+            </li>
+        </ul>
 
-        <form id="registerForm">
-            <div class="form-group">
-                <label for="tenantName">Nome do Estabelecimento</label>
-                <input type="text" id="tenantName" name="tenantName" placeholder="Ex: Pizzaria do Mario" required
-                    autofocus>
-            </div>
+        <a id="btnWhatsApp" href="#" target="_blank" class="contact-btn btn-whatsapp">
+            💬 Solicitar via WhatsApp
+        </a>
+        <a id="btnEmail" href="#" class="contact-btn btn-email">
+            📧 Solicitar via E-mail
+        </a>
 
-            <div class="form-group">
-                <label for="logoUrl">Logotipo (URL da Imagem - Opcional)</label>
-                <input type="url" id="logoUrl" name="logoUrl" placeholder="https://exemplo.com/logo.png">
-            </div>
-
-            <div class="form-group">
-                <label for="slug">URL do Cardápio</label>
-                <input type="text" id="slug" name="slug" placeholder="meu-menu/pizzaria-do-mario" required>
-                <small style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 4px; display: block;">Sem
-                    espaços ou caracteres especiais.</small>
-            </div>
-
-            <div class="form-group">
-                <label for="adminEmail">Seu E-mail (Acesso Admin)</label>
-                <input type="email" id="adminEmail" name="adminEmail" placeholder="admin@pizzaria.com" required>
-            </div>
-
-            <div class="form-group">
-                <label for="adminPassword">Senha Segura</label>
-                <input type="password" id="adminPassword" name="adminPassword" placeholder="••••••••" required
-                    minlength="6">
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-4" id="registerBtn">Iniciar Teste Grátis</button>
-        </form>
-
-        <div class="text-center mt-4" style="margin-top: 2rem; font-size: 0.875rem;">
-            <p>Já possui cadastro? <a href="index.html" class="link">Fazer Login</a></p>
+        <div class="back-link">
+            <p>Já tem acesso? <a href="index.html">Fazer Login →</a></p>
+        </div>
+        <div class="back-link" style="margin-top:8px;">
+            <a href="/demo.html">👁 Ver demonstração do cardápio</a>
         </div>
     </div>
 
-    <script src="./js/auth-api.js"></script>
+    <script>
+        // Load dev contact from localStorage (set in super admin panel)
+        const devPhone = localStorage.getItem('devPhone') || '';
+        const devEmail = localStorage.getItem('devEmail') || '';
+        const devName = localStorage.getItem('devName') || 'Suporte SmartPede';
+
+        const waMsg = encodeURIComponent(`Olá, ${devName}! Gostaria de solicitar acesso ao SmartPede.\n\nMeu nome: \nNome da loja: \nE-mail: \nWhatsApp: `);
+
+        const waBtn = document.getElementById('btnWhatsApp');
+        const emailBtn = document.getElementById('btnEmail');
+
+        if (devPhone) {
+            waBtn.href = `https://wa.me/${devPhone}?text=${waMsg}`;
+        } else {
+            waBtn.style.opacity = '0.5';
+            waBtn.style.pointerEvents = 'none';
+            waBtn.textContent = '💬 WhatsApp não configurado';
+        }
+
+        if (devEmail) {
+            emailBtn.href = `mailto:${devEmail}?subject=Solicitar acesso ao SmartPede&body=Ol%C3%A1%2C%20gostaria%20de%20solicitar%20acesso%20ao%20SmartPede.%0A%0AMeu%20nome%3A%20%0ANome%20da%20loja%3A%20%0AE-mail%3A%20%0AWhatsApp%3A%20`;
+        } else {
+            emailBtn.style.opacity = '0.5';
+            emailBtn.style.pointerEvents = 'none';
+            emailBtn.textContent = '📧 E-mail não configurado';
+        }
+    </script>
 </body>
 
 </html>

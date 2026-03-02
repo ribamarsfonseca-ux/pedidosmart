@@ -263,12 +263,12 @@
                         <input type="text" id="devName" placeholder="Ex: Ribamar Fonseca">
                     </div>
                     <div>
-                        <label>Nova Senha do Super Admin</label>
-                        <input type="password" id="devNewPassword" placeholder="Deixe em branco para não alterar">
+                        <label>🔒 Nova Senha Mestra (Super Admin)</label>
+                        <input type="password" id="newMasterPassword" placeholder="Mínimo 6 caracteres">
                     </div>
                 </div>
-                <button class="btn-sm btn-renew" onclick="saveDevConfig()" style="padding:8px 20px;">💾 Salvar
-                    Configurações</button>
+                <button class="btn-sm btn-renew" onclick="saveDevData()" style="padding:8px 20px;">💾 Salvar Dados e
+                    SenhaMestra</button>
             </div>
 
             <!-- Stats -->
@@ -317,17 +317,36 @@
             document.getElementById('devName').value = localStorage.getItem('devName') || '';
         }
 
-        function saveDevConfig() {
+        async function saveDevData() {
             localStorage.setItem('devPhone', document.getElementById('devPhone').value.trim());
             localStorage.setItem('devEmail', document.getElementById('devEmail').value.trim());
             localStorage.setItem('devName', document.getElementById('devName').value.trim());
-            const newPass = document.getElementById('devNewPassword').value;
+
+            const newPass = document.getElementById('newMasterPassword').value.trim();
             if (newPass) {
-                // Just a local reminder — actual password is in the server .env
-                alert('Atenção: A senha do super admin fica no arquivo .env do servidor.\nPara alterá-la, edite a variável SUPER_ADMIN_PASSWORD no servidor e reinicie o backend.');
-                document.getElementById('devNewPassword').value = '';
+                if (newPass.length < 6) return alert('A nova senha deve ter no mínimo 6 caracteres.');
+
+                try {
+                    const res = await fetch('/api/super-admin/change-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                        body: JSON.stringify({ newPassword: newPass })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert('✅ ' + data.message);
+                        document.getElementById('newMasterPassword').value = '';
+                        // Atualiza a masterPass local para as próximas requisições desta sessão
+                        masterPass = newPass;
+                        document.getElementById('masterPassword').value = newPass;
+                    } else {
+                        alert('❌ Erro ao mudar senha: ' + data.error);
+                    }
+                } catch (e) {
+                    alert('Erro na conexão com o servidor.');
+                }
             } else {
-                alert('Configurações salvas com sucesso!');
+                alert('Dados de contato salvos com sucesso!');
             }
         }
 

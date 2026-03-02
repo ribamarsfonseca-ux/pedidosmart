@@ -139,3 +139,11 @@ model OrderItem {
   @@index([productId])
   @@map("order_items")
 }
+
+model Config {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("configs")
+}

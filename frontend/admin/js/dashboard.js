@@ -988,7 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('auth_token');
             const res = await fetch('/api/tenants/change-password', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -997,7 +997,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (res.ok) {
                 alert('✅ ' + data.message + '\n\nPor segurança, faça login novamente.');
-                localStorage.removeItem('token');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('tenant_data');
                 window.location.href = '/admin/index.html';
             } else {
                 alert('❌ Erro: ' + data.error);

@@ -73,3 +73,26 @@ export const resetTenantPassword = async (req: Request, res: Response): Promise<
         res.status(500).json({ error: 'Erro ao resetar senha.' });
     }
 };
+
+export const changeMasterPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { newPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 6) {
+            res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+            return;
+        }
+
+        // Salva ou atualiza a senha mestra na tabela Config
+        await prisma.config.upsert({
+            where: { key: 'SUPER_ADMIN_PASSWORD' },
+            update: { value: newPassword },
+            create: { key: 'SUPER_ADMIN_PASSWORD', value: newPassword }
+        });
+
+        res.json({ message: 'Senha mestra do Super Admin alterada com sucesso! Use a nova senha no próximo login.' });
+    } catch (error) {
+        console.error('Change Master Password Error:', error);
+        res.status(500).json({ error: 'Erro ao alterar senha do Super Admin.' });
+    }
+};
