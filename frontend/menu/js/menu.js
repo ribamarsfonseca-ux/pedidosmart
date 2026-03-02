@@ -229,12 +229,15 @@ function renderMenu(data) {
 
         const formatTime = (t) => {
             if (!t) return '';
-            const [h, m] = t.split(':');
-            return `${h}:${m} h`;
+            const [hh, mm] = t.split(':');
+            return `${hh.padStart(2, '0')}:${mm}h`;
         };
 
         let text = h.start ? `${formatTime(h.start)} às ${formatTime(h.end)}` : 'Fechado hoje';
-        if (h.shift1) text = `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}${h.shift2 ? ` / ${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}` : ''}`;
+        if (h.shift1) {
+            text = `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}`;
+            if (h.shift2) text += ` / ${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}`;
+        }
 
         // Se estiver fechado, mostrar quando abre (opcional, mas user pediu exemplo "Abre às 18:00 h")
         // Simplificando conforme pedido: Aberto • 00:00 h às 4:00 h
@@ -332,6 +335,15 @@ window.filterProducts = () => {
         const pill = document.querySelector(`[onclick*="${catId}"]`);
         if (pill) pill.style.display = visibleCount > 0 ? 'inline-block' : 'none';
     });
+};
+
+// Scroll to category section and mark active pill
+window.scrollToCategory = (catId, pill) => {
+    const section = document.getElementById(catId);
+    if (!section) return;
+    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 window.switchTab = (tab, el) => {
