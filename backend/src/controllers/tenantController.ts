@@ -223,3 +223,33 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ error: 'Erro ao atualizar configurações' });
     }
 };
+export const getCurrentTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) {
+            res.status(401).json({ error: 'Não autorizado' });
+            return;
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            include: {
+                categories: {
+                    include: {
+                        products: true
+                    }
+                }
+            }
+        });
+
+        if (!tenant) {
+            res.status(404).json({ error: 'Tenant não encontrado' });
+            return;
+        }
+
+        res.json({ tenant });
+    } catch (error) {
+        console.error('Get Me Error:', error);
+        res.status(500).json({ error: 'Erro ao buscar dados do lojista' });
+    }
+};

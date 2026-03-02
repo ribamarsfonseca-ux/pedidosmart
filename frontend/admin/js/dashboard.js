@@ -10,7 +10,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    const tenantData = JSON.parse(tenantDataRaw);
+    let tenantData = JSON.parse(tenantDataRaw);
+
+    async function refreshTenantData() {
+        try {
+            const data = await apiFetch('/tenants/me');
+            if (data && data.tenant) {
+                tenantData = data.tenant;
+                localStorage.setItem('tenant_data', JSON.stringify(tenantData));
+                // Update header if already in DOM
+                const nameDisplay = document.getElementById('tenantNameDisplay');
+                if (nameDisplay) nameDisplay.innerHTML = `${renderLogo()} ${tenantData.name}`;
+            }
+        } catch (e) {
+            console.error('Erro ao atualizar dados do lojista:', e);
+        }
+    }
 
     // 2. Setup Base UI Elements
     const renderLogo = () => {
@@ -33,6 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Simple SPA Navigation logic
+    refreshTenantData(); // Fetch fresh data in background
+
     const navLinks = document.querySelectorAll('.sidebar-nav a');
     const contentArea = document.getElementById('app-content');
     const pageTitle = document.getElementById('pageTitle');
