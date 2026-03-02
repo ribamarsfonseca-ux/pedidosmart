@@ -114,7 +114,7 @@ function renderMenu(data) {
                 document.getElementById('restHoursTableModal').innerHTML = '<p class="text-secondary">Horários não cadastrados.</p>';
             } else {
                 const hours = typeof data.openingHours === 'string' ? JSON.parse(data.openingHours) : data.openingHours;
-                const dayLabels = { 'mon': 'Segunda', 'tue': 'Terça', 'wed': 'Quarta', 'thu': 'Quinta', 'fri': 'Sexta', 'sat': 'Sábado', 'sun': 'Domingo' };
+                const dayLabels = { 'mon': 'Seg:', 'tue': 'Ter:', 'wed': 'Qua:', 'thu': 'Qui:', 'fri': 'Sex:', 'sat': 'Sab:', 'sun': 'Dom:' };
                 const daysOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
                 document.getElementById('restHoursTableModal').innerHTML = daysOrder.map(day => {
@@ -140,7 +140,7 @@ function renderMenu(data) {
 
                     return `
                         <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                            <span style="font-weight: 600;">${dayLabels[day]}:</span>
+                            <span style="font-weight: 500; font-size: 0.85rem; color: #4B5563;">${dayLabels[day]}</span>
                             <span style="font-size: 0.85rem;">${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
                         </div>
                     `;
@@ -531,16 +531,19 @@ function openCart() {
     const list = document.getElementById('cartItemsList');
     const modalTotal = document.getElementById('modalTotal');
 
-    // Inserir Tempos Estimados ao lado de "Meu Pedido"
-    const cartHeader = modal.querySelector('h3');
+    // Inserir Tempos Estimados ao lado de "Meu Pedido" (Refinado)
+    const cartHeader = modal.querySelector('h2');
     if (cartHeader && restaurant) {
         let timesHtml = '';
-        if (restaurant.estimatedTimePickup) timesHtml += `<span style="font-size: 0.75rem; color: #666; margin-left: 10px;">(Entrega/Retirada: ${restaurant.estimatedTimePickup})</span>`;
-        if (restaurant.estimatedTimeDelivery) timesHtml += `<span style="font-size: 0.75rem; color: #666; margin-left: 5px;">(Delivery: ${restaurant.estimatedTimeDelivery})</span>`;
-        cartHeader.innerHTML = `Meu Pedido ${timesHtml}`;
-        cartHeader.style.display = 'flex';
-        cartHeader.style.alignItems = 'center';
-        cartHeader.style.flexWrap = 'wrap';
+        if (restaurant.estimatedTimePickup) timesHtml += `<span style="font-size: 0.75rem; color: #4B5563; background: #F3F4F6; padding: 4px 8px; border-radius: 6px; margin-left: 15px;">🛍️ ${restaurant.estimatedTimePickup}</span>`;
+        if (restaurant.estimatedTimeDelivery) timesHtml += `<span style="font-size: 0.75rem; color: #4B5563; background: #F3F4F6; padding: 4px 8px; border-radius: 6px; margin-left: 8px;">🛵 ${restaurant.estimatedTimeDelivery}</span>`;
+        if (timesHtml) {
+            cartHeader.innerHTML = `Meu Pedido ${timesHtml}`;
+            cartHeader.style.display = 'flex';
+            cartHeader.style.alignItems = 'center';
+            cartHeader.style.flexWrap = 'wrap';
+            cartHeader.style.gap = '5px';
+        }
     }
 
     list.innerHTML = cart.map(item => `
@@ -701,15 +704,16 @@ async function checkout() {
         let message = `*Nova Mensagem de: ${restaurant.name}*\n`;
         message += `*Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
+        if (restaurant.extraInfo) {
+            message += `📢 *AVISO:* ${restaurant.extraInfo}\n`;
+            message += `--------------------------\n`;
+        }
         message += `*Cliente:* ${name}\n`;
         message += `*Telefone:* ${phone}\n`;
         message += `*Tipo:* ${localTranslateFulfillment[fulfillmentType]}\n`;
         message += `*Pagamento:* ${localTranslatePayment[paymentMethod]}\n\n`;
 
         if (fulfillmentType === 'delivery') {
-            if (restaurant.extraInfo) {
-                message += `*Aviso da Loja:* ${restaurant.extraInfo}\n\n`;
-            }
             if (restaurant.estimatedTimeDelivery) {
                 message += `*Tempo Estimado (Delivery):* ${restaurant.estimatedTimeDelivery}\n\n`;
             }
