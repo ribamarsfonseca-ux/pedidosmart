@@ -233,15 +233,20 @@ function renderMenu(data) {
             return `${hh.padStart(2, '0')}:${mm}h`;
         };
 
-        let text = h.start ? `${formatTime(h.start)} às ${formatTime(h.end)}` : 'Fechado hoje';
+        let text = h.start ? `${formatTime(h.start)} - ${formatTime(h.end)}` : 'Fechado hoje';
         if (h.shift1) {
-            text = `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}`;
-            if (h.shift2) text += ` / ${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}`;
+            text = `${formatTime(h.shift1.start)} - ${formatTime(h.shift1.end)}`;
+            if (h.shift2) text += ` | ${formatTime(h.shift2.start)} - ${formatTime(h.shift2.end)}`;
         }
 
-        // Se estiver fechado, mostrar quando abre (opcional, mas user pediu exemplo "Abre às 18:00 h")
-        // Simplificando conforme pedido: Aberto • 00:00 h às 4:00 h
-        hoursEl.textContent = ` • ${text}`;
+        // Horário ao lado do status, mesma linha, fonte menor para mobile
+        hoursEl.textContent = ` ${text}`;
+        hoursEl.style.fontSize = '0.78rem';
+        hoursEl.style.color = '#4B5563';
+        hoursEl.style.fontWeight = '500';
+        hoursEl.style.whiteSpace = 'nowrap';
+        hoursEl.style.overflow = 'hidden';
+        hoursEl.style.textOverflow = 'ellipsis';
 
         // v5 Status Bar White Text
         statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
