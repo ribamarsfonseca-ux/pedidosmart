@@ -909,9 +909,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const active = chk.checked;
         s.disabled = !active;
         e.disabled = !active;
-        s.style.opacity = active ? '1' : '0.4';
-        e.style.opacity = active ? '1' : '0.4';
-        if (!active) { s.value = ''; e.value = ''; }
+        s.style.opacity = active ? '1' : '0.5';
+        e.style.opacity = active ? '1' : '0.5';
     };
 
     // Init Base View
