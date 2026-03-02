@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerTenant, loginAdmin, getTenantBySlug, updateTenant, getCurrentTenant, changeTenantPassword, loginPDV, getPDVStats } from '../controllers/tenantController';
+import { registerTenant, loginAdmin, getTenantBySlug, updateTenant, getCurrentTenant, changeTenantPassword, loginPDV, getPDVStats, getPublicConfigs } from '../controllers/tenantController';
 import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
