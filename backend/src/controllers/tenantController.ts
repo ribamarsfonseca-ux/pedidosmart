@@ -135,6 +135,8 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 readyMessage: true,
                 extraInfo: true,
                 estimatedTime: true,
+                estimatedTimeDelivery: true,
+                estimatedTimePickup: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
@@ -179,7 +181,9 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             facebookUrl,
             contactEmail,
             extraInfo,
-            estimatedTime
+            estimatedTime,
+            estimatedTimeDelivery,
+            estimatedTimePickup
         } = req.body;
 
         if (!tenantId) {
@@ -207,7 +211,9 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 facebookUrl,
                 contactEmail,
                 extraInfo,
-                estimatedTime
+                estimatedTime,
+                estimatedTimeDelivery,
+                estimatedTimePickup
             }
         });
 

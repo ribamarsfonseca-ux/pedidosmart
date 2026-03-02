@@ -27,10 +27,12 @@ model Tenant {
   minOrderDineIn     Float    @default(0)
   minOrderPickup     Float    @default(0)
   minOrderDelivery   Float    @default(0)
-  deliveryFee        Float    @default(0)
-  estimatedTime      String?  // Ex: "30-50 min" | "Hoje em 1h"
-  extraInfo          String?  // Informação extra: ex "Entrega em 40 min ⏰"
-  whatsapp           String?
+  deliveryFee            Float    @default(0)
+  estimatedTime          String?  // Legado
+  estimatedTimeDelivery  String?  // Ex: "40-50min / 1:30h"
+  estimatedTimePickup    String?  // Ex: "30-40 min / 1:00h"
+  extraInfo              String?  // Informação extra/avisos/promoções
+  whatsapp               String?
   instagramUrl       String?
   facebookUrl        String?
   contactEmail       String?

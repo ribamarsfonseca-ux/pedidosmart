@@ -129,7 +129,7 @@ function renderMenu(data) {
                     const formatTime = (t) => {
                         if (!t) return '';
                         const [h, m] = t.split(':');
-                        return `${h}:${m} h`;
+                        return `${h}:${m}h`;
                     };
 
                     let text = '';
@@ -140,7 +140,7 @@ function renderMenu(data) {
 
                     return `
                         <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f0f0f0;">
-                            <span style="text-transform: capitalize;">${dayLabels[day].toLowerCase()}:</span>
+                            <span style="font-weight: 600;">${dayLabels[day]}:</span>
                             <span style="font-size: 0.85rem;">${text || '<span style="color: #ef4444;">Fechado</span>'}</span>
                         </div>
                     `;
@@ -236,22 +236,22 @@ function renderMenu(data) {
         let text = h.start ? `${formatTime(h.start)} às ${formatTime(h.end)}` : 'Fechado hoje';
         if (h.shift1) text = `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}${h.shift2 ? ` / ${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}` : ''}`;
 
-        hoursEl.textContent = text;
-        if (estimatedTimeEl && data.estimatedTime) {
-            estimatedTimeEl.textContent = `⏱️ ${data.estimatedTime}`;
-            estimatedTimeEl.style.display = 'inline-block';
-            estimatedTimeEl.style.marginLeft = '15px';
-            estimatedTimeEl.style.borderLeft = '1px solid #ddd';
-            estimatedTimeEl.style.paddingLeft = '15px';
-        }
+        // Se estiver fechado, mostrar quando abre (opcional, mas user pediu exemplo "Abre às 18:00 h")
+        // Simplificando conforme pedido: Aberto • 00:00 h às 4:00 h
+        hoursEl.textContent = ` • ${text}`;
+
         // v5 Status Bar White Text
         statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
         statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
         statusEl.style.display = 'inline-block';
-        statusEl.style.marginRight = '15px';
+        statusEl.style.marginRight = '5px';
+
+        // Remover tempo do cabeçalho
+        if (estimatedTimeEl) estimatedTimeEl.style.display = 'none';
+
     } catch (e) {
         console.error('Erro ao renderizar horários:', e);
-        hoursEl.textContent = 'Consulte nossos horários';
+        hoursEl.textContent = ' • Consulte nossos horários';
     }
 
 
@@ -531,6 +531,18 @@ function openCart() {
     const list = document.getElementById('cartItemsList');
     const modalTotal = document.getElementById('modalTotal');
 
+    // Inserir Tempos Estimados ao lado de "Meu Pedido"
+    const cartHeader = modal.querySelector('h3');
+    if (cartHeader && restaurant) {
+        let timesHtml = '';
+        if (restaurant.estimatedTimePickup) timesHtml += `<span style="font-size: 0.75rem; color: #666; margin-left: 10px;">(Entrega/Retirada: ${restaurant.estimatedTimePickup})</span>`;
+        if (restaurant.estimatedTimeDelivery) timesHtml += `<span style="font-size: 0.75rem; color: #666; margin-left: 5px;">(Delivery: ${restaurant.estimatedTimeDelivery})</span>`;
+        cartHeader.innerHTML = `Meu Pedido ${timesHtml}`;
+        cartHeader.style.display = 'flex';
+        cartHeader.style.alignItems = 'center';
+        cartHeader.style.flexWrap = 'wrap';
+    }
+
     list.innerHTML = cart.map(item => `
         <div class="cart-item">
             <div>
@@ -698,6 +710,9 @@ async function checkout() {
             if (restaurant.extraInfo) {
                 message += `*Aviso da Loja:* ${restaurant.extraInfo}\n\n`;
             }
+            if (restaurant.estimatedTimeDelivery) {
+                message += `*Tempo Estimado (Delivery):* ${restaurant.estimatedTimeDelivery}\n\n`;
+            }
             message += `*Endereço de Entrega:*\n`;
             message += `📍 ${addressData.addressStreet}, ${addressData.addressNumber}\n`;
             message += `📍 Bairro: ${addressData.addressDistrict}\n`;
@@ -705,8 +720,8 @@ async function checkout() {
             message += `\n`;
         } else {
             // Retirada ou Local
-            if (restaurant.estimatedTime) {
-                message += `*Tempo Estimado:* ${restaurant.estimatedTime}\n\n`;
+            if (restaurant.estimatedTimePickup) {
+                message += `*Tempo Estimado:* ${restaurant.estimatedTimePickup}\n\n`;
             }
         }
 

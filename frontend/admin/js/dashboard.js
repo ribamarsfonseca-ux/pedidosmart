@@ -732,13 +732,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Variáveis disponíveis: {cliente}, {tipo}, {pedido}</p>
                 </div>
                 <div class="form-group">
-                    <label>Tempo Estimado de Entrega/Retirada (Ex: 30-50 min)</label>
-                    <input type="text" id="set-estimated-time" value="${tenantData.estimatedTime || ''}" placeholder="Ex: 30-50 min | Hoje em 1h">
+                    <label>Tempos Estimados (Ex: 30-40 min / 1:30h)</label>
+                    <div class="grid-cols-2" style="gap: 10px;">
+                        <div>
+                            <small>Entrega/Retirada (Pick-up)</small>
+                            <input type="text" id="set-estimated-time-pickup" value="${tenantData.estimatedTimePickup || ''}" placeholder="Ex: 30-40 min / 1:00h">
+                        </div>
+                        <div>
+                            <small>Delivery (Entrega em casa)</small>
+                            <input type="text" id="set-estimated-time-delivery" value="${tenantData.estimatedTimeDelivery || ''}" placeholder="Ex: 40-50 min / 1:30h">
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Informação Extra (opcional) — exibida no cabeçalho do cardápio</label>
-                    <input type="text" id="set-extra-info" value="${tenantData.extraInfo || ''}" placeholder="Ex: Entrega em 40 min ⏰ | Aberto até 22h | Pickup disponível">
-                    <p style="font-size: 0.75rem; color: #888; margin-top: 4px;">Use para informar tempo de entrega, promoções ou qualquer aviso rápido aos clientes.</p>
+                    <label>Avisos Rápidos / Promoções (Exclusivo para o Recibo do WhatsApp)</label>
+                    <input type="text" id="set-extra-info" value="${tenantData.extraInfo || ''}" placeholder="Ex: Promoção de hoje: Compre 1 leve 2! | Entregas em 40 min ⏰">
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 4px;">Este campo aparecerá apenas no comprovante de pedido enviado ao seu WhatsApp.</p>
                 </div>
                 <div class="form-group">
                     <label>Horários de Funcionamento (Configuração por Turnos)</label>
@@ -774,7 +783,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const instagramUrl = document.getElementById('set-instagram').value;
         const facebookUrl = document.getElementById('set-facebook').value;
         const contactEmail = document.getElementById('set-email').value;
-        const estimatedTime = document.getElementById('set-estimated-time').value;
+        const estimatedTimeDelivery = document.getElementById('set-estimated-time-delivery').value;
+        const estimatedTimePickup = document.getElementById('set-estimated-time-pickup').value;
 
         // Coletar horários (v5: 2 turnos)
         const hours = {};
@@ -813,7 +823,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     facebookUrl,
                     contactEmail,
                     extraInfo: document.getElementById('set-extra-info').value,
-                    estimatedTime
+                    estimatedTimeDelivery,
+                    estimatedTimePickup
                 })
             });
 
@@ -836,7 +847,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.facebookUrl = facebookUrl;
             tenantData.contactEmail = contactEmail;
             tenantData.extraInfo = document.getElementById('set-extra-info').value;
-            tenantData.estimatedTime = estimatedTime;
+            tenantData.estimatedTimeDelivery = estimatedTimeDelivery;
+            tenantData.estimatedTimePickup = estimatedTimePickup;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
