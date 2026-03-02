@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 id="openOrders" style="font-size: 2rem; margin-top: 5px; color: var(--primary);">0</h2>
             </div>
             <div class="glass-card">
-                <p class="text-secondary">Pratos Ativos</p>
+                <p class="text-secondary">Produtos Ativos</p>
                 <h2 id="activeProducts" style="font-size: 2rem; margin-top: 5px;">0</h2>
             </div>
         </div>
@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const todayISO = brazilNow.toISOString().split('T')[0];
 
             // Total Vendas Hoje
-            const todaySales = finishedOrders.filter(o => {
+            const todaySales = finishedOrders.concat(orders.filter(o => o.status === 'completed')).filter(o => {
                 const orderDate = new Date(new Date(o.createdAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().split('T')[0];
                 return orderDate === todayISO;
             });
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Histórico de Vendas Diárias
             const salesByDate = {};
-            completedOrders.forEach(order => {
+            [...finishedOrders, ...orders.filter(o => o.status === 'completed')].forEach(order => {
                 const dateStr = new Date(order.createdAt).toLocaleDateString('pt-BR');
                 if (!salesByDate[dateStr]) salesByDate[dateStr] = { count: 0, total: 0 };
                 salesByDate[dateStr].count += 1;
@@ -607,8 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="form-group">
-                <label>URL da Imagem (Opcional)</label>
-                <input type="url" id="pImg">
+                <label>Link da Imagem do Produto (Opcional)</label>
+                <input type="text" id="pImg" placeholder="https://...">
             </div>
         `, 'Salvar Produto', async () => {
             const payload = {
@@ -645,8 +645,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-name" value="${tenantData.name}" disabled>
                 </div>
                 <div class="form-group">
-                    <label>Logotipo (URL da Imagem)</label>
-                    <input type="url" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
+                    <label>Logotipo (Link da Imagem)</label>
+                    <input type="text" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
                     <label>Sobre a Empresa / Descrição</label>
@@ -722,13 +722,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Variáveis disponíveis: {cliente}, {tipo}, {pedido}</p>
                 </div>
                 <div class="form-group">
+                    <label>Tempo Estimado de Entrega/Retirada (Ex: 30-50 min)</label>
+                    <input type="text" id="set-estimated-time" value="${tenantData.estimatedTime || ''}" placeholder="Ex: 30-50 min | Hoje em 1h">
+                </div>
+                <div class="form-group">
+                    <label>Informação Extra (opcional) — exibida no cabeçalho do cardápio</label>
+                    <input type="text" id="set-extra-info" value="${tenantData.extraInfo || ''}" placeholder="Ex: Entrega em 40 min ⏰ | Aberto até 22h | Pickup disponível">
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 4px;">Use para informar tempo de entrega, promoções ou qualquer aviso rápido aos clientes.</p>
+                </div>
+                <div class="form-group">
                     <label>Horários de Funcionamento (Configuração por Turnos)</label>
                     <div id="hours-table-container" style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
                         ${renderOpeningHoursTable(tenantData.openingHours)}
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Slug (URL)</label>
+                    <label>Slug (Link amigável)</label>
                     <input type="text" value="${tenantData.slug}" disabled>
                 </div>
                 <div class="form-group">
@@ -755,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const instagramUrl = document.getElementById('set-instagram').value;
         const facebookUrl = document.getElementById('set-facebook').value;
         const contactEmail = document.getElementById('set-email').value;
+        const estimatedTime = document.getElementById('set-estimated-time').value;
 
         // Coletar horários (v5: 2 turnos)
         const hours = {};
@@ -791,7 +801,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     readyMessage: document.getElementById('set-ready-msg').value,
                     instagramUrl,
                     facebookUrl,
-                    contactEmail
+                    contactEmail,
+                    extraInfo: document.getElementById('set-extra-info').value,
+                    estimatedTime
                 })
             });
 
@@ -813,6 +825,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.instagramUrl = instagramUrl;
             tenantData.facebookUrl = facebookUrl;
             tenantData.contactEmail = contactEmail;
+            tenantData.extraInfo = document.getElementById('set-extra-info').value;
+            tenantData.estimatedTime = estimatedTime;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
@@ -865,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td style="padding: 10px 0; font-weight: 600;">${dayLabels[day]}</td>
                             <td>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <input type="checkbox" id="chk1-${day}" ${hasShift1 ? 'checked' : ''} onchange="toggleTimeInputs('${day}', 1)">
+                                    <input type="checkbox" id="chk1-${day}" ${hasShift1 ? 'checked' : ''} onchange="window.toggleTimeInputs('${day}', 1)">
                                     <input type="time" id="s1-${day}" value="${s1.start || ''}" ${!hasShift1 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift1 ? 1 : 0.5};">
                                     <span>-</span>
                                     <input type="time" id="e1-${day}" value="${s1.end || ''}" ${!hasShift1 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift1 ? 1 : 0.5};">
@@ -873,7 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </td>
                             <td>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <input type="checkbox" id="chk2-${day}" ${hasShift2 ? 'checked' : ''} onchange="toggleTimeInputs('${day}', 2)">
+                                    <input type="checkbox" id="chk2-${day}" ${hasShift2 ? 'checked' : ''} onchange="window.toggleTimeInputs('${day}', 2)">
                                     <input type="time" id="s2-${day}" value="${s2.start || ''}" ${!hasShift2 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift2 ? 1 : 0.5};">
                                     <span>-</span>
                                     <input type="time" id="e2-${day}" value="${s2.end || ''}" ${!hasShift2 ? 'disabled' : ''} style="width: 85px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; opacity: ${hasShift2 ? 1 : 0.5};">
@@ -883,23 +897,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     `}).join('')}
                 </tbody>
             </table>
-            <script>
-                window.toggleTimeInputs = (day, shift) => {
-                    const chk = document.getElementById('chk' + shift + '-' + day);
-                    const s = document.getElementById('s' + shift + '-' + day);
-                    const e = document.getElementById('e' + shift + '-' + day);
-                    s.disabled = !chk.checked;
-                    e.disabled = !chk.checked;
-                    s.style.opacity = chk.checked ? 1 : 0.5;
-                    e.style.opacity = chk.checked ? 1 : 0.5;
-                    if (!chk.checked) { s.value = ''; e.value = ''; }
-                };
-            </script>
-            <p style="font-size: 0.75rem; color: #666; margin-top: 10px;">
-                💡 <b>Dica:</b> Para horários que cruzam a meia-noite (ex: 18:00 às 02:00), basta colocar o fim menor que o início.
-            </p>
         `;
     }
+
+    // toggleTimeInputs precisa estar no window para funcionar nos onchange dentro do innerHTML
+    window.toggleTimeInputs = (day, shift) => {
+        const chk = document.getElementById('chk' + shift + '-' + day);
+        const s = document.getElementById('s' + shift + '-' + day);
+        const e = document.getElementById('e' + shift + '-' + day);
+        if (!chk || !s || !e) return;
+        const active = chk.checked;
+        s.disabled = !active;
+        e.disabled = !active;
+        s.style.opacity = active ? '1' : '0.4';
+        e.style.opacity = active ? '1' : '0.4';
+        if (!active) { s.value = ''; e.value = ''; }
+    };
 
     // Init Base View
     loadView('home');

@@ -103,7 +103,7 @@
               <h3 style="margin: 0;">${t.name}</h3>
               <p style="font-size: 0.875rem; color: #94a3b8; margin: 4px 0;">URL: /${t.slug}</p>
               <div style="margin-top: 8px;">
-                <span class="status-badge ${getStatusClass(t)}">${t.subscriptionStatus.toUpperCase()}</span>
+                <span class="status-badge ${getStatusClass(t)}">${translateSubscriptionStatus(t.subscriptionStatus)}</span>
                 <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 10px;">Vence em: ${t.nextBillingDate ? new Date(t.nextBillingDate).toLocaleDateString() : 'N/A'}</span>
               </div>
             </div>
@@ -127,6 +127,16 @@
             if (t.subscriptionStatus === 'trial') return 'status-trial';
             if (t.subscriptionStatus === 'active') return 'status-active';
             return 'status-expired';
+        }
+
+        function translateSubscriptionStatus(status) {
+            const t = {
+                'trial': 'Teste Grátis',
+                'active': 'Ativo',
+                'past_due': 'Atrasado',
+                'canceled': 'Cancelado'
+            };
+            return t[status] || status;
         }
 
         async function toggleStatus(id, current) {

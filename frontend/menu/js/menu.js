@@ -69,6 +69,7 @@ function renderMenu(data) {
     // Status e Horário Dinâmico
     const statusEl = document.getElementById('storeStatus');
     const hoursEl = document.getElementById('restHours');
+    const estimatedTimeEl = document.getElementById('estimatedTimeDisplay');
 
     // Perfil da Loja
     const populateProfile = () => {
@@ -228,6 +229,10 @@ function renderMenu(data) {
         if (h.shift1) text = `${h.shift1.start} às ${h.shift1.end}${h.shift2 ? ` / ${h.shift2.start} às ${h.shift2.end}` : ''}`;
 
         hoursEl.textContent = text;
+        if (estimatedTimeEl && data.estimatedTime) {
+            estimatedTimeEl.textContent = `⏱️ ${data.estimatedTime}`;
+            estimatedTimeEl.style.display = 'block';
+        }
         // v5 Status Bar White Text
         statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
         statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
