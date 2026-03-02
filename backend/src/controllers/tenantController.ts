@@ -138,6 +138,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 estimatedTime: true,
                 estimatedTimeDelivery: true,
                 estimatedTimePickup: true,
+                pdvPassword: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
@@ -184,7 +185,8 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             extraInfo,
             estimatedTime,
             estimatedTimeDelivery,
-            estimatedTimePickup
+            estimatedTimePickup,
+            pdvPassword
         } = req.body;
 
         if (!tenantId) {
@@ -214,7 +216,8 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 extraInfo,
                 estimatedTime,
                 estimatedTimeDelivery,
-                estimatedTimePickup
+                estimatedTimePickup,
+                pdvPassword
             }
         });
 
@@ -312,7 +315,7 @@ export const loginPDV = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const tenant = await prisma.tenant.findUnique({ where: { slug } });
+        const tenant = await prisma.tenant.findUnique({ where: { slug: slug.toLowerCase() } });
 
         if (!tenant || tenant.pdvPassword !== pdvPassword) {
             res.status(401).json({ error: 'Credenciais de PDV inválidas' });
