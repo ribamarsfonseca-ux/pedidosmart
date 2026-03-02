@@ -96,3 +96,86 @@ export const changeMasterPassword = async (req: Request, res: Response): Promise
         res.status(500).json({ error: 'Erro ao alterar senha do Super Admin.' });
     }
 };
+
+export const getConfigs = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const configs = await prisma.config.findMany();
+        // Transforma array de [{key, value}] em objeto {key: value}
+        const configMap = configs.reduce((acc: any, curr) => {
+            if (curr.key !== 'SUPER_ADMIN_PASSWORD') { // Não expõe a senha mestra
+                acc[curr.key] = curr.value;
+            }
+            return acc;
+        }, {});
+        res.json(configMap);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar configurações' });
+    }
+};
+
+export const updateConfigs = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const updates = req.body; // { devPhone: '...', devEmail: '...', devName: '...' }
+
+        for (const [key, value] of Object.entries(updates)) {
+            if (key === 'SUPER_ADMIN_PASSWORD') continue; // Proteção extra
+
+            await prisma.config.upsert({
+                where: { key },
+                update: { value: value as string },
+                create: { key, value: value as string }
+            });
+        }
+
+        res.json({ message: 'Configurações atualizadas com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao salvar configurações' });
+    }
+};
+
+export const createTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { name, slug, adminEmail, adminPassword } = req.body;
+
+        if (!name || !slug || !adminEmail || !adminPassword) {
+            res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+            return;
+        }
+
+        const existingTenant = await prisma.tenant.findUnique({ where: { slug } });
+        if (existingTenant) {
+            res.status(400).json({ error: 'Slug já em uso' });
+            return;
+        }
+
+        const existingUser = await prisma.user.findUnique({ where: { email: adminEmail } });
+        if (existingUser) {
+            res.status(400).json({ error: 'E-mail já cadastrado' });
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+        const result = await prisma.$transaction(async (tx) => {
+            const tenant = await tx.tenant.create({
+                data: { name, slug, active: true, subscriptionStatus: 'active' }
+            });
+
+            await tx.user.create({
+                data: {
+                    tenantId: tenant.id,
+                    email: adminEmail,
+                    password: hashedPassword,
+                    role: 'admin'
+                }
+            });
+
+            return tenant;
+        });
+
+        res.status(201).json({ message: 'Empresa cadastrada com sucesso!', tenant: result });
+    } catch (error) {
+        console.error('Create Tenant Error:', error);
+        res.status(500).json({ error: 'Erro ao cadastrar empresa' });
+    }
+};

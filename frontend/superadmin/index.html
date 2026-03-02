@@ -288,8 +288,31 @@
             </div>
 
             <!-- Lista -->
-            <h3 style="margin-bottom:1rem;">Restaurantes Cadastrados</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h3 style="margin:0;">Restaurantes Cadastrados</h3>
+                <button class="btn-sm btn-activate" onclick="openNewTenantModal()">+ Nova Empresa</button>
+            </div>
             <div id="tenantsList"></div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Empresa -->
+    <div class="modal-overlay" id="newTenantModal">
+        <div class="modal-box">
+            <h3>🏢 Nova Empresa</h3>
+            <label>Nome da Loja</label>
+            <input type="text" id="newTenantName" placeholder="Ex: Pizzaria do Zé" style="margin-bottom:0.8rem;">
+            <label>URL (Slug)</label>
+            <input type="text" id="newTenantSlug" placeholder="ex: pizzaria-do-ze" style="margin-bottom:0.8rem;">
+            <label>E-mail Admin</label>
+            <input type="email" id="newTenantEmail" placeholder="admin@loja.com" style="margin-bottom:0.8rem;">
+            <label>Senha Provisória</label>
+            <input type="password" id="newTenantPassword" placeholder="Mínimo 6 caracteres"
+                style="margin-bottom:1.5rem;">
+
+            <button class="btn-primary-full" onclick="saveNewTenant()">Cadastrar Empresa</button>
+            <button onclick="closeNewTenantModal()"
+                style="width:100%;padding:0.6rem;margin-top:8px;border:none;border-radius:8px;cursor:pointer;background:#f1f5f9;color:#475569;font-weight:600;">Cancelar</button>
         </div>
     </div>
 
@@ -310,43 +333,69 @@
         let masterPass = '';
         let resetTargetId = null;
 
-        // Load dev config from localStorage
-        function loadDevConfig() {
-            document.getElementById('devPhone').value = localStorage.getItem('devPhone') || '';
-            document.getElementById('devEmail').value = localStorage.getItem('devEmail') || '';
-            document.getElementById('devName').value = localStorage.getItem('devName') || '';
+        // Load dev config from DB
+        async function loadDevConfig() {
+            try {
+                const res = await fetch('/api/super-admin/config', {
+                    headers: { 'x-admin-password': masterPass }
+                });
+                if (res.ok) {
+                    const configs = await res.json();
+                    document.getElementById('devPhone').value = configs.devPhone || '';
+                    document.getElementById('devEmail').value = configs.devEmail || '';
+                    document.getElementById('devName').value = configs.devName || '';
+
+                    // Sync to localStorage for usage in other pages (menu, blocked screen)
+                    if (configs.devPhone) localStorage.setItem('devPhone', configs.devPhone);
+                    if (configs.devEmail) localStorage.setItem('devEmail', configs.devEmail);
+                    if (configs.devName) localStorage.setItem('devName', configs.devName);
+                }
+            } catch (e) {
+                console.error('Erro ao carregar configs:', e);
+            }
         }
 
         async function saveDevData() {
-            localStorage.setItem('devPhone', document.getElementById('devPhone').value.trim());
-            localStorage.setItem('devEmail', document.getElementById('devEmail').value.trim());
-            localStorage.setItem('devName', document.getElementById('devName').value.trim());
-
+            const devPhone = document.getElementById('devPhone').value.trim();
+            const devEmail = document.getElementById('devEmail').value.trim();
+            const devName = document.getElementById('devName').value.trim();
             const newPass = document.getElementById('newMasterPassword').value.trim();
-            if (newPass) {
-                if (newPass.length < 6) return alert('A nova senha deve ter no mínimo 6 caracteres.');
 
-                try {
-                    const res = await fetch('/api/super-admin/change-password', {
+            try {
+                // Save basic configs to DB
+                const resConfig = await fetch('/api/super-admin/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                    body: JSON.stringify({ devPhone, devEmail, devName })
+                });
+
+                if (resConfig.ok) {
+                    localStorage.setItem('devPhone', devPhone);
+                    localStorage.setItem('devEmail', devEmail);
+                    localStorage.setItem('devName', devName);
+                }
+
+                // Save password if provided
+                if (newPass) {
+                    if (newPass.length < 6) return alert('A nova senha deve ter no mínimo 6 caracteres.');
+                    const resPass = await fetch('/api/super-admin/change-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
                         body: JSON.stringify({ newPassword: newPass })
                     });
-                    const data = await res.json();
-                    if (res.ok) {
-                        alert('✅ ' + data.message);
-                        document.getElementById('newMasterPassword').value = '';
-                        // Atualiza a masterPass local para as próximas requisições desta sessão
+                    if (resPass.ok) {
+                        alert('✅ Dados e nova Senha Mestra salvos com sucesso!');
                         masterPass = newPass;
                         document.getElementById('masterPassword').value = newPass;
+                        document.getElementById('newMasterPassword').value = '';
                     } else {
-                        alert('❌ Erro ao mudar senha: ' + data.error);
+                        alert('❌ Erro ao mudar senha.');
                     }
-                } catch (e) {
-                    alert('Erro na conexão com o servidor.');
+                } else {
+                    alert('✅ Dados de contato salvos com sucesso!');
                 }
-            } else {
-                alert('Dados de contato salvos com sucesso!');
+            } catch (e) {
+                alert('Erro ao processar solicitação.');
             }
         }
 
@@ -462,6 +511,49 @@
             const data = await res.json();
             alert(res.ok ? '✅ ' + data.message : '❌ Erro: ' + data.error);
             closeResetModal();
+        }
+
+        function openNewTenantModal() {
+            document.getElementById('newTenantName').value = '';
+            document.getElementById('newTenantSlug').value = '';
+            document.getElementById('newTenantEmail').value = '';
+            document.getElementById('newTenantPassword').value = '';
+            document.getElementById('newTenantModal').style.display = 'flex';
+        }
+
+        function closeNewTenantModal() {
+            document.getElementById('newTenantModal').style.display = 'none';
+        }
+
+        async function saveNewTenant() {
+            const name = document.getElementById('newTenantName').value.trim();
+            const slug = document.getElementById('newTenantSlug').value.trim();
+            const adminEmail = document.getElementById('newTenantEmail').value.trim();
+            const adminPassword = document.getElementById('newTenantPassword').value.trim();
+
+            if (!name || !slug || !adminEmail || !adminPassword) {
+                alert('Preencha todos os campos.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/super-admin/tenant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                    body: JSON.stringify({ name, slug, adminEmail, adminPassword })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert('✅ Empresa cadastrada com sucesso!');
+                    closeNewTenantModal();
+                    loadTenants();
+                } else {
+                    alert('❌ Erro: ' + data.error);
+                }
+            } catch (e) {
+                alert('Erro na conexão.');
+            }
         }
 
         function logout() {

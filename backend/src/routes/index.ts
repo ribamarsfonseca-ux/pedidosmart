@@ -21,6 +21,9 @@ router.get('/super-admin/tenants', superAdminAuth, superAdmin.getAllTenants);
 router.put('/super-admin/tenant/:id', superAdminAuth, superAdmin.updateTenantStatus);
 router.post('/super-admin/tenant/:id/reset-password', superAdminAuth, superAdmin.resetTenantPassword);
 router.post('/super-admin/change-password', superAdminAuth, superAdmin.changeMasterPassword);
+router.get('/super-admin/config', superAdminAuth, superAdmin.getConfigs);
+router.post('/super-admin/config', superAdminAuth, superAdmin.updateConfigs);
+router.post('/super-admin/tenant', superAdminAuth, superAdmin.createTenant);
 
 // Protected Admin Routes - Com verificação de assinatura e status
 router.use('/categories', checkSubscription, categoryRoutes);

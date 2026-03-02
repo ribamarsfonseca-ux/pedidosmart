@@ -36,6 +36,7 @@ model Tenant {
   instagramUrl       String?
   facebookUrl        String?
   contactEmail       String?
+  pdvPassword        String?  // Senha para o Frente de Caixa (PDV)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

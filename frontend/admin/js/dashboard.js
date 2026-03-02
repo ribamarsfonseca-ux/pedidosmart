@@ -21,9 +21,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update header if already in DOM
                 const nameDisplay = document.getElementById('tenantNameDisplay');
                 if (nameDisplay) nameDisplay.innerHTML = `${renderLogo()} ${tenantData.name}`;
+                checkActiveStatus(); // Verificar status após atualizar
             }
         } catch (e) {
             console.error('Erro ao atualizar dados do lojista:', e);
+        }
+    }
+
+    async function checkActiveStatus() {
+        if (tenantData && tenantData.active === false) {
+            // Se inativo, buscar dados do dev para mostrar suporte
+            let devData = {};
+            try {
+                const res = await fetch('/api/tenants/public-configs');
+                devData = await res.json();
+            } catch (e) { }
+
+            const overlayId = 'blocked-admin-overlay';
+            if (!document.getElementById(overlayId)) {
+                const html = `
+                    <div id="${overlayId}" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.95); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(10px);">
+                        <div style="background:white; padding:40px; border-radius:24px; max-width:500px; width:100%; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+                            <div style="font-size:4rem; margin-bottom:20px;">⚠️</div>
+                            <h2 style="color:#0f172a; margin-bottom:15px; font-size:1.75rem;">Sua loja está temporariamente bloqueada</h2>
+                            <p style="color:#64748b; margin-bottom:30px; line-height:1.6;">O acesso ao painel administrativo foi suspenso. Isso geralmente ocorre por pendências de pagamento ou manutenção do sistema.</p>
+                            
+                            <div style="background:#f8fafc; padding:20px; border-radius:16px; margin-bottom:30px; text-align:left;">
+                                <p style="font-weight:700; color:#0f172a; margin-bottom:12px; font-size:0.9rem;">Fale com o suporte para desbloquear:</p>
+                                <a href="https://wa.me/${(devData.devPhone || '').replace(/\D/g, '')}?text=Olá, minha loja ${tenantData.name} está bloqueada." target="_blank" style="display:flex; align-items:center; gap:12px; background:#25d366; color:white; padding:12px; border-radius:12px; text-decoration:none; font-weight:600; margin-bottom:10px; justify-content:center;">
+                                    <span>💬 WhatsApp do Suporte</span>
+                                </a>
+                                <a href="mailto:${devData.devEmail || ''}" style="display:flex; align-items:center; gap:12px; background:#ef4444; color:white; padding:12px; border-radius:12px; text-decoration:none; font-weight:600; justify-content:center;">
+                                    <span>📧 Enviar E-mail</span>
+                                </a>
+                            </div>
+                            
+                            <button onclick="localStorage.removeItem('auth_token'); location.reload();" style="background:none; border:none; color:#64748b; font-weight:600; cursor:pointer; text-decoration:underline;">Sair da conta</button>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', html);
+            }
         }
     }
 
@@ -49,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Simple SPA Navigation logic
     refreshTenantData(); // Fetch fresh data in background
+    checkActiveStatus(); // Primeira verificação com dados do localStorage
 
     const navLinks = document.querySelectorAll('.sidebar-nav a');
     const contentArea = document.getElementById('app-content');
@@ -780,6 +819,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label>Tipo de Plano</label>
                     <p><strong>${tenantData.planType.toUpperCase()}</strong></p>
                 </div>
+                <div class="form-group">
+                    <label>🔑 Senha do Frente de Caixa (PDV)</label>
+                    <input type="password" id="set-pdv-password" value="${tenantData.pdvPassword || ''}" placeholder="Senha para acesso ao PDV">
+                    <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Use esta senha para entrar no sistema de Frente de Caixa (PDV).</p>
+                </div>
                 <button class="btn btn-primary mt-4" onclick="saveSettings()">Salvar Alterações</button>
             </div>
 
@@ -858,7 +902,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     contactEmail,
                     extraInfo: document.getElementById('set-extra-info').value,
                     estimatedTimeDelivery,
-                    estimatedTimePickup
+                    estimatedTimePickup,
+                    pdvPassword: document.getElementById('set-pdv-password').value // Novo campo
                 })
             });
 
@@ -883,6 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.extraInfo = document.getElementById('set-extra-info').value;
             tenantData.estimatedTimeDelivery = estimatedTimeDelivery;
             tenantData.estimatedTimePickup = estimatedTimePickup;
+            tenantData.pdvPassword = document.getElementById('set-pdv-password').value; // Novo campo
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
@@ -1007,6 +1053,30 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Erro ao alterar senha. Tente novamente.');
         }
     };
+
+    // 7. Dynamic Badges
+    async function updatePendingBadge() {
+        try {
+            const orders = await apiFetch('/orders');
+            const pendingCount = orders.filter(o => o.status === 'pending').length;
+            const badgeEl = document.querySelector('a[data-page="orders"] .pending-badge');
+
+            if (pendingCount > 0) {
+                if (badgeEl) {
+                    badgeEl.textContent = pendingCount;
+                } else {
+                    const link = document.querySelector('a[data-page="orders"]');
+                    link.insertAdjacentHTML('beforeend', `<span class="pending-badge" style="background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;">${pendingCount}</span>`);
+                }
+            } else if (badgeEl) {
+                badgeEl.remove();
+            }
+        } catch (e) { console.error('Badge update error:', e); }
+    }
+
+    // Update every 30 seconds
+    setInterval(updatePendingBadge, 30000);
+    updatePendingBadge(); // Initial call
 
     // Init Base View
     loadView('home');

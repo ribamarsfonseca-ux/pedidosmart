@@ -297,11 +297,78 @@
             <h1>A plataforma definitiva para <span>turbinar seu restaurante</span></h1>
             <p class="hero-p">Cardápio digital inteligente, gestão de pedidos em tempo real e integração total com
                 WhatsApp. Tudo o que você precisa para crescer sem pagar comissões abusivas.</p>
-            <div class="hero-btns">
-                <a href="/admin/register.html" class="btn btn-primary"
-                    style="padding: 1rem 2.5rem; font-size: 1.1rem;">Começar Agora - É Grátis</a>
-                <a href="/menu/index.html#teststore" class="btn btn-outline"
-                    style="padding: 1rem 2.5rem; font-size: 1.1rem;">Ver Demonstração</a>
+            <div class="hero-btns" id="hero-actions">
+                <button onclick="showRegisterForm()" class="btn btn-primary"
+                    style="padding: 1rem 2.5rem; font-size: 1.1rem;">Começar Agora - É Grátis</button>
+                <a href="/demo.html" class="btn btn-outline" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Ver
+                    Demonstração</a>
+            </div>
+
+            <!-- Formulário de Cadastro (Inicialmente Oculto) -->
+            <div id="register-container"
+                style="display:none; max-width: 500px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 24px; box-shadow: var(--shadow); text-align: left; border: 1px solid rgba(0,0,0,0.05);">
+                <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--dark);">📝 Crie sua Loja
+                    Gratuitamente</h3>
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Seu Nome
+                            Completo</label>
+                        <input type="text" id="reg-name" required
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Nome da
+                            Loja/Estabelecimento</label>
+                        <input type="text" id="reg-tenant" required oninput="generateSlug(this.value)"
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                        <small style="color: #64748b;">Link da sua loja: smartpede.com.br/menu/#<span
+                                id="slug-preview">...</span></small>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Endereço
+                            do Estabelecimento</label>
+                        <input type="text" id="reg-address" required
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Seu
+                            E-mail</label>
+                        <input type="email" id="reg-email" required
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Seu
+                            WhatsApp</label>
+                        <input type="text" id="reg-whatsapp" required placeholder="5598988887766"
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display:block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;">Crie uma
+                            Senha Administrativa</label>
+                        <input type="password" id="reg-password" required minlength="6"
+                            style="width:100%; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 1rem;">
+                    </div>
+                    <button type="submit" class="btn btn-primary"
+                        style="width:100%; padding: 1rem; font-size: 1.1rem;">📩 Enviar Solicitação e Criar
+                        Loja</button>
+                    <button type="button" onclick="hideRegisterForm()"
+                        style="width:100%; margin-top: 10px; background: none; border: none; color: #64748b; font-size: 0.9rem; cursor: pointer;">Cancelar</button>
+                </form>
+            </div>
+
+            <!-- Mensagem de Sucesso (Inicialmente Oculta) -->
+            <div id="success-container"
+                style="display:none; max-width: 600px; margin: 2rem auto; background: #f0fdf4; padding: 2rem; border-radius: 24px; border: 1px solid #bbf7d0; text-align: center;">
+                <span style="font-size: 3rem;">✅</span>
+                <h3 style="color: #166534; margin: 1rem 0;">Solicitação Enviada com Sucesso!</h3>
+                <p style="color: #15803d; margin-bottom: 1.5rem;">Sua loja foi criada, mas está <b>bloqueada para
+                        análise</b>. Para ativar agora mesmo, clique no botão abaixo para falar com o desenvolvedor.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <a id="notify-whatsapp" href="#" target="_blank" class="btn"
+                        style="background: #25d366; color: white;">💬 Avisar via WhatsApp</a>
+                    <a id="notify-email" href="#" target="_blank" class="btn"
+                        style="background: #ef4444; color: white;">📧 Avisar via E-mail</a>
+                </div>
             </div>
         </div>
     </header>
@@ -394,6 +461,81 @@
         </div>
     </footer>
 
+    <script>
+        function generateSlug(val) {
+            const slug = val.toLowerCase().trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            document.getElementById('slug-preview').textContent = slug || '...';
+            return slug;
+        }
+
+        function showRegisterForm() {
+            document.getElementById('hero-actions').style.display = 'none';
+            document.getElementById('register-container').style.display = 'block';
+            document.getElementById('register-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideRegisterForm() {
+            document.getElementById('hero-actions').style.display = 'flex';
+            document.getElementById('register-container').style.display = 'none';
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            const name = document.getElementById('reg-name').value;
+            const tenantName = document.getElementById('reg-tenant').value;
+            const slug = generateSlug(tenantName);
+            const address = document.getElementById('reg-address').value;
+            const email = document.getElementById('reg-email').value;
+            const whatsapp = document.getElementById('reg-whatsapp').value;
+            const password = document.getElementById('reg-password').value;
+
+            try {
+                const res = await fetch('/api/tenants/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tenantName,
+                        slug,
+                        adminEmail: email,
+                        adminPassword: password,
+                        // Notificamos que é um registro público (opcional se a API já bloquear por padrão)
+                    })
+                });
+
+                if (res.ok) {
+                    // Cache dev data if already present or use defaults
+                    const devPhone = localStorage.getItem('devPhone') || '5598988838223';
+                    const devEmail = localStorage.getItem('devEmail') || 'ribamarsfonseca@gmail.com';
+                    const devName = localStorage.getItem('devName') || 'Ribamar Fonseca';
+
+                    const msg = `Olá ${devName}! Acabei de cadastrar minha loja no SmartPede: \n\n👤 Nome: ${name}\n🏢 Loja: ${tenantName}\n📍 Endereço: ${address}\n📱 WhatsApp: ${whatsapp}\n📧 E-mail: ${email}\n\nPode ativar meu acesso?`;
+
+                    document.getElementById('notify-whatsapp').href = `https://wa.me/${devPhone}?text=${encodeURIComponent(msg)}`;
+                    document.getElementById('notify-email').href = `mailto:${devEmail}?subject=Solicitação de Acesso SmartPede&body=${encodeURIComponent(msg)}`;
+
+                    document.getElementById('register-container').style.display = 'none';
+                    document.getElementById('success-container').style.display = 'block';
+                    document.getElementById('success-container').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    const data = await res.json();
+                    alert('Erro no cadastro: ' + (data.error || 'Verifique os dados'));
+                    btn.disabled = false;
+                    btn.textContent = '📩 Enviar Solicitação e Criar Loja';
+                }
+            } catch (err) {
+                alert('Erro na conexão com o servidor.');
+                btn.disabled = false;
+                btn.textContent = '📩 Enviar Solicitação e Criar Loja';
+            }
+        }
+    </script>
 </body>
 
 </html>

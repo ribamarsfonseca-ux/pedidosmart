@@ -34,7 +34,7 @@ export const registerTenant = async (req: Request, res: Response): Promise<void>
         // Create Tenant and Admin User transactionally
         const result = await prisma.$transaction(async (tx) => {
             const tenant = await tx.tenant.create({
-                data: { name: tenantName, slug, logoUrl },
+                data: { name: tenantName, slug, logoUrl, active: false }, // Nasce bloqueado
             });
 
             const user = await tx.user.create({
@@ -111,9 +111,10 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
         const { slug } = req.params;
 
         const tenant = await prisma.tenant.findFirst({
-            where: { slug: slug as string, active: true },
+            where: { slug: slug as string }, // Remove active: true filter
             select: {
                 id: true,
+                active: true, // Adicionado
                 name: true,
                 slug: true,
                 logoUrl: true,
@@ -149,7 +150,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
         });
 
         if (!tenant) {
-            res.status(404).json({ error: 'Restaurante não encontrado ou inativo' });
+            res.status(404).json({ error: 'Restaurante não encontrado' });
             return;
         }
 
@@ -299,5 +300,96 @@ export const changeTenantPassword = async (req: Request, res: Response): Promise
     } catch (error) {
         console.error('Change Password Error:', error);
         res.status(500).json({ error: 'Erro ao alterar senha.' });
+    }
+};
+
+export const loginPDV = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { slug, pdvPassword } = req.body;
+
+        if (!slug || !pdvPassword) {
+            res.status(400).json({ error: 'Slug e senha do PDV são obrigatórios' });
+            return;
+        }
+
+        const tenant = await prisma.tenant.findUnique({ where: { slug } });
+
+        if (!tenant || tenant.pdvPassword !== pdvPassword) {
+            res.status(401).json({ error: 'Credenciais de PDV inválidas' });
+            return;
+        }
+
+        if (!tenant.active) {
+            res.status(403).json({ error: 'Esta loja está bloqueada. Contate o administrador.' });
+            return;
+        }
+
+        const token = jwt.sign(
+            { tenantId: tenant.id, role: 'pdv' },
+            JWT_SECRET,
+            { expiresIn: '12h' }
+        );
+
+        res.json({
+            message: 'Acesso PDV autorizado',
+            tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+            token
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao processar login PDV' });
+    }
+};
+
+export const getPDVStats = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) {
+            res.status(401).json({ error: 'Não autorizado' });
+            return;
+        }
+
+        // Fuso de Brasília
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const orders = await prisma.order.findMany({
+            where: { tenantId }
+        });
+
+        const pending = orders.filter(o => o.status === 'pending').length;
+        const open = orders.filter(o => o.status === 'accepted' || o.status === 'preparing' || o.status === 'ready').length;
+        const finishedCount = orders.filter(o => o.status === 'finished' || o.status === 'completed').length;
+
+        // Vendas de hoje (considerando apenas finalizados de hoje)
+        const todaySales = orders.filter(o =>
+            (o.status === 'finished' || o.status === 'completed') &&
+            new Date(o.createdAt) >= startOfDay
+        ).reduce((acc, curr) => acc + curr.totalAmount, 0);
+
+        res.json({
+            pending,
+            open,
+            finished: finishedCount,
+            todaySales
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar métricas do PDV' });
+    }
+};
+
+export const getPublicConfigs = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const configs = await prisma.config.findMany({
+            where: {
+                key: { in: ['devPhone', 'devEmail', 'devName'] }
+            }
+        });
+
+        const result: any = {};
+        configs.forEach(c => result[c.key] = c.value);
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar configurações públicas' });
     }
 };
