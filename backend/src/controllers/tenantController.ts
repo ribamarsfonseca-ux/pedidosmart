@@ -253,3 +253,51 @@ export const getCurrentTenant = async (req: Request, res: Response): Promise<voi
         res.status(500).json({ error: 'Erro ao buscar dados do lojista' });
     }
 };
+
+export const changeTenantPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) {
+            res.status(401).json({ error: 'Não autorizado' });
+            return;
+        }
+
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias.' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+            return;
+        }
+
+        const user = await prisma.user.findFirst({
+            where: { tenantId, role: 'admin' }
+        });
+
+        if (!user) {
+            res.status(404).json({ error: 'Usuário não encontrado.' });
+            return;
+        }
+
+        const isValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isValid) {
+            res.status(401).json({ error: 'Senha atual incorreta.' });
+            return;
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ message: 'Senha alterada com sucesso!' });
+    } catch (error) {
+        console.error('Change Password Error:', error);
+        res.status(500).json({ error: 'Erro ao alterar senha.' });
+    }
+};

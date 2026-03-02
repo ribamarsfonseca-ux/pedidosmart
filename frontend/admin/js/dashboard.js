@@ -782,6 +782,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <button class="btn btn-primary mt-4" onclick="saveSettings()">Salvar Alterações</button>
             </div>
+
+            <div class="glass-card mt-8">
+                <h3 style="margin-top:0;">🔑 Alterar Senha de Acesso</h3>
+                <div class="form-group">
+                    <label>Senha Atual</label>
+                    <input type="password" id="pwd-current" placeholder="Digite sua senha atual">
+                </div>
+                <div class="form-group">
+                    <label>Nova Senha</label>
+                    <input type="password" id="pwd-new" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Nova Senha</label>
+                    <input type="password" id="pwd-confirm" placeholder="Repita a nova senha">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">Alterar Senha</button>
+            </div>
          `;
     }
 
@@ -950,6 +967,44 @@ document.addEventListener('DOMContentLoaded', () => {
         e.disabled = !active;
         s.style.opacity = active ? '1' : '0.5';
         e.style.opacity = active ? '1' : '0.5';
+    };
+
+    window.changePassword = async () => {
+        const currentPassword = document.getElementById('pwd-current')?.value?.trim();
+        const newPassword = document.getElementById('pwd-new')?.value?.trim();
+        const confirmPassword = document.getElementById('pwd-confirm')?.value?.trim();
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert('Por favor, preencha todos os campos de senha.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            alert('A nova senha e a confirmação não coincidem.');
+            return;
+        }
+        if (newPassword.length < 6) {
+            alert('A nova senha deve ter no mínimo 6 caracteres.');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/tenants/change-password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('✅ ' + data.message + '\n\nPor segurança, faça login novamente.');
+                localStorage.removeItem('token');
+                window.location.href = '/admin/index.html';
+            } else {
+                alert('❌ Erro: ' + data.error);
+            }
+        } catch (e) {
+            alert('Erro ao alterar senha. Tente novamente.');
+        }
     };
 
     // Init Base View

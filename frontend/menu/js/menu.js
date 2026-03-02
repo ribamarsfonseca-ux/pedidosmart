@@ -35,7 +35,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(checkOrdersStatus, 30000); // Polling every 30s
     } catch (error) {
         console.error(error);
-        document.getElementById('loading').innerHTML = `<p style="color: red;">Erro ao carregar cardápio: ${error.message}</p>`;
+        // Tela de bloqueio profissional
+        const devPhone = localStorage.getItem('devPhone') || '';
+        const devEmail = localStorage.getItem('devEmail') || '';
+        const devName = localStorage.getItem('devName') || 'Suporte SmartPede';
+        const waLink = devPhone ? `https://wa.me/${devPhone}?text=Ol%C3%A1%2C%20meu%20card%C3%A1pio%20est%C3%A1%20indispon%C3%ADvel.` : null;
+
+        document.getElementById('loading').innerHTML = `
+            <div style="text-align:center; padding: 3rem 1.5rem; font-family: 'Inter', sans-serif;">
+                <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔒</div>
+                <h2 style="color:#1e293b; margin-bottom:0.5rem;">Loja Temporariamente Indisponível</h2>
+                <p style="color:#64748b; max-width:380px; margin: 0 auto 2rem;">
+                    Esta loja está passando por manutenção ou aguarda regularização.<br>
+                    Entre em contato com o suporte para mais informações.
+                </p>
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:1.5rem; display:inline-block; text-align:left; min-width:260px;">
+                    <p style="font-weight:700; margin:0 0 10px; color:#475569;">📞 ${devName}</p>
+                    ${devPhone ? `<p style="margin:4px 0;"><a href="${waLink}" target="_blank" style="color:#25d366; text-decoration:none; font-weight:600;">💬 WhatsApp: ${devPhone}</a></p>` : ''}
+                    ${devEmail ? `<p style="margin:4px 0; color:#3b82f6;">📧 ${devEmail}</p>` : ''}
+                    ${!devPhone && !devEmail ? '<p style="color:#94a3b8; font-size:0.85rem;">Contate o administrador do sistema.</p>' : ''}
+                </div>
+            </div>
+        `;
     }
 });
 

@@ -16,9 +16,10 @@ router.get('/', (req, res) => {
 // Authentication and Public Tenant Routes
 router.use('/tenants', tenantRoutes);
 
-// Super Admin Routes (Controle de faturamento e assinaturas) - Protegidas por Senha Mestra
+// Super Admin Routes
 router.get('/super-admin/tenants', superAdminAuth, superAdmin.getAllTenants);
 router.put('/super-admin/tenant/:id', superAdminAuth, superAdmin.updateTenantStatus);
+router.post('/super-admin/tenant/:id/reset-password', superAdminAuth, superAdmin.resetTenantPassword);
 
 // Protected Admin Routes - Com verificação de assinatura e status
 router.use('/categories', checkSubscription, categoryRoutes);

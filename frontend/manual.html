@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual do Usuário | SmartPede</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --dark: #0f172a;
+            --text: #1e293b;
+            --muted: #64748b;
+            --bg: #f8fafc;
+            --white: #fff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: var(--white);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: white;
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .layout {
+            display: flex;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            width: 240px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .sidebar h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .sidebar h4:first-child {
+            margin-top: 0;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 5px 10px;
+            border-radius: 6px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .sidebar a:hover {
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .section {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+            scroll-margin-top: 90px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+            color: #334155;
+        }
+
+        .section p,
+        .section li {
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .section ul,
+        .section ol {
+            padding-left: 1.5rem;
+        }
+
+        .tip {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+        }
+
+        .tip strong {
+            color: var(--primary);
+        }
+
+        .warning {
+            background: #fef9c3;
+            border-left: 4px solid #eab308;
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin: 0.75rem 0;
+        }
+
+        .step-num {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        @media(max-width:768px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: var(--dark);
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="/">🚀 SmartPede</a>
+        <a href="/admin/index.html">Acessar Painel →</a>
+    </nav>
+
+    <div class="hero">
+        <h1>📘 Manual do Usuário</h1>
+        <p>Guia completo em português para usar o SmartPede do começo ao fim.</p>
+    </div>
+
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <h4>Início</h4>
+            <a href="#intro">O que é o SmartPede?</a>
+            <a href="#primeiros-passos">Primeiros Passos</a>
+            <h4>Painel Admin</h4>
+            <a href="#dashboard">Visão Geral</a>
+            <a href="#configuracoes">Configurações da Loja</a>
+            <a href="#horarios">Horários de Funcionamento</a>
+            <a href="#cardapio">Gerenciar Cardápio</a>
+            <a href="#pedidos">Gerenciar Pedidos</a>
+            <a href="#senha">Alterar Senha</a>
+            <h4>Cliente</h4>
+            <a href="#cardapio-cliente">Cardápio Online</a>
+            <a href="#fazer-pedido">Como Fazer um Pedido</a>
+            <h4>Outros</h4>
+            <a href="#backup">Backup de Dados</a>
+            <a href="#faq">Perguntas Frequentes</a>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+
+            <div class="section" id="intro">
+                <h2>🚀 O que é o SmartPede?</h2>
+                <p>O SmartPede é uma plataforma SaaS (Software como Serviço) de cardápio digital e gestão de pedidos
+                    para restaurantes, lanchonetes, açaiterias e qualquer negócio de alimentação.</p>
+                <h3>Principais Recursos</h3>
+                <ul>
+                    <li>Cardápio digital com link único para compartilhar no WhatsApp e redes sociais</li>
+                    <li>Pedidos enviados automaticamente ao WhatsApp da loja</li>
+                    <li>Painel administrativo para gerenciar categorias, produtos e pedidos em tempo real</li>
+                    <li>Configuração de horários por turno (manhã/noite, horários que passam da meia-noite)</li>
+                    <li>Taxa de delivery, tempo estimado de entrega e avisos/promoções rápidas</li>
+                    <li>Backup completo dos dados da loja</li>
+                    <li>Identidade visual personalizada: cores, logo e descrição</li>
+                </ul>
+            </div>
+
+            <div class="section" id="primeiros-passos">
+                <h2>🎯 Primeiros Passos</h2>
+                <h3>Cadastro da Loja</h3>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <p>Acesse <strong>/admin/register.html</strong> e preencha o nome da loja, slug (URL amigável),
+                        e-mail e senha.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <p>Clique em <strong>"Criar minha loja"</strong>. Você será redirecionado automaticamente para o
+                        painel.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <p>Seu cardápio já estará disponível em: <strong>seudominio.com/menu/#seuslug</strong></p>
+                </div>
+                <div class="tip"><strong>💡 Dica:</strong> Escolha um slug curto e fácil de lembrar, ex:
+                    <em>acai-da-marina</em>. Ele não pode ser alterado depois.</div>
+                <h3>Login no Painel</h3>
+                <p>Acesse <strong>/admin/index.html</strong> e entre com seu e-mail e senha cadastrados.</p>
+            </div>
+
+            <div class="section" id="dashboard">
+                <h2>📊 Visão Geral (Dashboard)</h2>
+                <p>A tela inicial do painel exibe:</p>
+                <ul>
+                    <li><strong>Resumo do Dia:</strong> total de pedidos recebidos hoje e faturamento</li>
+                    <li><strong>Pedidos em Aberto:</strong> pedidos pendentes de aceitação</li>
+                    <li><strong>Backup:</strong> botões para exportar seus dados</li>
+                    <li><strong>Link da Loja:</strong> botão para copiar e compartilhar o link do cardápio</li>
+                </ul>
+            </div>
+
+            <div class="section" id="configuracoes">
+                <h2>⚙️ Configurações da Loja</h2>
+                <p>Acesse a aba <strong>Configurações</strong> no menu lateral para personalizar:</p>
+                <h3>Identidade Visual</h3>
+                <ul>
+                    <li><strong>Logo da Loja:</strong> URL da imagem (recomendado 200×200px)</li>
+                    <li><strong>Cor Principal:</strong> escolha a cor do tema do seu cardápio</li>
+                    <li><strong>Descrição:</strong> texto que aparece no perfil da loja</li>
+                </ul>
+                <h3>Contato e Endereço</h3>
+                <ul>
+                    <li><strong>WhatsApp:</strong> número para receber pedidos (somente dígitos)</li>
+                    <li><strong>Endereço:</strong> endereço completo da loja</li>
+                    <li><strong>Google Maps:</strong> link do Maps para o cliente abrir a localização</li>
+                </ul>
+                <h3>Delivery e Pedidos</h3>
+                <ul>
+                    <li><strong>Taxa de Entrega:</strong> valor em R$ cobrado para delivery</li>
+                    <li><strong>Valor mínimo:</strong> pedido mínimo para cada tipo (consumo local, retirada, delivery)
+                    </li>
+                    <li><strong>Tempo Estimado (Retirada/Local):</strong> ex: <em>30-40 min / 1:00h</em></li>
+                    <li><strong>Tempo Estimado (Delivery):</strong> ex: <em>40-60 min / 1:30h</em></li>
+                </ul>
+                <h3>Avisos Rápidos / Promoções</h3>
+                <p>O campo <strong>"Avisos Rápidos"</strong> aparece no topo do recibo do WhatsApp enviado ao cliente.
+                    Use para divulgar promoções, frete grátis ou avisos importantes.</p>
+                <div class="tip"><strong>💡 Exemplo:</strong> <em>"🎉 Promoção: Combo Família com 20% OFF até
+                        domingo!"</em></div>
+            </div>
+
+            <div class="section" id="horarios">
+                <h2>🕒 Horários de Funcionamento</h2>
+                <p>Configure os horários de abertura por dia da semana. Cada dia suporta até <strong>dois
+                        turnos</strong>:</p>
+                <ul>
+                    <li><strong>Turno 1:</strong> ex: 00:00 às 04:00 (madrugada)</li>
+                    <li><strong>Turno 2:</strong> ex: 18:00 às 23:00 (noturno)</li>
+                </ul>
+                <p>O cardápio exibirá automaticamente o status <span class="badge">Aberto</span> ou <strong
+                        style="color:#dc2626;">Fechado</strong> com o horário correto ao lado.</p>
+                <div class="tip"><strong>💡 Horários que passam da meia-noite:</strong> Configure o Turno 1 de <em>00:00
+                        às 04:00</em> e o sistema reconhecerá corretamente.</div>
+                <div class="warning"><strong>⚠️ Atenção:</strong> Deixe os turnos em branco (desmarque) para dias em que
+                    a loja não funciona.</div>
+            </div>
+
+            <div class="section" id="cardapio">
+                <h2>🍽️ Gerenciar Cardápio</h2>
+                <h3>Categorias</h3>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <p>Vá em <strong>Cardápio → Categorias → Nova Categoria</strong>.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <p>Digite o nome (ex: "Lanches", "Bebidas", "Sobremesas") e salve.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <p>Use os botões de ordem para reorganizar as categorias.</p>
+                </div>
+                <h3>Produtos</h3>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <p>Selecione uma categoria e clique em <strong>"Adicionar Produto"</strong>.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <p>Preencha: Nome, Descrição, Preço e URL da Imagem.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <p>Use o botão de ativar/desativar para tirar o produto do cardápio temporariamente sem excluí-lo.
+                    </p>
+                </div>
+                <div class="tip"><strong>💡 Imagens:</strong> Recomendamos imagens quadradas de 400×400px hospedadas no
+                    Google Drive, Imgur ou similar.</div>
+            </div>
+
+            <div class="section" id="pedidos">
+                <h2>📋 Gerenciar Pedidos</h2>
+                <p>A aba <strong>Pedidos</strong> lista todos os pedidos recebidos. Para cada pedido você pode:</p>
+                <ul>
+                    <li><strong>Aceitar:</strong> confirma o pedido ao cliente</li>
+                    <li><strong>Em Preparo:</strong> avisa que está sendo preparado</li>
+                    <li><strong>Pronto:</strong> avisa que está pronto para retirada/saiu para entrega</li>
+                    <li><strong>Finalizar:</strong> marca o pedido como concluído</li>
+                    <li><strong>Cancelar:</strong> rejeita o pedido</li>
+                </ul>
+                <div class="tip"><strong>💡 Dica:</strong> O cliente pode acompanhar o status do pedido em tempo real na
+                    aba "Meus Pedidos" do cardápio.</div>
+            </div>
+
+            <div class="section" id="senha">
+                <h2>🔑 Alterar Senha de Acesso</h2>
+                <p>Para alterar sua senha de acesso ao painel:</p>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <p>Acesse <strong>Configurações</strong> no menu lateral.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <p>Role até a seção <strong>"Alterar Senha de Acesso"</strong>.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <p>Digite sua senha atual, a nova senha (mín. 6 caracteres) e confirme.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <p>Clique em <strong>"Alterar Senha"</strong>. Você será desconectado e deverá fazer login
+                        novamente.</p>
+                </div>
+                <div class="warning"><strong>⚠️ Esqueceu a senha?</strong> Entre em contato com o suporte técnico para
+                    que sua senha seja resetada.</div>
+            </div>
+
+            <div class="section" id="cardapio-cliente">
+                <h2>📱 Cardápio Online (Visão do Cliente)</h2>
+                <p>O cliente acessa o cardápio pelo link que você compartilha. O cardápio exibe:</p>
+                <ul>
+                    <li>Status da loja (Aberto/Fechado) com horário de funcionamento</li>
+                    <li>Nome e logo da loja no topo</li>
+                    <li>Filtro de categorias e busca por produtos</li>
+                    <li>Botão de perfil com endereço, formas de pagamento e redes sociais</li>
+                    <li>Carrinho de compras com tempos estimados de entrega</li>
+                </ul>
+            </div>
+
+            <div class="section" id="fazer-pedido">
+                <h2>🛒 Como Fazer um Pedido (Cliente)</h2>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <p>Adicione os produtos clicando no <strong>"+"</strong>.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <p>Clique no ícone do carrinho ou na barra flutuante na parte de baixo.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <p>Preencha nome, telefone, tipo de pedido (delivery, retirada ou consumo local) e forma de
+                        pagamento.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <p>Clique em <strong>"Finalizar Pedido pelo WhatsApp"</strong>. O pedido será enviado para o
+                        WhatsApp da loja automaticamente formatado.</p>
+                </div>
+            </div>
+
+            <div class="section" id="backup">
+                <h2>💾 Backup de Dados</h2>
+                <p>O backup está disponível na aba <strong>Visão Geral</strong> do painel:</p>
+                <ul>
+                    <li><strong>Backup do Dia:</strong> exporta os pedidos do dia atual em JSON</li>
+                    <li><strong>Backup Completo:</strong> exporta todos os pedidos e configurações da loja</li>
+                </ul>
+                <div class="tip"><strong>💡 Recomendação:</strong> Realize o backup completo semanalmente e salve em
+                    local seguro (Google Drive, e-mail, etc.).</div>
+            </div>
+
+            <div class="section" id="faq">
+                <h2>❓ Perguntas Frequentes</h2>
+                <h3>Meu cardápio não está abrindo. O que faço?</h3>
+                <p>Verifique se seu slug está correto na URL. O formato é: <em>seudominio.com/menu/#seuslug</em>. Se o
+                    problema persistir, entre em contato com o suporte.</p>
+                <h3>Os horários não estão aparecendo corretamente?</h3>
+                <p>Certifique-se de que salvou as configurações após editar os horários. Os horários são atualizados em
+                    tempo real no cardápio.</p>
+                <h3>O cliente não recebeu o pedido no WhatsApp?</h3>
+                <p>Verifique se o número de WhatsApp nas configurações está correto e sem espaços ou caracteres
+                    especiais. Use somente dígitos incluindo DDI: ex: <em>5598988838223</em>.</p>
+                <h3>Posso ter mais de um cardápio?</h3>
+                <p>Sim, cada cadastro representa uma loja com seu próprio slug e configurações independentes.</p>
+                <h3>Como mudar o logo da loja?</h3>
+                <p>Cole a URL direta de uma imagem hospedada online no campo "Logo da Loja" em Configurações.</p>
+                <h3>Posso bloquear uma loja?</h3>
+                <p>Sim, o administrador do sistema pode bloquear lojas pelo painel de gestão. O cliente verá uma
+                    mensagem de indisponibilidade com os dados de contato do suporte.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 SmartPede — Manual do Usuário v2.0</p>
+        <p style="margin-top:4px;">Dúvidas? Entre em contato com o suporte técnico.</p>
+    </footer>
+</body>
+
+</html>

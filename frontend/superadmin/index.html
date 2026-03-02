@@ -5,29 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin | SmartPede SaaS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../admin/css/styles.css">
     <style>
-        .tenant-card {
-            margin-bottom: 1rem;
-            padding: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
         }
 
-        .status-active {
-            color: #10B981;
-            font-weight: bold;
-        }
-
-        .status-blocked {
-            color: #EF4444;
-            font-weight: bold;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
+        .page-wrap {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
         }
 
         header {
@@ -36,105 +26,369 @@
             align-items: center;
             margin-bottom: 2rem;
         }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media(max-width:600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card p {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .tenant-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .tenant-card h4 {
+            margin: 0 0 4px;
+            font-size: 1rem;
+        }
+
+        .tenant-info {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin: 2px 0;
+        }
+
+        .tenant-info a {
+            color: #3b82f6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-blocked {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-trial {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-block {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-activate {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .btn-renew {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .btn-reset {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .dev-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+            border-left: 4px solid #6366f1;
+        }
+
+        .dev-card h3 {
+            margin: 0 0 1rem;
+            color: #6366f1;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media(max-width:600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-box h3 {
+            margin: 0 0 1rem;
+        }
+
+        .btn-primary-full {
+            width: 100%;
+            padding: 0.7rem;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-card {
+            max-width: 380px;
+            margin: 6rem auto;
+            background: #fff;
+            border-radius: 14px;
+            padding: 2rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 
-<body class="admin-layout" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
-    <header>
-        <div>
-            <h1>Painel de Gestão SaaS</h1>
-            <p class="text-secondary">Gerencie seus clientes e mensalidades</p>
-        </div>
-        <button class="btn btn-outline" onclick="logout()" style="width: auto;">Sair</button>
-    </header>
-
-    <div id="loginSection" class="glass-card" style="max-width: 400px; margin: 5rem auto;">
-        <h3>Acesso Restrito</h3>
-        <div class="form-group mt-4">
-            <label>Senha Mestra</label>
-            <input type="password" id="masterPassword" placeholder="Digite a senha do .env">
-        </div>
-        <button class="btn btn-primary mt-4" onclick="loadTenants()">Entrar</button>
+<body>
+    <!-- LOGIN -->
+    <div id="loginSection" class="login-card">
+        <h2 style="text-align:center; color:#6366f1; margin-bottom:1.5rem;">🔐 Painel Gestor</h2>
+        <label>Senha Mestra</label>
+        <input type="password" id="masterPassword" placeholder="Digite a senha do .env"
+            onkeydown="if(event.key==='Enter')loadTenants()">
+        <button class="btn-primary-full" style="margin-top:1rem;" onclick="loadTenants()">Entrar</button>
     </div>
 
-    <div id="mainSection" style="display: none;">
-        <div class="grid-cols-3" id="stats">
-            <div class="glass-card">
-                <p class="text-secondary">Total de Clientes</p>
-                <h2 id="totalTenants">0</h2>
-            </div>
-            <div class="glass-card">
-                <p class="text-secondary">Clientes Ativos</p>
-                <h2 id="activeTenants" style="color: #10B981;">0</h2>
-            </div>
-            <div class="glass-card">
-                <p class="text-secondary">Aguardando Pagamento</p>
-                <h2 id="blockedTenants" style="color: #EF4444;">0</h2>
-            </div>
-        </div>
+    <!-- MAIN PANEL -->
+    <div id="mainSection" style="display:none;">
+        <div class="page-wrap">
+            <header>
+                <div>
+                    <h2 style="margin:0;">Painel de Gestão SaaS</h2>
+                    <p style="font-size:0.85rem;color:#64748b;margin:0;">SmartPede — Gerencie seus clientes</p>
+                </div>
+                <button class="btn-sm btn-block" onclick="logout()">Sair</button>
+            </header>
 
-        <div class="mt-8">
-            <h3>Lista de Restaurantes</h3>
-            <div id="tenantsList" class="mt-4">
-                <!-- JavaScript renders here -->
+            <!-- Dados do Desenvolvedor -->
+            <div class="dev-card">
+                <h3>⚙️ Dados do Desenvolvedor</h3>
+                <div class="form-row">
+                    <div>
+                        <label>WhatsApp de Suporte</label>
+                        <input type="text" id="devPhone" placeholder="Ex: 5598988838223">
+                    </div>
+                    <div>
+                        <label>E-mail de Suporte</label>
+                        <input type="email" id="devEmail" placeholder="dev@exemplo.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label>Nome do Desenvolvedor / Suporte</label>
+                        <input type="text" id="devName" placeholder="Ex: Ribamar Fonseca">
+                    </div>
+                    <div>
+                        <label>Nova Senha do Super Admin</label>
+                        <input type="password" id="devNewPassword" placeholder="Deixe em branco para não alterar">
+                    </div>
+                </div>
+                <button class="btn-sm btn-renew" onclick="saveDevConfig()" style="padding:8px 20px;">💾 Salvar
+                    Configurações</button>
             </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p>Total de Clientes</p>
+                    <h2 id="totalTenants" style="margin:0;">0</h2>
+                </div>
+                <div class="stat-card">
+                    <p>Ativos</p>
+                    <h2 id="activeTenants" style="margin:0;color:#16a34a;">0</h2>
+                </div>
+                <div class="stat-card">
+                    <p>Bloqueados</p>
+                    <h2 id="blockedTenants" style="margin:0;color:#dc2626;">0</h2>
+                </div>
+            </div>
+
+            <!-- Lista -->
+            <h3 style="margin-bottom:1rem;">Restaurantes Cadastrados</h3>
+            <div id="tenantsList"></div>
+        </div>
+    </div>
+
+    <!-- Modal Reset Senha -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal-box">
+            <h3>🔑 Resetar Senha</h3>
+            <p id="resetModalName" style="font-size:0.85rem;color:#64748b;margin-bottom:1rem;"></p>
+            <label>Nova Senha</label>
+            <input type="password" id="resetNewPassword" placeholder="Mínimo 6 caracteres" style="margin-bottom:1rem;">
+            <button class="btn-primary-full" onclick="confirmReset()">Confirmar Reset</button>
+            <button onclick="closeResetModal()"
+                style="width:100%;padding:0.6rem;margin-top:8px;border:none;border-radius:8px;cursor:pointer;background:#f1f5f9;color:#475569;font-weight:600;">Cancelar</button>
         </div>
     </div>
 
     <script>
         let masterPass = '';
+        let resetTargetId = null;
+
+        // Load dev config from localStorage
+        function loadDevConfig() {
+            document.getElementById('devPhone').value = localStorage.getItem('devPhone') || '';
+            document.getElementById('devEmail').value = localStorage.getItem('devEmail') || '';
+            document.getElementById('devName').value = localStorage.getItem('devName') || '';
+        }
+
+        function saveDevConfig() {
+            localStorage.setItem('devPhone', document.getElementById('devPhone').value.trim());
+            localStorage.setItem('devEmail', document.getElementById('devEmail').value.trim());
+            localStorage.setItem('devName', document.getElementById('devName').value.trim());
+            const newPass = document.getElementById('devNewPassword').value;
+            if (newPass) {
+                // Just a local reminder — actual password is in the server .env
+                alert('Atenção: A senha do super admin fica no arquivo .env do servidor.\nPara alterá-la, edite a variável SUPER_ADMIN_PASSWORD no servidor e reinicie o backend.');
+                document.getElementById('devNewPassword').value = '';
+            } else {
+                alert('Configurações salvas com sucesso!');
+            }
+        }
 
         async function loadTenants() {
             const passInput = document.getElementById('masterPassword').value;
-            const btn = document.querySelector('#loginSection .btn');
-
             if (!passInput) return alert('Por favor, digite a senha mestra.');
 
             try {
-                btn.disabled = true;
-                btn.textContent = 'Verificando...';
-
                 masterPass = passInput;
                 const res = await fetch('/api/super-admin/tenants', {
                     headers: { 'x-admin-password': masterPass }
                 });
 
                 if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido no servidor' }));
-                    throw new Error(errorData.error || `Erro HTTP: ${res.status}`);
+                    const err = await res.json().catch(() => ({ error: 'Erro desconhecido' }));
+                    throw new Error(err.error || `HTTP ${res.status}`);
                 }
 
                 const tenants = await res.json();
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('mainSection').style.display = 'block';
+                loadDevConfig();
                 renderTenants(tenants);
             } catch (error) {
-                console.error('Login Error:', error);
                 alert('Erro ao entrar: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Entrar';
             }
         }
 
+        function getBadge(t) {
+            if (!t.active) return '<span class="badge badge-blocked">Bloqueado</span>';
+            if (t.subscriptionStatus === 'trial') return '<span class="badge badge-trial">Teste Grátis</span>';
+            if (t.subscriptionStatus === 'active') return '<span class="badge badge-active">Ativo</span>';
+            return '<span class="badge badge-blocked">Atrasado</span>';
+        }
+
         function renderTenants(tenants) {
-            const list = document.getElementById('tenantsList');
             document.getElementById('totalTenants').textContent = tenants.length;
             document.getElementById('activeTenants').textContent = tenants.filter(t => t.active).length;
             document.getElementById('blockedTenants').textContent = tenants.filter(t => !t.active).length;
 
+            const list = document.getElementById('tenantsList');
             list.innerHTML = tenants.map(t => `
-                <div class="glass-card tenant-card">
-                    <div>
-                        <strong>${t.name}</strong> <small class="text-secondary">(${t.slug})</small>
-                        <p><a href="http://${window.location.host}/menu/#${t.slug}" target="_blank" class="link">Ver Cardápio</a></p>
-                        <p style="font-size: 0.8rem;" class="text-secondary">Criado em: ${new Date(t.createdAt).toLocaleDateString()}</p>
-                        <p style="font-size: 0.8rem;">Status: <span class="${t.active ? 'status-active' : 'status-blocked'}">${t.active ? 'ATIVO' : 'BLOQUEADO'}</span></p>
+                <div class="tenant-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <h4>${t.name} <small style="font-weight:400;color:#94a3b8;">(${t.slug})</small></h4>
+                            ${t.whatsapp ? `<p class="tenant-info">📱 <a href="https://wa.me/${t.whatsapp}" target="_blank">${t.whatsapp}</a></p>` : '<p class="tenant-info" style="color:#ccc;">📱 Sem WhatsApp cadastrado</p>'}
+                            ${t.contactEmail ? `<p class="tenant-info">📧 ${t.contactEmail}</p>` : '<p class="tenant-info" style="color:#ccc;">📧 Sem e-mail cadastrado</p>'}
+                            <p class="tenant-info">📅 Cadastro: ${new Date(t.createdAt).toLocaleDateString('pt-BR')}</p>
+                            <p class="tenant-info">🗓 Vencimento: ${t.nextBillingDate ? new Date(t.nextBillingDate).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                            <p class="tenant-info">🛒 ${t._count?.orders || 0} pedidos | 📦 ${t._count?.products || 0} produtos</p>
+                        </div>
+                        <div>${getBadge(t)}</div>
                     </div>
-                    <div class="controls">
-                        <button class="btn ${t.active ? 'btn-outline' : 'btn-primary'}" style="width: auto; padding: 0.5rem 1rem;" onclick="toggleStatus(${t.id}, ${t.active})">
-                            ${t.active ? 'Bloquear' : 'Ativar'}
+                    <div class="actions">
+                        <button class="btn-sm ${t.active ? 'btn-block' : 'btn-activate'}" onclick="toggleStatus(${t.id}, ${t.active})">
+                            ${t.active ? '🔒 Bloquear' : '✅ Ativar'}
                         </button>
+                        <button class="btn-sm btn-renew" onclick="renewSubscription(${t.id})">💳 Confirmar Pagamento</button>
+                        <button class="btn-sm btn-reset" onclick="openResetModal(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🔑 Resetar Senha</button>
+                        <a href="/menu/#${t.slug}" target="_blank" class="btn-sm" style="background:#f1f5f9;color:#475569;text-decoration:none;">👁 Ver Cardápio</a>
                     </div>
                 </div>
             `).join('');
@@ -142,25 +396,60 @@
 
         async function toggleStatus(id, currentActive) {
             if (!confirm(`Deseja ${currentActive ? 'BLOQUEAR' : 'ATIVAR'} este restaurante?`)) return;
-
             const res = await fetch(`/api/super-admin/tenant/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-admin-password': masterPass
-                },
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
                 body: JSON.stringify({ active: !currentActive })
             });
+            if (res.ok) loadTenants();
+            else alert('Erro ao atualizar status.');
+        }
 
-            if (res.ok) {
-                loadTenants();
-            } else {
-                alert('Erro ao atualizar status');
+        async function renewSubscription(id) {
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            const res = await fetch(`/api/super-admin/tenant/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                body: JSON.stringify({ subscriptionStatus: 'active', active: true, nextBillingDate: nextMonth.toISOString() })
+            });
+            if (res.ok) { alert('Assinatura renovada!'); loadTenants(); }
+            else alert('Erro ao renovar assinatura.');
+        }
+
+        function openResetModal(id, name) {
+            resetTargetId = id;
+            document.getElementById('resetModalName').textContent = `Loja: ${name}`;
+            document.getElementById('resetNewPassword').value = '';
+            document.getElementById('resetModal').style.display = 'flex';
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+            resetTargetId = null;
+        }
+
+        async function confirmReset() {
+            const newPass = document.getElementById('resetNewPassword').value.trim();
+            if (!newPass || newPass.length < 6) {
+                alert('A senha deve ter no mínimo 6 caracteres.');
+                return;
             }
+            const res = await fetch(`/api/super-admin/tenant/${resetTargetId}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                body: JSON.stringify({ newPassword: newPass })
+            });
+            const data = await res.json();
+            alert(res.ok ? '✅ ' + data.message : '❌ Erro: ' + data.error);
+            closeResetModal();
         }
 
         function logout() {
-            window.location.reload();
+            masterPass = '';
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('masterPassword').value = '';
         }
     </script>
 </body>
