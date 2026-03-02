@@ -129,7 +129,7 @@ function renderMenu(data) {
                     const formatTime = (t) => {
                         if (!t) return '';
                         const [h, m] = t.split(':');
-                        return `${h}h${m}min`;
+                        return `${h}:${m} h`;
                     };
 
                     let text = '';
@@ -220,23 +220,37 @@ function renderMenu(data) {
     // Horário amigável (v5 turnos)
     try {
         const hours = JSON.parse(data.openingHours);
-        const today = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()];
+        const todayIdx = new Date().getDay();
+        const daysMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const today = daysMap[todayIdx];
         const h = hours[today] || {};
         const s1 = h.shift1 || (h.start ? { start: h.start, end: h.end } : null);
         const s2 = h.shift2;
 
-        let text = h.start ? `${h.start} - ${h.end}` : 'Fechado hoje';
-        if (h.shift1) text = `${h.shift1.start} às ${h.shift1.end}${h.shift2 ? ` / ${h.shift2.start} às ${h.shift2.end}` : ''}`;
+        const formatTime = (t) => {
+            if (!t) return '';
+            const [h, m] = t.split(':');
+            return `${h}:${m} h`;
+        };
+
+        let text = h.start ? `${formatTime(h.start)} às ${formatTime(h.end)}` : 'Fechado hoje';
+        if (h.shift1) text = `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}${h.shift2 ? ` / ${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}` : ''}`;
 
         hoursEl.textContent = text;
         if (estimatedTimeEl && data.estimatedTime) {
             estimatedTimeEl.textContent = `⏱️ ${data.estimatedTime}`;
-            estimatedTimeEl.style.display = 'block';
+            estimatedTimeEl.style.display = 'inline-block';
+            estimatedTimeEl.style.marginLeft = '15px';
+            estimatedTimeEl.style.borderLeft = '1px solid #ddd';
+            estimatedTimeEl.style.paddingLeft = '15px';
         }
         // v5 Status Bar White Text
         statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
         statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
+        statusEl.style.display = 'inline-block';
+        statusEl.style.marginRight = '15px';
     } catch (e) {
+        console.error('Erro ao renderizar horários:', e);
         hoursEl.textContent = 'Consulte nossos horários';
     }
 
@@ -672,7 +686,8 @@ async function checkout() {
         const localTranslateFulfillment = { 'delivery': 'Delivery 🚀', 'pickup': 'Retirada 🥡', 'dine_in': 'Consumo no Local 🍽️' };
         const localTranslatePayment = { 'pix': 'Pix 💎', 'card': 'Cartão 💳', 'money': 'Dinheiro 💵' };
 
-        let message = `*Novo Pedido: #${orderNum}*\n`;
+        let message = `*Nova Mensagem de: ${restaurant.name}*\n`;
+        message += `*Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
         message += `*Cliente:* ${name}\n`;
         message += `*Telefone:* ${phone}\n`;
@@ -680,11 +695,19 @@ async function checkout() {
         message += `*Pagamento:* ${localTranslatePayment[paymentMethod]}\n\n`;
 
         if (fulfillmentType === 'delivery') {
+            if (restaurant.extraInfo) {
+                message += `*Aviso da Loja:* ${restaurant.extraInfo}\n\n`;
+            }
             message += `*Endereço de Entrega:*\n`;
             message += `📍 ${addressData.addressStreet}, ${addressData.addressNumber}\n`;
             message += `📍 Bairro: ${addressData.addressDistrict}\n`;
             if (addressData.addressComplement) message += `📍 Comp: ${addressData.addressComplement}\n`;
             message += `\n`;
+        } else {
+            // Retirada ou Local
+            if (restaurant.estimatedTime) {
+                message += `*Tempo Estimado:* ${restaurant.estimatedTime}\n\n`;
+            }
         }
 
         message += `*Itens:*\n`;

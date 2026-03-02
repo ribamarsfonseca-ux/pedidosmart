@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrders, updateOrderStatus, getOrderPublicStatus } from '../controllers/orderController';
+import { createOrder, getOrders, updateOrderStatus, getOrderPublicStatus, exportOrdersBackup } from '../controllers/orderController';
 import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
@@ -12,6 +12,7 @@ router.get('/:id/status_public', getOrderPublicStatus);
 router.use(authenticateToken);
 
 router.get('/', getOrders);
+router.get('/backup', exportOrdersBackup);
 router.put('/:id/status', updateOrderStatus);
 
 export default router;

@@ -123,6 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return data;
     }
 
+    window.downloadBackup = (type) => {
+        const token = localStorage.getItem('auth_token');
+        window.open(`${API_URL}/orders/backup?type=${type}&token=${token}`, '_blank');
+    };
+
     // 5. Shared UI Components
     function renderModal(title, content, actionBtnText, onAction) {
         const modalId = `modal-${Math.random().toString(36).substr(2, 9)}`;
@@ -176,6 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-secondary">Produtos Ativos</p>
                 <h2 id="activeProducts" style="font-size: 2rem; margin-top: 5px;">0</h2>
             </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="window.downloadBackup('daily')" class="btn btn-outline" style="font-size: 0.8rem;">📥 Backup de Hoje (CSV)</button>
+            <button onclick="window.downloadBackup('full')" class="btn btn-outline" style="font-size: 0.8rem;">📥 Backup Completo (CSV)</button>
         </div>
         <div class="glass-card">
             <h3>Bem-vindo ao SmartPede</h3>

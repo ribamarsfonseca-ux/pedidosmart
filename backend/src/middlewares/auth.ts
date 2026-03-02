@@ -18,9 +18,8 @@ declare global {
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
     const authHeader = req.headers['authorization'];
-
-    // Bearer TOKEN_STRING
-    const token = authHeader && authHeader.split(' ')[1];
+    // Support token in query string for downloads
+    const token = (authHeader && authHeader.split(' ')[1]) || (req.query.token as string);
 
     if (!token) {
         res.status(401).json({ error: 'Token de acesso não fornecido' });

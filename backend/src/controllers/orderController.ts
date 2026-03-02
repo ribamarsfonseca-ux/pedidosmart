@@ -180,3 +180,49 @@ export const getOrderPublicStatus = async (req: Request, res: Response): Promise
         res.status(500).json({ error: 'Erro ao buscar status do pedido' });
     }
 };
+
+// Protected Admin Route: Export Orders to CSV (Backup)
+export const exportOrdersBackup = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        const { type } = req.query; // 'daily' or 'full'
+
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        let whereClause: any = { tenantId };
+
+        if (type === 'daily') {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            whereClause.createdAt = { gte: today };
+        }
+
+        const orders = await prisma.order.findMany({
+            where: whereClause,
+            include: {
+                items: {
+                    include: { product: { select: { name: true } } }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Generate CSV
+        let csv = 'ID,Numero,Data,Cliente,Telefone,Tipo,Pagamento,Total,Status,Itens\n';
+        orders.forEach(o => {
+            const itemsStr = o.items.map(i => `${i.quantity}x ${i.product.name}`).join(' | ');
+            const dateStr = new Date(o.createdAt).toLocaleString('pt-BR');
+            csv += `${o.id},${o.orderNumber},${dateStr},"${o.customerName}",${o.customerPhone},${o.fulfillmentType},${o.paymentMethod},${o.totalAmount},${o.status},"${itemsStr}"\n`;
+        });
+
+        const filename = type === 'daily' ? `backup_diario_${new Date().toISOString().split('T')[0]}.csv` : `backup_completo_${new Date().toISOString().split('T')[0]}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.status(200).send(csv);
+
+    } catch (error) {
+        console.error('Export Backup Error:', error);
+        res.status(500).json({ error: 'Erro ao gerar backup' });
+    }
+};
