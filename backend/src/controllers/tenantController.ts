@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient';
+import { calcularFreteGeoapify } from '../services/deliveryService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
@@ -394,5 +395,55 @@ export const getPublicConfigs = async (req: Request, res: Response): Promise<voi
         res.json(result);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar configurações públicas' });
+    }
+};
+
+/**
+ * Endpoint para calcular frete dinâmico (Geoapify)
+ */
+export const getDeliveryFee = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { restauranteId, latDestino, lonDestino } = req.query;
+
+        if (!restauranteId || !latDestino || !lonDestino) {
+            res.status(400).json({ error: 'Parâmetros restauranteId, latDestino e lonDestino são obrigatórios.' });
+            return;
+        }
+
+        // Mock de configurações do restaurante (Em um cenário real, buscaria do Banco pelo restauranteId)
+        // Simulando que buscamos as coordenadas da matriz e as regras de preço do tenant
+        const mockConfigRestaurante = {
+            id: Number(restauranteId),
+            latOrigem: -23.55052,  // Exemplo: São Paulo Centro
+            lonOrigem: -46.633308,
+            raio_max_km: 15,       // Raio máximo de 15km
+            taxa_fixa: 5.00,       // R$ 5,00 base
+            valor_km: 1.50         // R$ 1,50 por KM rodado
+        };
+
+        const resultado = await calcularFreteGeoapify(
+            mockConfigRestaurante.latOrigem,
+            mockConfigRestaurante.lonOrigem,
+            Number(latDestino),
+            Number(lonDestino),
+            {
+                raio_max_km: mockConfigRestaurante.raio_max_km,
+                taxa_fixa: mockConfigRestaurante.taxa_fixa,
+                valor_km: mockConfigRestaurante.valor_km
+            }
+        );
+
+        if (!resultado.success) {
+            res.status(400).json(resultado);
+            return;
+        }
+
+        res.json({
+            restauranteId: mockConfigRestaurante.id,
+            ...resultado
+        });
+
+    } catch (error: any) {
+        res.status(500).json({ error: error.message || 'Erro interno ao calcular frete.' });
     }
 };

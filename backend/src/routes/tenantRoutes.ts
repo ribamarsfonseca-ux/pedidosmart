@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerTenant, loginAdmin, getTenantBySlug, updateTenant, getCurrentTenant, changeTenantPassword, loginPDV, getPDVStats, getPublicConfigs } from '../controllers/tenantController';
+import { registerTenant, loginAdmin, getTenantBySlug, updateTenant, getCurrentTenant, changeTenantPassword, loginPDV, getPDVStats, getPublicConfigs, getDeliveryFee } from '../controllers/tenantController';
 import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
@@ -8,9 +8,10 @@ const router = Router();
 router.post('/register', registerTenant);
 router.post('/login', loginAdmin);
 
-// Public Menu Route (accessed by customers via /:slug URL)
+// Public Menu & Services Routes
 router.get('/menu/:slug', getTenantBySlug);
-router.get('/public-configs', getPublicConfigs); // Nova rota pública para dados do dev
+router.get('/public-configs', getPublicConfigs);
+router.get('/calcular-entrega', getDeliveryFee); // Nova rota de frete inteligente
 
 // Private Settings & PDV Routes
 router.get('/me', authenticateToken, getCurrentTenant);

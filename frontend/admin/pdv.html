@@ -233,7 +233,7 @@
                 const res = await fetch(`${API_URL}/tenants/pdv/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ slug, pdvPassword })
+                    body: JSON.stringify({ slug: slug.toLowerCase(), pdvPassword })
                 });
 
                 const data = await res.json();

@@ -861,8 +861,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const instagramUrl = document.getElementById('set-instagram').value;
         const facebookUrl = document.getElementById('set-facebook').value;
         const contactEmail = document.getElementById('set-email').value;
-        const estimatedTimeDelivery = document.getElementById('set-estimated-time-delivery').value;
         const estimatedTimePickup = document.getElementById('set-estimated-time-pickup').value;
+        const pdvPassword = document.getElementById('set-pdv-password').value.trim();
 
         // Coletar horários (v5: 2 turnos)
         const hours = {};
@@ -903,11 +903,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     extraInfo: document.getElementById('set-extra-info').value,
                     estimatedTimeDelivery,
                     estimatedTimePickup,
-                    pdvPassword: document.getElementById('set-pdv-password').value // Novo campo
+                    pdvPassword: document.getElementById('set-pdv-password').value.trim()
                 })
             });
 
             if (response.error) throw new Error(response.error);
+
+            // Atualiza os dados locais para refletir o que foi salvo
+            tenantData.pdvPassword = document.getElementById('set-pdv-password').value.trim();
+            localStorage.setItem('tenant_data', JSON.stringify(tenantData));
 
             tenantData.logoUrl = logoUrl;
             tenantData.primaryColor = primaryColor;
