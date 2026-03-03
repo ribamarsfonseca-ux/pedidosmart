@@ -201,6 +201,24 @@
 
                 <div id="addressFields" style="display: none;">
 
+                    <!-- Novo Card de Ajuste de Endereço no Checkout -->
+                    <div id="checkoutAddressCard" onclick="openLocationModal()"
+                        style="background: #fdf2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                            <span style="font-size: 1.3rem;">📍</span>
+                            <div style="overflow: hidden;">
+                                <p
+                                    style="margin: 0; font-size: 0.7rem; color: #b91c1c; font-weight: 700; text-transform: uppercase;">
+                                    Local de Entrega</p>
+                                <p id="checkoutAddressLabel"
+                                    style="margin: 0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333;">
+                                    Ajustar no mapa...</p>
+                            </div>
+                        </div>
+                        <span
+                            style="color: #ef4444; font-size: 0.7rem; font-weight: 800; border: 1.5px solid #ef4444; padding: 4px 8px; border-radius: 6px;">EDITAR</span>
+                    </div>
+
                     <div class="form-group">
                         <label>Rua</label>
                         <input type="text" id="custStreet" placeholder="Nome da rua"

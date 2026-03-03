@@ -33,8 +33,10 @@ async function loadPublicConfigs() {
 
 function initLocationUI() {
     const label = document.getElementById('currentAddressLabel');
+    const checkoutLabel = document.getElementById('checkoutAddressLabel');
     if (userLocation && userLocation.address) {
         label.textContent = userLocation.address;
+        if (checkoutLabel) checkoutLabel.textContent = userLocation.address;
         updateDeliveryFee();
     }
 }
@@ -707,24 +709,18 @@ window.toggleAddressFields = async () => {
     if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
 
     if (type === 'delivery') {
-        const btn = document.getElementById('btnGetLocation');
         if (userLocation) {
             updateDeliveryFee();
-            if (btn) {
-                btn.innerHTML = '<span>✅</span> Localização Obtida';
-                btn.style.backgroundColor = '#059669';
-                btn.disabled = true;
+            // Preencher campos se vazios
+            if (document.getElementById('custStreet') && !document.getElementById('custStreet').value) {
+                const parts = userLocation.address.split(',');
+                document.getElementById('custStreet').value = parts[0]?.trim() || '';
+                document.getElementById('custNumber').value = parts[1]?.trim() || '';
+                document.getElementById('custDistrict').value = parts[2]?.trim() || '';
             }
         } else {
-            // Reseta o botão caso não tenha localização ainda
-            if (btn) {
-                btn.innerHTML = '<span>🛰️</span> Usar Minha Localização Exata';
-                btn.style.backgroundColor = '#16a34a';
-                btn.disabled = false;
-            }
-            // Valor padrão até calcular
-            calculatedDeliveryFee = restaurant.deliveryFee || 0;
-            updateCartTotalUI();
+            // Se não tem localização, abre o modal automaticamente para facilitar
+            openLocationModal();
         }
     } else {
         calculatedDeliveryFee = 0;
@@ -732,58 +728,22 @@ window.toggleAddressFields = async () => {
     }
 };
 
-window.requestLocationManual = () => {
-    const btn = document.getElementById('btnGetLocation');
-    if (btn) {
-        btn.innerHTML = '<span>⏳</span> Obtendo localização...';
-        btn.disabled = true;
-    }
-
-    const modalTotal = document.getElementById('modalTotal');
-    if (modalTotal) modalTotal.innerHTML = '<span style="color:var(--primary); font-size:1rem; font-weight: 500;">Calculando frete...</span>';
-
-    if (!navigator.geolocation) {
-        fallbackLocationError(btn, 'Geolocalização não suportada no seu navegador.');
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        userLocation = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-        };
-        console.log('Localização obtida manualmente:', userLocation);
-
-        if (btn) {
-            btn.innerHTML = '<span>✅</span> Localização Obtida';
-            btn.style.backgroundColor = '#059669';
-        }
-
-        updateDeliveryFee();
-    }, (error) => {
-        console.error('Erro ao obter localização:', error);
-        fallbackLocationError(btn, 'Não foi possível acessar sua localização. Você pode tentar reiniciar o cardápio ou permiti-la nas configurações.');
-    }, { timeout: 10000, enableHighAccuracy: true });
-};
-
-function fallbackLocationError(btn, msg) {
-    alert(msg + '\n\nA taxa padrão da loja será aplicada.');
-    if (btn) {
-        btn.innerHTML = '<span>⚠️</span> Tentar Novamente';
-        btn.style.backgroundColor = '#d97706'; // Âmbar para erro recuperável
-        btn.disabled = false;
-    }
-    calculatedDeliveryFee = restaurant.deliveryFee || 0;
-    updateCartTotalUI();
-}
 
 window.openLocationModal = () => {
+    // Inicializar tempLocation com a localização atual para evitar erro de "escolha endereço"
+    if (userLocation) tempLocation = { ...userLocation };
+
     document.getElementById('locationModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
     // Pequeno delay para garantir que o container do mapa esteja visível antes de carregar
     setTimeout(() => {
         initLocationMap();
+        // Se já temos endereço no autocomplete, preencher o input inicial do modal
+        if (userLocation && userLocation.address) {
+            const input = document.getElementById('addressAutocomplete');
+            if (input) input.value = userLocation.address;
+        }
     }, 100);
 };
 
@@ -874,22 +834,42 @@ window.selectAddress = (lat, lon, address) => {
 };
 
 window.confirmLocation = () => {
+    // Verificação robusta: se não tem temp nem user, aí sim avisa
     if (!tempLocation && !userLocation) {
         alert('Por favor, selecione um endereço no mapa ou na busca.');
         return;
     }
 
+    // Prioriza tempLocation (ajuste atual) sobre userLocation (antigo)
     userLocation = tempLocation || userLocation;
+
+    // Garantir que temos o objeto correto
+    if (!userLocation.address) {
+        alert('Endereço incompleto. Por favor selecione novamente no mapa.');
+        return;
+    }
+
     localStorage.setItem('userLocation', JSON.stringify(userLocation));
 
+    // Atualizar Labels
     document.getElementById('currentAddressLabel').textContent = userLocation.address;
+    const checkoutLabel = document.getElementById('checkoutAddressLabel');
+    if (checkoutLabel) checkoutLabel.textContent = userLocation.address;
 
-    // Preencher campos do checkout se estiverem visíveis
+    // Preencher campos do checkout de forma inteligente
     if (document.getElementById('custStreet')) {
         const parts = userLocation.address.split(',');
+        // Formato tipicamente: Rua, Número, Bairro, CEP...
         document.getElementById('custStreet').value = parts[0]?.trim() || '';
-        document.getElementById('custNumber').value = parts[1]?.trim() || '';
-        document.getElementById('custDistrict').value = parts[2]?.trim() || '';
+
+        // Tenta pegar o número se parecer um número, senão deixa vazio pro cliente preencher
+        const secondPart = parts[1]?.trim() || '';
+        if (/\d/.test(secondPart)) {
+            document.getElementById('custNumber').value = secondPart;
+            document.getElementById('custDistrict').value = parts[2]?.trim() || '';
+        } else {
+            document.getElementById('custDistrict').value = secondPart;
+        }
     }
 
     updateDeliveryFee();
