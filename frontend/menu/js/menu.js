@@ -1,10 +1,45 @@
-const API_URL = '/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : '/api';
+
+// Global State
 let cart = [];
 let restaurant = null;
-let userLocation = null;
+let userLocation = JSON.parse(localStorage.getItem('userLocation')) || null;
 let calculatedDeliveryFee = 0;
+let map = null;
+let marker = null;
+let favorites = JSON.parse(localStorage.getItem('locationFavorites')) || { home: null, work: null };
+let geoapifyApiKey = ''; // Loaded from public configs
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await loadPublicConfigs();
+    await loadTenantData();
+    initLocationUI();
+});
+
+async function loadPublicConfigs() {
+    try {
+        const res = await fetch(`${API_URL}/tenants/public-configs`).then(r => r.json());
+        if (res.geoapifyApiKey) {
+            geoapifyApiKey = res.geoapifyApiKey;
+        }
+        // Cache dev info for error screen
+        window.devConfigs = res;
+    } catch (e) {
+        console.error('Erro ao carregar configs públicas');
+    }
+}
+
+function initLocationUI() {
+    const label = document.getElementById('currentAddressLabel');
+    if (userLocation && userLocation.address) {
+        label.textContent = userLocation.address;
+        updateDeliveryFee();
+    }
+}
+
+async function loadTenantData() {
     // 1. Get Slug from Subdomain or Hash
     let slug = window.location.hash.substring(1);
 
@@ -38,12 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error(error);
 
-        let devData = {};
-        try {
-            const configRes = await fetch(`${API_URL}/tenants/public-configs`);
-            devData = await configRes.json();
-        } catch (e) { }
-
+        const devData = window.devConfigs || {};
         const devPhone = devData.devPhone || '';
         const devEmail = devData.devEmail || '';
         const devName = devData.devName || 'Suporte SmartPede';
@@ -69,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
     }
-});
+}
 
 function applyTheme(color) {
     const r = parseInt(color.slice(1, 3), 16);
@@ -677,11 +707,24 @@ window.toggleAddressFields = async () => {
     if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
 
     if (type === 'delivery') {
-        // Solicitar localização se ainda não tiver
-        if (!userLocation) {
-            requestUserLocation();
-        } else {
+        const btn = document.getElementById('btnGetLocation');
+        if (userLocation) {
             updateDeliveryFee();
+            if (btn) {
+                btn.innerHTML = '<span>✅</span> Localização Obtida';
+                btn.style.backgroundColor = '#059669';
+                btn.disabled = true;
+            }
+        } else {
+            // Reseta o botão caso não tenha localização ainda
+            if (btn) {
+                btn.innerHTML = '<span>🛰️</span> Usar Minha Localização Exata';
+                btn.style.backgroundColor = '#16a34a';
+                btn.disabled = false;
+            }
+            // Valor padrão até calcular
+            calculatedDeliveryFee = restaurant.deliveryFee || 0;
+            updateCartTotalUI();
         }
     } else {
         calculatedDeliveryFee = 0;
@@ -689,9 +732,18 @@ window.toggleAddressFields = async () => {
     }
 };
 
-async function requestUserLocation() {
+window.requestLocationManual = () => {
+    const btn = document.getElementById('btnGetLocation');
+    if (btn) {
+        btn.innerHTML = '<span>⏳</span> Obtendo localização...';
+        btn.disabled = true;
+    }
+
+    const modalTotal = document.getElementById('modalTotal');
+    if (modalTotal) modalTotal.innerHTML = '<span style="color:var(--primary); font-size:1rem; font-weight: 500;">Calculando frete...</span>';
+
     if (!navigator.geolocation) {
-        console.log('Geolocalização não suportada.');
+        fallbackLocationError(btn, 'Geolocalização não suportada no seu navegador.');
         return;
     }
 
@@ -700,15 +752,164 @@ async function requestUserLocation() {
             lat: position.coords.latitude,
             lon: position.coords.longitude
         };
-        console.log('Localização obtida:', userLocation);
+        console.log('Localização obtida manualmente:', userLocation);
+
+        if (btn) {
+            btn.innerHTML = '<span>✅</span> Localização Obtida';
+            btn.style.backgroundColor = '#059669';
+        }
+
         updateDeliveryFee();
     }, (error) => {
         console.error('Erro ao obter localização:', error);
-        // Fallback para taxa fixa se der erro
-        calculatedDeliveryFee = restaurant.deliveryFee || 0;
-        updateCartTotalUI();
+        fallbackLocationError(btn, 'Não foi possível acessar sua localização. Você pode tentar reiniciar o cardápio ou permiti-la nas configurações.');
+    }, { timeout: 10000, enableHighAccuracy: true });
+};
+
+function fallbackLocationError(btn, msg) {
+    alert(msg + '\n\nA taxa padrão da loja será aplicada.');
+    if (btn) {
+        btn.innerHTML = '<span>⚠️</span> Tentar Novamente';
+        btn.style.backgroundColor = '#d97706'; // Âmbar para erro recuperável
+        btn.disabled = false;
+    }
+    calculatedDeliveryFee = restaurant.deliveryFee || 0;
+    updateCartTotalUI();
+}
+
+window.openLocationModal = () => {
+    document.getElementById('locationModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Pequeno delay para garantir que o container do mapa esteja visível antes de carregar
+    setTimeout(() => {
+        initLocationMap();
+    }, 100);
+};
+
+window.closeLocationModal = () => {
+    document.getElementById('locationModal').style.display = 'none';
+    document.body.style.overflow = '';
+};
+
+function initLocationMap() {
+    if (map) {
+        map.invalidateSize();
+        return;
+    }
+
+    const defaultLat = restaurant?.lat || -23.55052;
+    const defaultLon = restaurant?.lon || -46.633308;
+    const startPos = userLocation ? [userLocation.lat, userLocation.lon] : [defaultLat, defaultLon];
+
+    map = L.map('locationMap').setView(startPos, 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    marker = L.marker(startPos, { draggable: true }).addTo(map);
+
+    marker.on('dragend', function (e) {
+        const pos = marker.getLatLng();
+        reverseGeocode(pos.lat, pos.lng);
     });
 }
+
+async function reverseGeocode(lat, lon) {
+    if (!geoapifyApiKey) return;
+    try {
+        const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${geoapifyApiKey}`;
+        const res = await fetch(url).then(r => r.json());
+
+        if (res.features && res.features.length > 0) {
+            const props = res.features[0].properties;
+            const address = `${props.street || ''}, ${props.housenumber || ''}, ${props.suburb || ''}`.replace(/,,/g, ',').trim();
+            document.getElementById('addressAutocomplete').value = address;
+            tempLocation = { lat, lon, address };
+        }
+    } catch (e) {
+        console.error('Erro no reverse geocoding:', e);
+    }
+}
+
+let tempLocation = null;
+window.handleAddressAutocomplete = async (value) => {
+    if (!geoapifyApiKey || value.length < 3) {
+        document.getElementById('autocompleteResults').style.display = 'none';
+        return;
+    }
+
+    try {
+        const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(value)}&apiKey=${geoapifyApiKey}`;
+        const res = await fetch(url).then(r => r.json());
+
+        const resultsDiv = document.getElementById('autocompleteResults');
+        if (res.features && res.features.length > 0) {
+            resultsDiv.innerHTML = res.features.map(f => `
+                <div class="list-group-item" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" 
+                     onclick="selectAddress(${f.properties.lat}, ${f.properties.lon}, '${f.properties.formatted.replace(/'/g, "\\'")}')">
+                    ${f.properties.formatted}
+                </div>
+            `).join('');
+            resultsDiv.style.display = 'block';
+        } else {
+            resultsDiv.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('Erro no autocomplete:', e);
+    }
+};
+
+window.selectAddress = (lat, lon, address) => {
+    tempLocation = { lat, lon, address };
+    document.getElementById('addressAutocomplete').value = address;
+    document.getElementById('autocompleteResults').style.display = 'none';
+
+    if (map && marker) {
+        const pos = [lat, lon];
+        map.setView(pos, 16);
+        marker.setLatLng(pos);
+    }
+};
+
+window.confirmLocation = () => {
+    if (!tempLocation && !userLocation) {
+        alert('Por favor, selecione um endereço no mapa ou na busca.');
+        return;
+    }
+
+    userLocation = tempLocation || userLocation;
+    localStorage.setItem('userLocation', JSON.stringify(userLocation));
+
+    document.getElementById('currentAddressLabel').textContent = userLocation.address;
+
+    // Preencher campos do checkout se estiverem visíveis
+    if (document.getElementById('custStreet')) {
+        const parts = userLocation.address.split(',');
+        document.getElementById('custStreet').value = parts[0]?.trim() || '';
+        document.getElementById('custNumber').value = parts[1]?.trim() || '';
+        document.getElementById('custDistrict').value = parts[2]?.trim() || '';
+    }
+
+    updateDeliveryFee();
+    closeLocationModal();
+};
+
+window.selectFavorite = (type) => {
+    const fav = favorites[type];
+    if (fav) {
+        selectAddress(fav.lat, fav.lon, fav.address);
+    } else {
+        if (!userLocation) {
+            alert('Selecione uma localização primeiro para salvá-á como favorita.');
+            return;
+        }
+        favorites[type] = userLocation;
+        localStorage.setItem('locationFavorites', JSON.stringify(favorites));
+        alert(`${type === 'home' ? 'Casa' : 'Trabalho'} salvo com sucesso!`);
+    }
+};
 
 async function updateDeliveryFee() {
     if (!userLocation || !restaurant) return;
@@ -717,16 +918,13 @@ async function updateDeliveryFee() {
         const url = `${API_URL}/tenants/calcular-entrega?restauranteId=${restaurant.id}&latDestino=${userLocation.lat}&lonDestino=${userLocation.lon}`;
         const res = await fetch(url).then(r => r.json());
 
-        if (res.success) {
+        if (res.price !== undefined) {
             calculatedDeliveryFee = res.price;
             updateCartTotalUI();
         } else {
             console.warn('Erro no cálculo de frete:', res.error);
             calculatedDeliveryFee = restaurant.deliveryFee || 0;
             updateCartTotalUI();
-            if (res.error && res.error.includes('raio máximo')) {
-                alert('Atenção: Seu endereço parece estar fora do nosso raio de entrega.');
-            }
         }
     } catch (e) {
         console.error('Erro ao chamar API de frete:', e);

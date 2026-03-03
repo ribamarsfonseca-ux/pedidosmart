@@ -402,7 +402,9 @@ export const getPublicConfigs = async (req: Request, res: Response): Promise<voi
             }
         });
 
-        const result: any = {};
+        const result: any = {
+            geoapifyApiKey: process.env.GEOAPIFY_API_KEY || ''
+        };
         configs.forEach(c => result[c.key] = c.value);
 
         res.json(result);

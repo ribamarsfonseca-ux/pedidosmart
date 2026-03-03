@@ -6,7 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Cardápio Digital | SmartPede</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/menu.css">
+    <link rel="stylesheet" href="./css/menu.css?v=2.1">
+
+    <!-- Leaflet.js for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 </head>
 
 <body>
@@ -18,6 +23,23 @@
             <p>Carregando Cardápio...</p>
         </div>
     </div>
+
+    <!-- iFood Style Address Header -->
+    <header id="addressHeader"
+        style="background: white; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 800; cursor: pointer;"
+        onclick="openLocationModal()">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">📍</span>
+            <div style="overflow: hidden;">
+                <p style="margin: 0; font-size: 0.7rem; color: #888; font-weight: 600; text-transform: uppercase;">
+                    Entregar em</p>
+                <p id="currentAddressLabel"
+                    style="margin: 0; font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    Selecionar endereço...</p>
+            </div>
+        </div>
+        <span style="color: var(--primary); font-size: 0.8rem;">Alterar</span>
+    </header>
 
     <!-- Header -->
     <header class="menu-header">
@@ -178,6 +200,7 @@
                 </div>
 
                 <div id="addressFields" style="display: none;">
+
                     <div class="form-group">
                         <label>Rua</label>
                         <input type="text" id="custStreet" placeholder="Nome da rua"
@@ -223,7 +246,51 @@
         </div>
     </div>
 
-    <script src="./js/menu.js?v=1.7"></script>
+    <!-- v6 Location Selection Modal -->
+    <div class="cart-modal" id="locationModal" style="z-index: 1100;">
+        <div class="cart-modal-header">
+            <h2>Onde você está?</h2>
+            <button onclick="closeLocationModal()"
+                style="background: none; border: none; font-size: 1.5rem;">&times;</button>
+        </div>
+
+        <div style="padding: 15px; flex: 1; overflow-y: auto;">
+            <!-- Autocomplete Search -->
+            <div class="form-group" style="position: relative;">
+                <input type="text" id="addressAutocomplete" placeholder="Buscar rua e número..."
+                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 1rem;"
+                    oninput="handleAddressAutocomplete(this.value)">
+                <div id="autocompleteResults"
+                    style="position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10; display: none;">
+                </div>
+            </div>
+
+            <!-- Manual Pin Selection -->
+            <div style="margin-bottom: 20px;">
+                <div id="locationMap"
+                    style="height: 200px; border-radius: 12px; background: #eee; margin-bottom: 10px;"></div>
+                <p style="font-size: 0.75rem; color: #666; text-align: center;">Arraste o mapa para ajustar o pino no
+                    local exato</p>
+            </div>
+
+            <!-- Favorites -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button onclick="selectFavorite('home')" class="btn-outline"
+                    style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px;">
+                    <span>🏠</span> <small>Casa</small>
+                </button>
+                <button onclick="selectFavorite('work')" class="btn-outline"
+                    style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px;">
+                    <span>💼</span> <small>Trabalho</small>
+                </button>
+            </div>
+
+            <button onclick="confirmLocation()" class="btn-checkout" id="btnConfirmLocation">Confirmar
+                Localização</button>
+        </div>
+    </div>
+
+    <script src="./js/menu.js?v=2.2"></script>
 </body>
 
 </html>

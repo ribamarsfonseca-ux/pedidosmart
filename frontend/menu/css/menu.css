@@ -261,3 +261,44 @@ body {
     justify-content: center;
     z-index: 9999;
 }
+
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #4B5563;
+}
+
+.btn-outline {
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.autocomplete-item:hover {
+    background: #f3f4f6;
+}
+
+#locationModal .btn-checkout {
+    margin-top: 1rem;
+}
+
+/* iFood Header Hover */
+#addressHeader:hover {
+    background: #f9fafb !important;
+}
