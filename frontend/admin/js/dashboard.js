@@ -371,30 +371,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderOrdersView() {
         return `
-            <div class="glass-card pdv-compact-view">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <h3>Monitor de Pedidos</h3>
-                        <span class="live-indicator"><span class="dot"></span> EM TEMPO REAL</span>
-                    </div>
-                </div>
-                <div class="orders-table-wrapper">
-                    <table class="compact-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Horário</th>
-                                <th>Cliente / Mesa</th>
-                                <th>Itens / Detalhes</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ordersList">
-                            <tr><td colspan="7" class="text-secondary">Carregando pedidos ativos...</td></tr>
-                        </tbody>
-                    </table>
+            <div class="orders-monitor">
+                <div class="order-card-grid" id="ordersList">
+                    <!-- Cards de pedidos ativos aqui -->
                 </div>
             </div>
         `;
@@ -414,27 +393,47 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = activeOrders.map(order => `
-                <tr class="order-row-compact" style="border-left: 4px solid ${getStatusColor(order.status)}">
-                    <td class="font-bold">#${order.orderNumber || order.id}</td>
-                    <td class="text-secondary" style="font-size: 0.8rem;">${new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td>
-                        <div class="client-name">${order.customerName}</div>
-                        <small class="text-secondary">${translateFulfillment(order.fulfillmentType)}</small>
-                    </td>
-                    <td>
-                        <div class="order-items-compact">
-                            ${order.items.map(item => `${item.quantity}x ${item.product.name}`).join(', ')}
+                <div class="order-card" style="border-left-color: ${getStatusColor(order.status)}">
+                    <div class="order-card-header">
+                        <div class="order-info">
+                            <h3>Pedido #${order.orderNumber || order.id}</h3>
+                            <div class="order-time">🕒 ${new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
-                        ${order.fulfillmentType === 'delivery' ? `<small class="address-badge">📍 ${order.addressDistrict || 'Entrega'}</small>` : ''}
-                    </td>
-                    <td class="font-bold">${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                    <td><span class="status-pill" style="background: ${getStatusColor(order.status)}22; color: ${getStatusColor(order.status)}">${translateStatus(order.status)}</span></td>
-                    <td class="actions-cell">
-                        <div style="display: flex; gap: 5px;">
-                            ${renderStatusActions(order)}
+                        <span class="status-pill" style="background: ${getStatusColor(order.status)}22; color: ${getStatusColor(order.status)}">
+                            ${translateStatus(order.status)}
+                        </span>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="order-client">👤 ${order.customerName}</div>
+                        <div class="order-fulfillment">
+                            <span>📍 ${translateFulfillment(order.fulfillmentType)}</span>
+                            ${order.fulfillmentType === 'delivery' ? `<span class="text-secondary">| ${order.addressDistrict || 'Bairro ñ inf.'}</span>` : ''}
                         </div>
-                    </td>
-                </tr>
+                        
+                        <div class="order-items-list">
+                            ${order.items.map(item => `
+                                <div class="order-item-row">
+                                    <span>${item.quantity}x ${item.product.name}</span>
+                                    <span class="text-secondary">${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="order-footer">
+                        <div class="order-total-label">Subtotal</div>
+                        <div class="order-total-value">${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    </div>
+
+                    <div class="order-actions">
+                        ${renderStatusActions(order)}
+                        <button class="btn-outline" style="font-size: 0.8rem; flex: 1;" onclick="printOrder(${order.id})">🖨️ Recibo</button>
+                        ${!['finished', 'cancelled', 'completed'].includes(order.status)
+                    ? `<button class="btn-outline" style="font-size: 0.8rem; border-color: #ef4444; color: #ef4444; flex: 1;" onclick="cancelOrderAdmin(${order.id})">🚫 Cancelar</button>`
+                    : ''}
+                    </div>
+                </div>
             `).join('');
 
         } catch (error) {
@@ -445,21 +444,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHistoryView() {
         return `
             <div class="glass-card">
-                <div class="orders-table-wrapper">
-                    <table class="compact-table">
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Data</th>
-                                <th>Cliente</th>
-                                <th>Tipo / Pagamento</th>
-                                <th>Itens</th>
-                                <th>Total</th>
-                                <th>Status</th>
+                            <tr style="border-bottom: 2px solid var(--background); color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">
+                                <th style="padding: 1rem 0.5rem;"># Pedido</th>
+                                <th style="padding: 1rem 0.5rem;">Data / Hora</th>
+                                <th style="padding: 1rem 0.5rem;">Cliente</th>
+                                <th style="padding: 1rem 0.5rem;">Tipo / Pgto</th>
+                                <th style="padding: 1rem 0.5rem;">Total</th>
+                                <th style="padding: 1rem 0.5rem;">Status</th>
                             </tr>
                         </thead>
                         <tbody id="historyList">
-                            <tr><td colspan="7" class="text-secondary">Carregando histórico...</td></tr>
+                            <!-- Histórico aqui -->
                         </tbody>
                     </table>
                 </div>
@@ -535,13 +533,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderStatusActions(order) {
         const actions = {
-            'pending': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'accepted')">Aceitar</button>`,
-            'accepted': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'preparing')">Iniciar Preparo</button>`,
-            'preparing': `<button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'ready')">Marcar Pronto</button>`,
+            'pending': `<button class="btn-outline" style="background: var(--primary); color: white; border: none; flex: 2;" onclick="updateStatus(${order.id}, 'accepted')">Aceitar Pedido</button>`,
+            'accepted': `<button class="btn-outline" style="border-color: var(--primary); color: var(--primary); flex: 2;" onclick="updateStatus(${order.id}, 'preparing')">Iniciar Preparo</button>`,
+            'preparing': `<button class="btn-outline" style="border-color: var(--primary); color: var(--primary); flex: 2;" onclick="updateStatus(${order.id}, 'ready')">Pedido Pronto</button>`,
             'ready': `
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn btn-primary btn-sm" style="background: #25D366; border-color: #25D366;" onclick="sendReadyNotification(${order.id})">📲 Notificar</button>
-                    <button class="btn btn-outline btn-sm" onclick="updateStatus(${order.id}, 'finished')">Finalizar</button>
+                <div style="display: flex; gap: 8px; flex: 2;">
+                    <button class="btn-outline" style="background: #25D366; border-color: #25D366; color: white; flex: 1;" onclick="sendReadyNotification(${order.id})">📲 Notificar</button>
+                    <button class="btn-outline" style="flex: 1;" onclick="updateStatus(${order.id}, 'finished')">Finalizar</button>
                 </div>
             `
         };
@@ -820,36 +818,76 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label>Sobre a Empresa / Descrição</label>
                     <textarea id="set-description" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Conte um pouco sobre sua empresa para seus clientes...">${tenantData.description || ''}</textarea>
                 </div>
-                <div class="form-group">
-                    <label>Pedido Mínimo e Taxas (R$)</label>
-                    <div class="grid-cols-4" style="gap: 10px;">
+                <div class="settings-section">
+                    <h3>🚀 Logística Inteligente</h3>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="set-accept-delivery" ${tenantData.acceptDelivery !== false ? 'checked' : ''}>
+                            <span class="slider round"></span>
+                        </label>
                         <div>
-                            <small>Consumo Local</small>
-                            <input type="number" id="min-dinein" step="0.01" value="${tenantData.minOrderDineIn || 0}">
+                            <div style="font-weight: 700;">Aceitar Pedidos de Delivery</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);">Habilite ou desabilite as opções de entrega no seu cardápio.</div>
                         </div>
-                        <div>
-                            <small>Retirada</small>
-                            <input type="number" id="min-pickup" step="0.01" value="${tenantData.minOrderPickup || 0}">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Taxa Fixa Base (R$)</label>
+                            <input type="number" id="delivery-fee" step="0.01" value="${tenantData.deliveryFee || 0}">
                         </div>
-                        <div>
-                            <small>Min. Delivery</small>
+                        <div class="form-group">
+                            <label>Valor p/ KM (R$)</label>
+                            <input type="number" id="set-valor-km" step="0.01" value="${tenantData.valorKm || 0}">
+                        </div>
+                        <div class="form-group">
+                            <label>Raio Máx. Entrega (KM)</label>
+                            <input type="number" id="set-raio-max" step="0.1" value="${tenantData.raioMaxKm || 0}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Latitude da Loja</label>
+                            <input type="number" id="set-lat" step="any" value="${tenantData.lat || ''}" placeholder="-23.5505">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude da Loja</label>
+                            <input type="number" id="set-lon" step="any" value="${tenantData.lon || ''}" placeholder="-46.6333">
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #666; margin-top: -10px;">Obtenha as coordenadas do seu restaurante no Google Maps.</p>
+                </div>
+
+                <div class="settings-section">
+                    <h3>💰 Pedidos Mínimos</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Delivery (R$)</label>
                             <input type="number" id="min-delivery" step="0.01" value="${tenantData.minOrderDelivery || 0}">
                         </div>
-                        <div>
-                            <small>Taxa de Entrega</small>
-                            <input type="number" id="delivery-fee" step="0.01" value="${tenantData.deliveryFee || 0}">
+                        <div class="form-group">
+                            <label>Retirada (R$)</label>
+                            <input type="number" id="min-pickup" step="0.01" value="${tenantData.minOrderPickup || 0}">
+                        </div>
+                        <div class="form-group">
+                            <label>Consumo Local (R$)</label>
+                            <input type="number" id="min-dinein" step="0.01" value="${tenantData.minOrderDineIn || 0}">
                         </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Cor Principal do Cardápio</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
-                        ${['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280', '#111827'].map(color => `
-                            <div onclick="selectThemeColor('${color}')" id="color-${color}" style="width: 35px; height: 35px; border-radius: 50%; background: ${color}; cursor: pointer; border: 3px solid ${tenantData.primaryColor === color ? '#fff' : 'transparent'}; box-shadow: 0 0 5px rgba(0,0,0,0.2);"></div>
-                        `).join('')}
+
+                <div class="settings-section">
+                    <h3>🎨 Visual do Cardápio</h3>
+                    <div class="form-group">
+                        <label>Cor Principal</label>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px;">
+                            ${['#4f46e5', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#6b7280', '#111827'].map(color => `
+                                <div onclick="selectThemeColor('${color}')" id="color-${color}" style="width: 38px; height: 38px; border-radius: 50%; background: ${color}; cursor: pointer; border: 3px solid ${tenantData.primaryColor === color ? '#fff' : 'transparent'}; box-shadow: 0 0 8px rgba(0,0,0,0.1);"></div>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="set-color" value="${tenantData.primaryColor || '#4f46e5'}">
                     </div>
-                    <input type="hidden" id="set-color" value="${tenantData.primaryColor || '#3b82f6'}">
-                    <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Escolha uma cor para personalizar o visual do seu cardápio online.</p>
                 </div>
                 <div class="form-group">
                     <label>WhatsApp de Contato (Ex: 5511999999999)</label>
@@ -964,7 +1002,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const facebookUrl = document.getElementById('set-facebook').value;
         const contactEmail = document.getElementById('set-email').value;
         const estimatedTimePickup = document.getElementById('set-estimated-time-pickup').value;
+        const estimatedTimeDelivery = document.getElementById('set-estimated-time-delivery').value;
         const pdvPassword = document.getElementById('set-pdv-password').value.trim();
+        const valorKm = parseFloat(document.getElementById('set-valor-km').value) || 0;
+        const raioMaxKm = parseFloat(document.getElementById('set-raio-max').value) || 0;
+        const lat = parseFloat(document.getElementById('set-lat').value) || null;
+        const lon = parseFloat(document.getElementById('set-lon').value) || null;
+        const acceptDelivery = document.getElementById('set-accept-delivery').checked;
 
         // Coletar horários (v5: 2 turnos)
         const hours = {};
@@ -1005,7 +1049,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     extraInfo: document.getElementById('set-extra-info').value,
                     estimatedTimeDelivery,
                     estimatedTimePickup,
-                    pdvPassword: document.getElementById('set-pdv-password').value.trim()
+                    pdvPassword,
+                    valorKm,
+                    raioMaxKm,
+                    lat,
+                    lon,
+                    acceptDelivery
                 })
             });
 
@@ -1035,6 +1084,11 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.estimatedTimeDelivery = estimatedTimeDelivery;
             tenantData.estimatedTimePickup = estimatedTimePickup;
             tenantData.pdvPassword = document.getElementById('set-pdv-password').value; // Novo campo
+            tenantData.acceptDelivery = acceptDelivery;
+            tenantData.valorKm = valorKm;
+            tenantData.raioMaxKm = raioMaxKm;
+            tenantData.lat = lat;
+            tenantData.lon = lon;
 
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
             alert('Configurações salvas! Recarregando...');
@@ -1119,6 +1173,31 @@ document.addEventListener('DOMContentLoaded', () => {
         e.disabled = !active;
         s.style.opacity = active ? '1' : '0.5';
         e.style.opacity = active ? '1' : '0.5';
+    };
+
+    // 8. Action Functions
+    window.printOrder = (id) => {
+        const token = localStorage.getItem('auth_token');
+        const url = `/api/orders/${id}/receipt?token=${token}`;
+        window.open(url, '_blank');
+    };
+
+    window.cancelOrderAdmin = async (id) => {
+        const reason = prompt('Motivo do cancelamento:');
+        if (reason === null) return;
+
+        try {
+            await apiFetch(`/orders/${id}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: 'cancelled',
+                    cancelReason: reason || 'Cancelado pelo administrador'
+                })
+            });
+            initOrdersView();
+        } catch (e) {
+            alert('Erro ao cancelar: ' + e.message);
+        }
     };
 
     window.changePassword = async () => {

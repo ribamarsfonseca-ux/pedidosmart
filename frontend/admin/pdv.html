@@ -604,7 +604,10 @@
                 });
 
                 if (res.ok) {
-                    alert('✅ Venda realizada com sucesso!');
+                    if (confirm('✅ Venda realizada com sucesso!\n\nDeseja imprimir o recibo?')) {
+                        const token = localStorage.getItem('pdv_token');
+                        window.open(`${API_URL}/orders/${result.order.id}/receipt?token=${token}`, '_blank');
+                    }
                     cart = [];
                     document.getElementById('cart-customer').value = '';
                     renderCart();

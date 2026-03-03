@@ -37,6 +37,14 @@ model Tenant {
   facebookUrl        String?
   contactEmail       String?
   pdvPassword        String?  // Senha para o Frente de Caixa (PDV)
+  
+  // Logistics v2 (Geoapify)
+  acceptDelivery     Boolean  @default(true)
+  valorKm            Float    @default(0)
+  raioMaxKm          Float    @default(0)
+  lat                Float?
+  lon                Float?
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

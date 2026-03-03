@@ -1,6 +1,8 @@
 const API_URL = '/api';
 let cart = [];
 let restaurant = null;
+let userLocation = null;
+let calculatedDeliveryFee = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Get Slug from Subdomain or Hash
@@ -100,6 +102,12 @@ function renderMenu(data) {
     const statusEl = document.getElementById('storeStatus');
     const hoursEl = document.getElementById('restHours');
     const estimatedTimeEl = document.getElementById('estimatedTimeDisplay');
+
+    // Desativar Delivery se configurado
+    if (data.acceptDelivery === false) {
+        const delOption = document.querySelector('#fulfillmentType option[value="delivery"]');
+        if (delOption) delOption.remove();
+    }
 
     // Perfil da Loja
     const populateProfile = () => {
@@ -663,22 +671,81 @@ window.repeatOrder = async (id) => {
     }
 };
 
-window.toggleAddressFields = () => {
+window.toggleAddressFields = async () => {
     const type = document.getElementById('fulfillmentType').value;
     const fields = document.getElementById('addressFields');
     if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
 
-    // Update Modal Total dynamically with Delivery Fee
+    if (type === 'delivery') {
+        // Solicitar localização se ainda não tiver
+        if (!userLocation) {
+            requestUserLocation();
+        } else {
+            updateDeliveryFee();
+        }
+    } else {
+        calculatedDeliveryFee = 0;
+        updateCartTotalUI();
+    }
+};
+
+async function requestUserLocation() {
+    if (!navigator.geolocation) {
+        console.log('Geolocalização não suportada.');
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        userLocation = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+        };
+        console.log('Localização obtida:', userLocation);
+        updateDeliveryFee();
+    }, (error) => {
+        console.error('Erro ao obter localização:', error);
+        // Fallback para taxa fixa se der erro
+        calculatedDeliveryFee = restaurant.deliveryFee || 0;
+        updateCartTotalUI();
+    });
+}
+
+async function updateDeliveryFee() {
+    if (!userLocation || !restaurant) return;
+
+    try {
+        const url = `${API_URL}/tenants/calcular-entrega?restauranteId=${restaurant.id}&latDestino=${userLocation.lat}&lonDestino=${userLocation.lon}`;
+        const res = await fetch(url).then(r => r.json());
+
+        if (res.success) {
+            calculatedDeliveryFee = res.price;
+            updateCartTotalUI();
+        } else {
+            console.warn('Erro no cálculo de frete:', res.error);
+            calculatedDeliveryFee = restaurant.deliveryFee || 0;
+            updateCartTotalUI();
+            if (res.error && res.error.includes('raio máximo')) {
+                alert('Atenção: Seu endereço parece estar fora do nosso raio de entrega.');
+            }
+        }
+    } catch (e) {
+        console.error('Erro ao chamar API de frete:', e);
+        calculatedDeliveryFee = restaurant.deliveryFee || 0;
+        updateCartTotalUI();
+    }
+}
+
+function updateCartTotalUI() {
     const modalTotal = document.getElementById('modalTotal');
     const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const fee = (type === 'delivery' && restaurant.deliveryFee) ? restaurant.deliveryFee : 0;
+    const fee = calculatedDeliveryFee;
 
     if (modalTotal) {
         modalTotal.innerHTML = fee > 0
             ? `R$ ${(itemsPrice).toFixed(2).replace('.', ',')} <small class="text-secondary">+ R$ ${fee.toFixed(2).replace('.', ',')} (entrega)</small>`
             : (itemsPrice + fee).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
-};
+}
 
 async function checkout() {
     const name = document.getElementById('custName').value.trim();
@@ -699,7 +766,7 @@ async function checkout() {
         return;
     }
 
-    const fee = (fulfillmentType === 'delivery' && restaurant.deliveryFee) ? restaurant.deliveryFee : 0;
+    const fee = calculatedDeliveryFee;
     const totalPrice = itemsPrice + fee;
 
     // Coletar campos de endereço se for delivery

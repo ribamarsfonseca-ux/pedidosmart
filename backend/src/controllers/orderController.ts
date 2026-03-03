@@ -120,7 +120,7 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
     try {
         const tenantId = req.user?.tenantId;
         const { id } = req.params;
-        const { status } = req.body; // pending, accepted, preparing, ready, completed, cancelled
+        const { status, cancelReason } = req.body; // pending, accepted, preparing, ready, completed, cancelled
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
@@ -136,7 +136,10 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
 
         const order = await prisma.order.update({
             where: { id: parseInt(id as string) },
-            data: { status: status as string },
+            data: {
+                status: status as string,
+                cancelReason: cancelReason as string || undefined
+            },
             include: {
                 items: {
                     include: { product: { select: { name: true } } }

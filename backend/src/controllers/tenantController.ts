@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient';
-import { calcularFreteGeoapify } from '../services/deliveryService';
+import { calcularFreteGeoapify } from '../services/logisticsService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
@@ -137,9 +137,12 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 readyMessage: true,
                 extraInfo: true,
                 estimatedTime: true,
-                estimatedTimeDelivery: true,
                 estimatedTimePickup: true,
                 pdvPassword: true,
+                valorKm: true,
+                raioMaxKm: true,
+                lat: true,
+                lon: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
@@ -187,7 +190,12 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
             estimatedTime,
             estimatedTimeDelivery,
             estimatedTimePickup,
-            pdvPassword
+            pdvPassword,
+            acceptDelivery,
+            valorKm,
+            raioMaxKm,
+            lat,
+            lon
         } = req.body;
 
         if (!tenantId) {
@@ -218,7 +226,12 @@ export const updateTenant = async (req: Request, res: Response): Promise<void> =
                 estimatedTime,
                 estimatedTimeDelivery,
                 estimatedTimePickup,
-                pdvPassword
+                pdvPassword,
+                acceptDelivery: acceptDelivery !== undefined ? Boolean(acceptDelivery) : true,
+                valorKm: valorKm ? parseFloat(valorKm.toString()) : 0,
+                raioMaxKm: raioMaxKm ? parseFloat(raioMaxKm.toString()) : 0,
+                lat: lat ? parseFloat(lat.toString()) : null,
+                lon: lon ? parseFloat(lon.toString()) : null
             }
         });
 
@@ -410,40 +423,30 @@ export const getDeliveryFee = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        // Mock de configurações do restaurante (Em um cenário real, buscaria do Banco pelo restauranteId)
-        // Simulando que buscamos as coordenadas da matriz e as regras de preço do tenant
-        const mockConfigRestaurante = {
-            id: Number(restauranteId),
-            latOrigem: -23.55052,  // Exemplo: São Paulo Centro
-            lonOrigem: -46.633308,
-            raio_max_km: 15,       // Raio máximo de 15km
-            taxa_fixa: 5.00,       // R$ 5,00 base
-            valor_km: 1.50         // R$ 1,50 por KM rodado
-        };
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: Number(restauranteId) }
+        });
 
-        const resultado = await calcularFreteGeoapify(
-            mockConfigRestaurante.latOrigem,
-            mockConfigRestaurante.lonOrigem,
-            Number(latDestino),
-            Number(lonDestino),
-            {
-                raio_max_km: mockConfigRestaurante.raio_max_km,
-                taxa_fixa: mockConfigRestaurante.taxa_fixa,
-                valor_km: mockConfigRestaurante.valor_km
-            }
-        );
-
-        if (!resultado.success) {
-            res.status(400).json(resultado);
+        if (!tenant || !tenant.lat || !tenant.lon) {
+            res.status(400).json({ error: 'Configuração de geolocalização da loja incompleta.' });
             return;
         }
 
-        res.json({
-            restauranteId: mockConfigRestaurante.id,
-            ...resultado
-        });
+        const resultado = await calcularFreteGeoapify(
+            Number(latDestino),
+            Number(lonDestino),
+            {
+                lat: tenant.lat,
+                lon: tenant.lon,
+                deliveryFee: tenant.deliveryFee,
+                valorKm: tenant.valorKm,
+                raioMaxKm: tenant.raioMaxKm
+            }
+        );
+
+        res.json(resultado);
 
     } catch (error: any) {
-        res.status(500).json({ error: error.message || 'Erro interno ao calcular frete.' });
+        res.status(500).json({ error: 'Erro interno ao calcular frete.' });
     }
 };
