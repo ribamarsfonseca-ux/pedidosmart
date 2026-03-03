@@ -5,12 +5,15 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     try {
         const tenantId = req.user?.tenantId;
 
-        if (!tenantId) res.status(401).json({ error: 'Não autorizado' });
+        if (!tenantId) {
+            res.status(401).json({ error: 'Não autorizado' });
+            return;
+        }
 
         const products = await prisma.product.findMany({
             where: { tenantId },
             include: { category: { select: { name: true } } },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { order: 'asc' },
         });
 
         res.json(products);
@@ -23,7 +26,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 export const createProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
-        const { name, description, price, imageUrl, categoryId, active } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
         if (!name || price === undefined || !categoryId) {
@@ -33,7 +36,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 
         // Verify category belongs to tenant
         const categoryExists = await prisma.category.findFirst({
-            where: { id: parseInt(categoryId), tenantId }
+            where: { id: parseInt(categoryId as string), tenantId }
         });
 
         if (!categoryExists) {
@@ -44,12 +47,13 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
         const product = await prisma.product.create({
             data: {
                 tenantId,
-                categoryId: parseInt(categoryId),
+                categoryId: parseInt(categoryId as string),
                 name,
                 description,
-                price: parseFloat(price),
+                price: parseFloat(price as string),
                 imageUrl,
                 active: active !== undefined ? active : true,
+                order: order !== undefined ? parseInt(order as string) : 0,
             },
         });
 
@@ -64,7 +68,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
     try {
         const tenantId = req.user?.tenantId;
         const { id } = req.params;
-        const { name, description, price, imageUrl, categoryId, active } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
@@ -79,7 +83,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
 
         if (categoryId) {
             const categoryExists = await prisma.category.findFirst({
-                where: { id: parseInt(categoryId), tenantId }
+                where: { id: parseInt(categoryId as string), tenantId }
             });
             if (!categoryExists) {
                 res.status(400).json({ error: 'Categoria inválida' });
@@ -90,12 +94,13 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
         const product = await prisma.product.update({
             where: { id: parseInt(id) },
             data: {
-                categoryId: categoryId !== undefined ? parseInt(categoryId) : existingProduct.categoryId,
+                categoryId: categoryId !== undefined ? parseInt(categoryId as string) : existingProduct.categoryId,
                 name: name !== undefined ? name : existingProduct.name,
                 description: description !== undefined ? description : existingProduct.description,
-                price: price !== undefined ? parseFloat(price) : existingProduct.price,
+                price: price !== undefined ? parseFloat(price as string) : existingProduct.price,
                 imageUrl: imageUrl !== undefined ? imageUrl : existingProduct.imageUrl,
                 active: active !== undefined ? active : existingProduct.active,
+                order: order !== undefined ? parseInt(order as string) : (existingProduct as any).order || 0,
             },
         });
 

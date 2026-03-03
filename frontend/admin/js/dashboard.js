@@ -623,9 +623,12 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML = `
                 <div class="category-item active" onclick="filterByCategory(null, this)">Todos os Produtos</div>
                 ${categories.map(c => `
-                    <div class="category-item" onclick="filterByCategory(${c.id}, this)">
-                        ${c.name}
-                        <button class="btn-text" onclick="event.stopPropagation(); deleteCategory(${c.id})">&times;</button>
+                    <div class="category-item" onclick="filterByCategory(${c.id}, this)" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${c.name} <small class="text-secondary">(Ord: ${c.order})</small></span>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn-text" style="color: var(--primary);" onclick="event.stopPropagation(); openEditCategoryModal(${JSON.stringify(c).replace(/"/g, '&quot;')})">✏️</button>
+                            <button class="btn-text" onclick="event.stopPropagation(); deleteCategory(${c.id})">&times;</button>
+                        </div>
                     </div>
                 `).join('')}
             `;
@@ -680,7 +683,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span style="font-size: 0.75rem; margin-left: 5px; color: ${p.active ? 'var(--primary)' : '#666'};">${p.active ? 'Ativo' : 'Inativo'}</span>
                                 </td>
                                 <td>
-                                    <button class="btn-text" onclick="deleteProduct(${p.id})">Remover</button>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn-text" style="color: var(--primary);" onclick="openEditProductModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">✏️ Editar</button>
+                                        <button class="btn-text" style="color: #ef4444;" onclick="deleteProduct(${p.id})">Excluir</button>
+                                    </div>
                                 </td>
                             </tr>
                         `).join('')}
@@ -725,9 +731,30 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `, 'Criar Categoria', async () => {
             const name = document.getElementById('newCatName').value;
-            const order = parseInt(document.getElementById('newCatOrder').value);
+            const order = parseInt(document.getElementById('newCatOrder').value) || 0;
             await apiFetch('/categories', {
                 method: 'POST',
+                body: JSON.stringify({ name, order })
+            });
+            loadCategories();
+        });
+    };
+
+    window.openEditCategoryModal = (cat) => {
+        renderModal('Editar Categoria', `
+            <div class="form-group">
+                <label>Nome da Categoria</label>
+                <input type="text" id="editCatName" value="${cat.name}">
+            </div>
+            <div class="form-group">
+                <label>Ordem de Exibição</label>
+                <input type="number" id="editCatOrder" value="${cat.order || 0}">
+            </div>
+        `, 'Salvar Alterações', async () => {
+            const name = document.getElementById('editCatName').value;
+            const order = parseInt(document.getElementById('editCatOrder').value) || 0;
+            await apiFetch(`/categories/${cat.id}`, {
+                method: 'PUT',
                 body: JSON.stringify({ name, order })
             });
             loadCategories();
@@ -773,8 +800,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="form-group">
-                <label>Link da Imagem do Produto (Opcional)</label>
-                <input type="text" id="pImg" placeholder="https://...">
+                <label>Link da Imagem do Produto (Aceita qualquer URL)</label>
+                <input type="text" id="pImg" placeholder="https://exemplo.com/imagem.png">
+                <small class="text-secondary">Você pode usar links do Imgur, PostImages, Google Drive, etc.</small>
+            </div>
+            <div class="form-group">
+                <label>Ordem de Exibição</label>
+                <input type="number" id="pOrder" value="0">
             </div>
         `, 'Salvar Produto', async () => {
             const payload = {
@@ -782,10 +814,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 description: document.getElementById('pDesc').value,
                 price: parseFloat(document.getElementById('pPrice').value),
                 categoryId: parseInt(document.getElementById('pCat').value),
-                imageUrl: document.getElementById('pImg').value
+                imageUrl: document.getElementById('pImg').value,
+                order: parseInt(document.getElementById('pOrder').value) || 0
             };
             await apiFetch('/products', {
                 method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            loadProducts();
+        });
+    };
+
+    window.openEditProductModal = (product) => {
+        renderModal('Editar Produto', `
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="pNameEdit" value="${product.name}" required>
+            </div>
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="pDescEdit" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem;">${product.description || ''}</textarea>
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Preço</label>
+                    <input type="number" id="pPriceEdit" step="0.01" value="${product.price}" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="pCatEdit" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                        ${window.categories.map(c => `<option value="${c.id}" ${c.id === product.categoryId ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Link da Imagem do Produto</label>
+                <input type="text" id="pImgEdit" value="${product.imageUrl || ''}" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Ordem de Exibição</label>
+                <input type="number" id="pOrderEdit" value="${product.order || 0}">
+            </div>
+        `, 'Salvar Alterações', async () => {
+            const payload = {
+                name: document.getElementById('pNameEdit').value,
+                description: document.getElementById('pDescEdit').value,
+                price: parseFloat(document.getElementById('pPriceEdit').value),
+                categoryId: parseInt(document.getElementById('pCatEdit').value),
+                imageUrl: document.getElementById('pImgEdit').value,
+                order: parseInt(document.getElementById('pOrderEdit').value) || 0
+            };
+            await apiFetch(`/products/${product.id}`, {
+                method: 'PUT',
                 body: JSON.stringify(payload)
             });
             loadProducts();
