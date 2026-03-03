@@ -44,8 +44,42 @@ model Tenant {
   categories Category[]
   products   Product[]
   orders     Order[]
+  tables     Table[]
+  drivers    Driver[]
 
   @@map("tenants")
+}
+
+model Table {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  number    Int
+  active    Boolean  @default(true)
+  qrCodeUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders    Order[]
+
+  @@index([tenantId])
+  @@map("tables")
+}
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  name      String
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders    Order[]
+
+  @@index([tenantId])
+  @@map("drivers")
 }
 
 model User {
@@ -103,13 +137,17 @@ model Order {
   id             Int      @id @default(autoincrement())
   orderNumber    Int?     // Sequential number for the establishment
   tenantId       Int
+  tableId        Int?     // Vínculo opcional com Mesa
+  driverId       Int?     // Vínculo opcional com Entregador
   customerName   String
   customerPhone  String
   totalAmount    Float
-  status         String   @default("pending") // pending, accepted, preparing, ready, finished
+  status         String   @default("pending") // pending, accepted, preparing, ready, finished, cancelled
+  cancelReason   String?  // Motivo do cancelamento
+  cancellationRequested Boolean @default(false) // Se o cliente pediu cancelamento
   
   // v3 Fields
-  fulfillmentType String   @default("delivery") // delivery, pickup, dine_in
+  fulfillmentType String   @default("delivery") // delivery, pickup, dine_in, counter
   paymentMethod   String   @default("money")    // pix, card, money
   addressStreet   String?
   addressNumber   String?
@@ -120,9 +158,13 @@ model Order {
   updatedAt      DateTime @updatedAt
 
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  table          Table?   @relation(fields: [tableId], references: [id])
+  driver         Driver?  @relation(fields: [driverId], references: [id])
   items          OrderItem[]
 
   @@index([tenantId])
+  @@index([tableId])
+  @@index([driverId])
   @@map("orders")
 }
 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
+import { generateThermalReceipt } from '../services/printingService';
 
 // Public Route: Create an Order (By Customer in the Menu)
 export const createOrder = async (req: Request, res: Response): Promise<void> => {
@@ -74,6 +75,12 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             include: { items: true }
         });
 
+        // Emitir evento Socket.io para o lojista
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`tenant-${tenantId}`).emit('new-order', order);
+        }
+
         res.status(201).json({
             message: 'Pedido criado com sucesso',
             order
@@ -130,7 +137,18 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
         const order = await prisma.order.update({
             where: { id: parseInt(id as string) },
             data: { status: status as string },
+            include: {
+                items: {
+                    include: { product: { select: { name: true } } }
+                }
+            }
         });
+
+        // Emitir evento Socket.io de atualização
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`tenant-${tenantId}`).emit('order-updated', order);
+        }
 
         res.json(order);
     } catch (error) {
@@ -224,5 +242,130 @@ export const exportOrdersBackup = async (req: Request, res: Response): Promise<v
     } catch (error) {
         console.error('Export Backup Error:', error);
         res.status(500).json({ error: 'Erro ao gerar backup' });
+    }
+};
+
+// Thermal Receipt Generation
+export const getThermalReceipt = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        const { id } = req.params;
+        const { width } = req.query;
+
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        const order = await prisma.order.findFirst({
+            where: { id: parseInt(id), tenantId },
+            include: {
+                items: { include: { product: { select: { name: true } } } },
+                tenant: true
+            }
+        });
+
+        if (!order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
+
+        const html = generateThermalReceipt(order, (width?.toString() as any) || '80mm');
+        res.header('Content-Type', 'text/html');
+        res.send(html);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao gerar recibo' });
+    }
+};
+
+// CRM Dashboard Metrics
+export const getCRMDashboard = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        const orders = await prisma.order.findMany({
+            where: { tenantId, status: { in: ['finished', 'completed'] } }
+        });
+
+        const vgv = orders.reduce((acc, o) => acc + o.totalAmount, 0);
+        const count = orders.length;
+        const averageTicket = count > 0 ? vgv / count : 0;
+
+        res.json({ vgv, count, averageTicket });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar dados CRM' });
+    }
+};
+
+// Export Customer List for Marketing (CSV)
+export const exportCustomersCRM = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        const orders = await prisma.order.findMany({
+            where: { tenantId },
+            select: { customerName: true, customerPhone: true, createdAt: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const customersMap = new Map();
+        orders.forEach(o => {
+            if (!customersMap.has(o.customerPhone)) {
+                customersMap.set(o.customerPhone, {
+                    name: o.customerName,
+                    phone: o.customerPhone,
+                    lastOrder: o.createdAt
+                });
+            }
+        });
+
+        const customers = Array.from(customersMap.values());
+
+        let csv = 'Nome,WhatsApp,Ultimo_Pedido\n';
+        customers.forEach(c => {
+            const dateStr = new Date(c.lastOrder).toLocaleDateString();
+            csv += `"${c.name}",${c.phone},${dateStr}\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=base_clientes_crm.csv');
+        res.status(200).send(csv);
+
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao exportar base CRM' });
+    }
+};
+
+// Customer Request Cancellation
+export const requestCancellation = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+
+        const order = await prisma.order.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
+
+        // Only allow if status is pending or accepted
+        if (!['pending', 'accepted'].includes(order.status)) {
+            res.status(400).json({ error: 'Este pedido já está em preparo ou pronto e não pode ser cancelado pelo app.' });
+            return;
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: { id: parseInt(id) },
+            data: {
+                cancellationRequested: true,
+                cancelReason: reason || 'Solicitado pelo cliente'
+            }
+        });
+
+        // Notify via socket
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`tenant-${order.tenantId}`).emit('order-updated', updatedOrder);
+        }
+
+        res.json({ message: 'Solicitação de cancelamento enviada com sucesso.', order: updatedOrder });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao solicitar cancelamento' });
     }
 };

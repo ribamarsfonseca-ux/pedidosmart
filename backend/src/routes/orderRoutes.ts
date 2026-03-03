@@ -13,6 +13,10 @@ router.use(authenticateToken);
 
 router.get('/', getOrders);
 router.get('/backup', exportOrdersBackup);
+router.get('/crm/dashboard', authenticateToken, require('../controllers/orderController').getCRMDashboard);
+router.get('/crm/customers/export', authenticateToken, require('../controllers/orderController').exportCustomersCRM);
+router.get('/:id/receipt', authenticateToken, require('../controllers/orderController').getThermalReceipt);
 router.put('/:id/status', updateOrderStatus);
+router.put('/:id/request-cancel', require('../controllers/orderController').requestCancellation);
 
 export default router;

@@ -452,7 +452,9 @@ async function refreshMyOrders() {
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <button class="btn-action" style="width: 100%; font-size: 0.8rem;" onclick="repeatOrder(${o.id})">🔗 Repetir Pedido</button>
-                    <button class="btn-action" style="width: 100%; font-size: 0.8rem; background: #eee; border: none; color: #333;" onclick="alert('Funcionalidade de detalhes em breve!')">📄 Detalhes</button>
+                    ${(o.status === 'pending' || o.status === 'accepted') && !o.cancellationRequested
+                ? `<button class="btn-action" style="width: 100%; font-size: 0.8rem; background: #fee2e2; border-color: #ef4444; color: #ef4444;" onclick="solicitarCancelamento(${o.id})">🚫 Cancelar</button>`
+                : `<button class="btn-action" style="width: 100%; font-size: 0.8rem; background: #eee; border: none; color: #333;" onclick="alert('${o.cancellationRequested ? 'Cancelamento solicitado.' : 'Acompanhe seu pedido!'}')">📄 Status</button>`}
                 </div>
             </div>
         `).join('');
@@ -813,3 +815,26 @@ async function checkout() {
         btn.textContent = 'Finalizar Pedido pelo WhatsApp';
     }
 }
+// CANCELLATION REQUEST
+window.solicitarCancelamento = async (id) => {
+    const reason = prompt('Por que deseja cancelar seu pedido?');
+    if (reason === null) return; // Cancelled prompt
+
+    try {
+        const res = await fetch(`${API_URL}/orders/${id}/request-cancel`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason || 'Solicitado pelo cliente' })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert('✅ Solicitação de cancelamento enviada. Aguarde confirmação da loja.');
+            refreshMyOrders();
+        } else {
+            alert('❌ Erro: ' + data.error);
+        }
+    } catch (e) {
+        alert('Erro ao processar solicitação.');
+    }
+};

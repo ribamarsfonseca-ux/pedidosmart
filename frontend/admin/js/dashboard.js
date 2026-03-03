@@ -11,6 +11,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let tenantData = JSON.parse(tenantDataRaw);
+    let socket;
+
+    // 1.1 Socket.io Setup
+    function setupSocket() {
+        if (typeof io === 'undefined') return;
+
+        socket = io();
+        socket.emit('join-tenant', tenantData.id);
+
+        socket.on('new-order', (order) => {
+            console.log('Novo pedido recebido via Socket:', order);
+            playNotificationSound();
+            if (activePage === 'orders') {
+                initOrdersView(); // Recarregar lista se estiver na página de pedidos
+            }
+            updatePendingBadge();
+        });
+
+        socket.on('order-updated', (order) => {
+            if (activePage === 'orders') initOrdersView();
+            if (activePage === 'history') initHistoryView();
+        });
+    }
+
+    function playNotificationSound() {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(e => console.log('Erro ao tocar som:', e));
+    }
+
+    setupSocket();
+    let activePage = 'home';
 
     async function refreshTenantData() {
         try {
@@ -101,9 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
             render: () => renderHomeView()
         },
         'orders': {
-            title: 'Pedidos Recentes',
-            subtitle: 'Gerencie e altere o status dos pedidos em andamento',
+            title: 'Atendimento & Produção',
+            subtitle: 'Gerencie os pedidos em andamento em tempo real',
             render: () => renderOrdersView()
+        },
+        'history': {
+            title: 'Histórico de Vendas',
+            subtitle: 'Consulta de pedidos finalizados e cancelados',
+            render: () => renderHistoryView()
         },
         'catalog': {
             title: 'Cardápio & Produtos',
@@ -118,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function loadView(pageId) {
+        activePage = pageId;
         // Update Active Nav State
         navLinks.forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector(`.sidebar-nav a[data-page="${pageId}"]`);
@@ -334,13 +371,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderOrdersView() {
         return `
-            <div class="glass-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                    <h3>Gestão de Pedidos</h3>
-                    <button class="btn btn-outline" style="width: auto;" onclick="initOrdersView()">Atualizar</button>
+            <div class="glass-card pdv-compact-view">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h3>Monitor de Pedidos</h3>
+                        <span class="live-indicator"><span class="dot"></span> EM TEMPO REAL</span>
+                    </div>
                 </div>
-                <div id="ordersList" class="orders-grid">
-                    <p class="text-secondary">Carregando pedidos...</p>
+                <div class="orders-table-wrapper">
+                    <table class="compact-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Horário</th>
+                                <th>Cliente / Mesa</th>
+                                <th>Itens / Detalhes</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersList">
+                            <tr><td colspan="7" class="text-secondary">Carregando pedidos ativos...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -348,50 +402,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.initOrdersView = async () => {
         const list = document.getElementById('ordersList');
+        if (!list) return;
         try {
             const orders = await apiFetch('/orders');
-            if (orders.length === 0) {
-                list.innerHTML = '<p class="text-secondary">Nenhum pedido recebido ainda.</p>';
+            // Filtrar apenas os ativos (não finalizados/cancelados)
+            const activeOrders = orders.filter(o => !['finished', 'cancelled', 'completed'].includes(o.status));
+
+            if (activeOrders.length === 0) {
+                list.innerHTML = '<tr><td colspan="7" class="text-center text-secondary" style="padding: 2rem;">Nenhum pedido em produção.</td></tr>';
                 return;
             }
 
-            list.innerHTML = orders.map(order => `
-                <div class="order-card glass-card" style="border: 1px solid ${getStatusColor(order.status)}44; border-left: 4px solid ${getStatusColor(order.status)}">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                        <div>
-                            <strong>#${order.orderNumber || order.id} - ${order.customerName}</strong>
-                            <p class="text-secondary">${new Date(order.createdAt).toLocaleString()}</p>
+            list.innerHTML = activeOrders.map(order => `
+                <tr class="order-row-compact" style="border-left: 4px solid ${getStatusColor(order.status)}">
+                    <td class="font-bold">#${order.orderNumber || order.id}</td>
+                    <td class="text-secondary" style="font-size: 0.8rem;">${new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>
+                        <div class="client-name">${order.customerName}</div>
+                        <small class="text-secondary">${translateFulfillment(order.fulfillmentType)}</small>
+                    </td>
+                    <td>
+                        <div class="order-items-compact">
+                            ${order.items.map(item => `${item.quantity}x ${item.product.name}`).join(', ')}
                         </div>
-                        <span class="status-badge" style="background: ${getStatusColor(order.status)}">${translateStatus(order.status)}</span>
-                    </div>
-                    <div class="order-items" style="margin-bottom: 1rem; font-size: 0.9rem;">
-                        <p><strong>Tipo:</strong> ${translateFulfillment(order.fulfillmentType)} | <strong>Pagamento:</strong> ${translatePayment(order.paymentMethod)}</p>
-                        ${order.fulfillmentType === 'delivery' ? `
-                            <p style="background: #f3f4f6; padding: 5px; border-radius: 4px; margin: 5px 0;">
-                                📍 ${order.addressStreet}, ${order.addressNumber}${order.addressDistrict ? ` - ${order.addressDistrict}` : ''}
-                                ${order.addressComplement ? `<br><small>(${order.addressComplement})</small>` : ''}
-                            </p>
-                        ` : ''}
-                        <div style="border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px;">
-                            ${order.items.map(item => `
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>${item.quantity}x ${item.product.name}</span>
-                                    <span>${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem;">
-                        <strong>Total: ${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
-                        <div style="display: flex; gap: 0.5rem;">
+                        ${order.fulfillmentType === 'delivery' ? `<small class="address-badge">📍 ${order.addressDistrict || 'Entrega'}</small>` : ''}
+                    </td>
+                    <td class="font-bold">${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    <td><span class="status-pill" style="background: ${getStatusColor(order.status)}22; color: ${getStatusColor(order.status)}">${translateStatus(order.status)}</span></td>
+                    <td class="actions-cell">
+                        <div style="display: flex; gap: 5px;">
                             ${renderStatusActions(order)}
                         </div>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `).join('');
 
         } catch (error) {
-            list.innerHTML = `<p class="error">Erro ao carregar pedidos: ${error.message}</p>`;
+            list.innerHTML = `<tr><td colspan="7" class="error">Erro ao carregar: ${error.message}</td></tr>`;
+        }
+    };
+
+    function renderHistoryView() {
+        return `
+            <div class="glass-card">
+                <div class="orders-table-wrapper">
+                    <table class="compact-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Tipo / Pagamento</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyList">
+                            <tr><td colspan="7" class="text-secondary">Carregando histórico...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    window.initHistoryView = async () => {
+        const list = document.getElementById('historyList');
+        if (!list) return;
+        try {
+            const orders = await apiFetch('/orders');
+            const finishedOrders = orders.filter(o => ['finished', 'cancelled', 'completed'].includes(o.status));
+
+            if (finishedOrders.length === 0) {
+                list.innerHTML = '<tr><td colspan="7" class="text-center text-secondary" style="padding: 2rem;">Nenhum encerramento recente.</td></tr>';
+                return;
+            }
+
+            list.innerHTML = finishedOrders.map(order => `
+                <tr class="history-row">
+                    <td class="text-secondary">#${order.orderNumber || order.id}</td>
+                    <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td>${order.customerName}</td>
+                    <td>${translateFulfillment(order.fulfillmentType)} / ${translatePayment(order.paymentMethod)}</td>
+                    <td class="text-secondary" style="font-size: 0.8rem;">
+                        ${order.items.map(item => `${item.quantity}x ${item.product.name}`).join(', ').substring(0, 50)}...
+                    </td>
+                    <td class="font-bold">${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                    <td><span class="status-pill" style="background: #eee; color: #666;">${translateStatus(order.status)}</span></td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            list.innerHTML = `<tr><td colspan="7" class="error">Erro ao carregar histórico.</td></tr>`;
         }
     };
 

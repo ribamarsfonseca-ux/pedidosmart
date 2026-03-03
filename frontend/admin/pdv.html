@@ -4,15 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDV - Frente de Caixa | SmartPede</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>PDV Profissional | SmartPede</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #10b981;
             --dark: #0f172a;
             --light: #f8fafc;
             --white: #fff;
             --gray: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -25,9 +31,11 @@
         body {
             background: var(--light);
             color: var(--dark);
+            overflow: hidden;
+            height: 100vh;
         }
 
-        /* Login State */
+        /* Login Screen */
         #login-screen {
             height: 100vh;
             display: flex;
@@ -38,84 +46,202 @@
 
         .login-box {
             background: var(--white);
-            padding: 2.5rem;
+            padding: 3rem;
             border-radius: 24px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
         }
 
-        /* Main State */
+        /* PDV Layout */
         #main-pdv {
             display: none;
-            padding: 1.5rem;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 70px 1fr;
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1rem;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
+            grid-column: 1 / -1;
             background: var(--white);
-            padding: 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-card h3 {
-            font-size: 0.875rem;
-            color: var(--gray);
-            margin-bottom: 5px;
-        }
-
-        .stat-card p {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--dark);
-        }
-
-        .card {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-bottom: 1.5rem;
-        }
-
-        .orders-list {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .order-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 1rem;
+            border-bottom: 1px solid var(--border);
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
         }
 
-        .btn {
-            padding: 0.75rem 1.25rem;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
+        .pdv-container {
+            grid-column: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: #f1f5f9;
+        }
+
+        .cart-sidebar {
+            grid-column: 2;
+            background: var(--white);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Catalog Styles */
+        .search-box {
+            position: sticky;
+            top: 0;
+            background: #f1f5f9;
+            padding-bottom: 1.5rem;
+            z-index: 10;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 1.1rem;
+            outline: none;
             transition: 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .product-card {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .product-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+        }
+
+        .product-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #eee;
+        }
+
+        .product-info h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .product-info p {
+            font-size: 0.85rem;
+            color: var(--gray);
+            line-height: 1.2;
+            height: 32px;
+            overflow: hidden;
+        }
+
+        .product-price {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: auto;
+        }
+
+        /* Cart Styles */
+        .cart-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-info h5 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .cart-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .qty-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .cart-footer {
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        /* Form elements */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--radius-md);
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
         }
 
         .btn-primary {
@@ -123,106 +249,191 @@
             color: white;
         }
 
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            font-size: 1.2rem;
+            padding: 1.2rem;
+        }
+
         .btn-outline {
             background: transparent;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
             color: var(--gray);
         }
 
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            font-size: 1rem;
+        .form-group {
+            margin-bottom: 1.2rem;
         }
 
-        label {
+        .form-group label {
             display: block;
             font-size: 0.85rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 6px;
             color: var(--gray);
+            text-transform: uppercase;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            outline: none;
+        }
+
+        /* Utils */
+        .badge-live {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .dot {
+            height: 8px;
+            width: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.9);
+            }
+
+            70% {
+                transform: scale(1.1);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(0.9);
+            }
+        }
+
+        #pdv-clock {
+            font-weight: 600;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 
 <body>
-
     <!-- TELA DE LOGIN -->
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="margin-bottom: 0.5rem; text-align: center;">🚀 PDV SmartPede</h2>
-            <p style="text-align: center; color: var(--gray); font-size: 0.9rem; margin-bottom: 2rem;">Acesse o frente
-                de caixa da sua loja</p>
+            <h1 style="text-align: center; margin-bottom: 0.5rem;">🚀 SmartPede</h1>
+            <p style="text-align: center; color: var(--gray); margin-bottom: 2.5rem;">Acesse o Frente de Caixa
+                Profissional</p>
             <form onsubmit="handlePDVLogin(event)">
-                <label>URL da Loja (Slug)</label>
-                <input type="text" id="pdv-slug" placeholder="ex: pizzaria-do-ze" required>
-                <label>Senha do PDV</label>
-                <input type="password" id="pdv-pass" placeholder="Defunida nas configurações" required>
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem;">Entrar no PDV</button>
+                <div class="form-group">
+                    <label>URL DA LOJA (SLUG)</label>
+                    <input type="text" id="pdv-slug" placeholder="ex: pizzaria-do-ze" required>
+                </div>
+                <div class="form-group">
+                    <label>SENHA DO PDV</label>
+                    <input type="password" id="pdv-pass" placeholder="Definida nas configurações do Admin" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 1.2rem;">ENTRAR NO TERMINAL</button>
             </form>
         </div>
     </div>
 
     <!-- TELA PRINCIPAL PDV -->
-    <div id="main-pdv">
+    <div id="main-pdv" style="display: none;">
         <header class="header">
-            <div>
-                <h2 id="pdv-store-name">Minha Loja</h2>
-                <p id="pdv-clock" style="color: var(--gray); font-size: 0.85rem;"></p>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <h3 id="pdv-store-name" style="font-weight: 800; font-size: 1.4rem; color: var(--primary);">MINHA LOJA
+                </h3>
+                <div id="pdv-clock" class="text-secondary">00:00:00</div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="copyLink()" class="btn btn-outline">🔗 Copiar Link</button>
-                <button onclick="logoutPDV()" class="btn btn-outline">Sair</button>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="badge-live"><span class="dot"></span> TERMINAL ATIVO</div>
+                <button onclick="logoutPDV()" class="btn btn-outline"
+                    style="width: auto; padding: 0.5rem 1rem;">SAIR</button>
             </div>
         </header>
 
-        <div class="stats-grid">
-            <div class="stat-card" style="border-left: 5px solid #f59e0b;">
-                <h3>Pendentes</h3>
-                <p id="stat-pending">0</p>
+        <section class="pdv-container">
+            <div class="search-box">
+                <input type="text" id="pdv-search" class="search-input"
+                    placeholder="🔍 Buscar produto por nome ou código..." onkeyup="filterProducts()">
             </div>
-            <div class="stat-card" style="border-left: 5px solid #3b82f6;">
-                <h3>Em Aberto</h3>
-                <p id="stat-open">0</p>
+            <div id="product-grid" class="product-grid">
+                <!-- Produtos renderizados aqui via JS -->
+                <p>Carregando catálogo...</p>
             </div>
-            <div class="stat-card" style="border-left: 5px solid #10b981;">
-                <h3>Finalizados</h3>
-                <p id="stat-finished">0</p>
-            </div>
-            <div class="stat-card" style="border-left: 5px solid #8b5cf6;">
-                <h3>Vendas Hoje</h3>
-                <p id="stat-sales">R$ 0,00</p>
-            </div>
-        </div>
+        </section>
 
-        <div class="card">
-            <h3 style="margin-bottom: 1.5rem;">Pedidos Recentes</h3>
-            <div id="pdv-orders-list" class="orders-list">
-                <p style="color: var(--gray);">Carregando pedidos...</p>
+        <aside class="cart-sidebar">
+            <div class="cart-header">
+                <h3>🛒 Carrinho de Venda</h3>
+                <button class="btn btn-outline" style="width: auto; padding: 5px 10px; font-size: 0.75rem;"
+                    onclick="clearCart()">Limpar</button>
             </div>
-        </div>
+
+            <div id="cart-items" class="cart-items">
+                <p class="text-secondary" style="text-align: center; margin-top: 2rem;">Carrinho Vazio</p>
+            </div>
+
+            <div class="cart-footer">
+                <div class="form-group">
+                    <label>CLIENTE (OPCIONAL)</label>
+                    <input type="text" id="cart-customer" placeholder="Nome do cliente">
+                </div>
+                <div class="form-group">
+                    <label>FORMA DE PAGAMENTO</label>
+                    <select id="cart-payment">
+                        <option value="money">Dinheiro</option>
+                        <option value="pix">PIX</option>
+                        <option value="card">Cartão</option>
+                    </select>
+                </div>
+                <div class="total-row">
+                    <span>TOTAL</span>
+                    <span id="cart-total">R$ 0,00</span>
+                </div>
+                <button class="btn btn-success" onclick="finishOrder()">FINALIZAR VENDA (F10)</button>
+            </div>
+        </aside>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const API_URL = '/api';
-        let currentTenant = null;
+        let products = [];
+        let cart = [];
+        let tenant = null;
+        let socket;
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('pdv_token');
             if (token) {
                 showMain();
             }
-            setInterval(updateClock, 1000);
-            updateClock();
+            setInterval(() => {
+                document.getElementById('pdv-clock').textContent = new Date().toLocaleTimeString();
+            }, 1000);
         });
 
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('pdv-clock').textContent = now.toLocaleString('pt-BR');
-        }
+        // Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F10') {
+                e.preventDefault();
+                finishOrder();
+            }
+        });
 
         async function handlePDVLogin(e) {
             e.preventDefault();
@@ -242,67 +453,171 @@
                     localStorage.setItem('pdv_tenant', JSON.stringify(data.tenant));
                     showMain();
                 } else {
-                    alert('Erro: ' + data.error);
+                    alert('Credenciais inválidas. Verifique no painel admin.');
                 }
-            } catch (err) { alert('Erro na conexão.'); }
+            } catch (err) { alert('Erro na conexão com o servidor.'); }
         }
 
-        function showMain() {
-            currentTenant = JSON.parse(localStorage.getItem('pdv_tenant'));
-            document.getElementById('pdv-store-name').textContent = currentTenant.name;
+        async function showMain() {
+            tenant = JSON.parse(localStorage.getItem('pdv_tenant'));
+            document.getElementById('pdv-store-name').textContent = tenant.name.toUpperCase();
             document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-pdv').style.display = 'block';
-            loadStats();
-            loadOrders();
-            setInterval(loadStats, 30000); // Auto-refresh metrics
+            document.getElementById('main-pdv').style.display = 'grid';
+
+            setupSocket();
+            await loadProducts();
         }
 
-        async function loadStats() {
+        function setupSocket() {
+            if (typeof io === 'undefined') return;
+            socket = io();
+            socket.emit('join-tenant', tenant.id);
+            socket.on('new-order', () => {
+                // Notificar sobre novos pedidos online se necessário
+                console.log('Novo pedido online recebido!');
+            });
+        }
+
+        async function loadProducts() {
             try {
                 const token = localStorage.getItem('pdv_token');
-                const res = await fetch(`${API_URL}/tenants/pdv/stats`, {
+                const res = await fetch(`${API_URL}/products`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    const stats = await res.json();
-                    document.getElementById('stat-pending').textContent = stats.pending;
-                    document.getElementById('stat-open').textContent = stats.open;
-                    document.getElementById('stat-finished').textContent = stats.finished;
-                    document.getElementById('stat-sales').textContent = stats.todaySales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    products = await res.json();
+                    renderProducts(products);
                 }
-            } catch (e) { }
+            } catch (e) { console.error('Erro ao carregar produtos'); }
         }
 
-        async function loadOrders() {
+        function renderProducts(list) {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = list.map(p => `
+                <div class="product-card" onclick="addToCart(${p.id})">
+                    ${p.imageUrl ? `<img src="${p.imageUrl}" class="product-img">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;color:#ccc">S/ FOTO</div>'}
+                    <div class="product-info">
+                        <h4>${p.name}</h4>
+                        <p>${p.description || ''}</p>
+                        <div class="product-price">${p.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterProducts() {
+            const term = document.getElementById('pdv-search').value.toLowerCase();
+            const filtered = products.filter(p =>
+                p.name.toLowerCase().includes(term) ||
+                (p.description && p.description.toLowerCase().includes(term))
+            );
+            renderProducts(filtered);
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existing = cart.find(item => item.id === productId);
+
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    cart = cart.filter(i => i.id !== id);
+                }
+                renderCart();
+            }
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                list.innerHTML = '<p class="text-secondary" style="text-align: center; margin-top: 2rem;">Carrinho Vazio</p>';
+                document.getElementById('cart-total').textContent = 'R$ 0,00';
+                return;
+            }
+
+            let total = 0;
+            list.innerHTML = cart.map(item => {
+                const subtotal = item.price * item.qty;
+                total += subtotal;
+                return `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h5>${item.name}</h5>
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            <div class="cart-item-qty">
+                                <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                                <span>${item.qty}</span>
+                                <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                            </div>
+                        </div>
+                        <div style="font-weight: 700;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function clearCart() {
+            if (confirm('Deseja limpar o carrinho?')) {
+                cart = [];
+                renderCart();
+            }
+        }
+
+        async function finishOrder() {
+            if (cart.length === 0) return alert('O carrinho está vazio!');
+
+            const btn = document.querySelector('.btn-success');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'FINALIZANDO...';
+
+            const payload = {
+                tenantId: tenant.id,
+                customerName: document.getElementById('cart-customer').value || 'Cliente Balcão',
+                customerPhone: '0000000000',
+                fulfillmentType: 'counter', // Venda direta/balcão
+                paymentMethod: document.getElementById('cart-payment').value,
+                items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
+            };
+
             try {
                 const token = localStorage.getItem('pdv_token');
                 const res = await fetch(`${API_URL}/orders`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
                 });
-                if (res.ok) {
-                    const orders = await res.json();
-                    const list = document.getElementById('pdv-orders-list');
-                    if (orders.length === 0) {
-                        list.innerHTML = '<p style="color: var(--gray);">Nenhum pedido hoje.</p>';
-                        return;
-                    }
-                    list.innerHTML = orders.slice(0, 10).map(o => `
-                        <div class="order-item">
-                            <div>
-                                <strong>#${o.orderNumber || o.id} - ${o.customerName}</strong>
-                                <p style="font-size: 0.8rem; color: var(--gray);">${o.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                            </div>
-                            <span style="font-size: 0.75rem; background: #e2e8f0; padding: 4px 8px; border-radius: 6px;">${o.status}</span>
-                        </div>
-                    `).join('');
-                }
-            } catch (e) { }
-        }
 
-        function copyLink() {
-            const url = `${window.location.origin}/menu/#${currentTenant.slug}`;
-            navigator.clipboard.writeText(url);
-            alert('Link do cardápio copiado!');
+                if (res.ok) {
+                    alert('✅ Venda realizada com sucesso!');
+                    cart = [];
+                    document.getElementById('cart-customer').value = '';
+                    renderCart();
+                    // Opcional: imprimir recibo aqui automaticamente no futuro
+                } else {
+                    const err = await res.json();
+                    alert('Erro: ' + err.error);
+                }
+            } catch (e) { alert('Erro ao finalizar venda.'); }
+            finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
 
         function logoutPDV() {

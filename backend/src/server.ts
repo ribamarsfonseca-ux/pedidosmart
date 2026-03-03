@@ -5,19 +5,46 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import apiRoutes from './routes';
 import path from 'path';
+import http from 'http';
+import { Server } from 'socket.io';
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 const port = process.env.PORT || 3000;
 
 app.use(helmet({
-    contentSecurityPolicy: false, // Necessário para carregar recursos externos se houver
+    contentSecurityPolicy: false,
 }));
 app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Socket.io Connection Logic
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('join-tenant', (tenantId) => {
+        socket.join(`tenant-${tenantId}`);
+        console.log(`User ${socket.id} joined tenant-${tenantId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Tornar o IO acessível nas rotas
+app.set('io', io);
 
 // Serve os arquivos estáticos do frontend (Ajustado para VPS)
 const frontendPath = path.join(__dirname, '..', '..', 'frontend');
@@ -41,7 +68,6 @@ app.get(['/menu/:slug', '/m/:slug'], async (req, res) => {
             const title = `${tenant.name} | Cardápio Digital`;
             const image = tenant.logoUrl || 'https://smartpede.com.br/logo.png';
 
-            // Injeta as Meta Tags
             const metaTags = `
                 <title>${title}</title>
                 <meta property="og:title" content="${title}">
@@ -51,7 +77,6 @@ app.get(['/menu/:slug', '/m/:slug'], async (req, res) => {
                 <meta name="twitter:card" content="summary_large_image">
             `;
             html = html.replace('</head>', `${metaTags}\n</head>`);
-            // Remove o título original se existir para não duplicar
             html = html.replace(/<title>.*?<\/title>/, '');
         }
 
@@ -66,6 +91,6 @@ app.use(express.static(frontendPath));
 // Rota base para a API
 app.use('/api', apiRoutes);
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
 });

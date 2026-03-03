@@ -29,5 +29,7 @@ router.post('/super-admin/tenant', superAdminAuth, superAdmin.createTenant);
 router.use('/categories', checkSubscription, categoryRoutes);
 router.use('/products', checkSubscription, productRoutes);
 router.use('/orders', checkSubscription, orderRoutes);
+router.use('/tables', checkSubscription, require('./tableRoutes').default);
+router.use('/logistics', checkSubscription, require('./logisticsRoutes').default);
 
 export default router;
