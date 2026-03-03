@@ -165,6 +165,34 @@
             margin-top: auto;
         }
 
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            scrollbar-width: none;
+        }
+
+        .category-tab {
+            padding: 0.6rem 1.2rem;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .category-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
         /* Cart Styles */
         .cart-header {
             padding: 1.5rem;
@@ -370,6 +398,11 @@
                 <input type="text" id="pdv-search" class="search-input"
                     placeholder="🔍 Buscar produto por nome ou código..." onkeyup="filterProducts()">
             </div>
+
+            <div id="category-tabs" class="category-tabs">
+                <!-- Categorias injetadas aqui -->
+            </div>
+
             <div id="product-grid" class="product-grid">
                 <!-- Produtos renderizados aqui via JS -->
                 <p>Carregando catálogo...</p>
@@ -411,8 +444,12 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const API_URL = '/api';
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000/api'
+            : '/api';
         let products = [];
+        let categories = [];
+        let currentCategoryId = 'all';
         let cart = [];
         let tenant = null;
         let socket;
@@ -481,19 +518,53 @@
         async function loadProducts() {
             try {
                 const token = localStorage.getItem('pdv_token');
+
+                // Load Categories first
+                const catRes = await fetch(`${API_URL}/categories`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (catRes.ok) {
+                    categories = await catRes.json();
+                    renderCategories();
+                }
+
+                // Load Products
                 const res = await fetch(`${API_URL}/products`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
                     products = await res.json();
-                    renderProducts(products);
+                    renderProducts(); // Render with current filters
                 }
-            } catch (e) { console.error('Erro ao carregar produtos'); }
+            } catch (e) { console.error('Erro ao carregar dados'); }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-tabs');
+            container.innerHTML = `
+                <div class="category-tab ${currentCategoryId === 'all' ? 'active' : ''}" onclick="filterByCategory('all')">Todos</div>
+                ${categories.map(c => `
+                    <div class="category-tab ${currentCategoryId === c.id ? 'active' : ''}" onclick="filterByCategory(${c.id})">${c.name}</div>
+                `).join('')}
+            `;
+        }
+
+        function filterByCategory(id) {
+            currentCategoryId = id;
+            renderCategories();
+            filterProducts(); // Apply both category and search filters
         }
 
         function renderProducts(list) {
             const grid = document.getElementById('product-grid');
-            grid.innerHTML = list.map(p => `
+            const displayList = list || products; // Fallback to all if no list provided (though filterProducts will handle it)
+
+            if (displayList.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray);">Nenhum produto encontrado.</p>';
+                return;
+            }
+
+            grid.innerHTML = displayList.map(p => `
                 <div class="product-card" onclick="addToCart(${p.id})">
                     ${p.imageUrl ? `<img src="${p.imageUrl}" class="product-img">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;color:#ccc">S/ FOTO</div>'}
                     <div class="product-info">
@@ -507,10 +578,11 @@
 
         function filterProducts() {
             const term = document.getElementById('pdv-search').value.toLowerCase();
-            const filtered = products.filter(p =>
-                p.name.toLowerCase().includes(term) ||
-                (p.description && p.description.toLowerCase().includes(term))
-            );
+            const filtered = products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term));
+                const matchesCategory = currentCategoryId === 'all' || p.categoryId === currentCategoryId;
+                return matchesSearch && matchesCategory;
+            });
             renderProducts(filtered);
         }
 
@@ -604,6 +676,7 @@
                 });
 
                 if (res.ok) {
+                    const result = await res.json();
                     if (confirm('✅ Venda realizada com sucesso!\n\nDeseja imprimir o recibo?')) {
                         const token = localStorage.getItem('pdv_token');
                         window.open(`${API_URL}/orders/${result.order.id}/receipt?token=${token}`, '_blank');
