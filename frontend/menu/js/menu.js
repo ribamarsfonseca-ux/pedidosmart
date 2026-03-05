@@ -730,65 +730,46 @@ window.toggleAddressFields = async () => {
 
 
 window.openLocationModal = () => {
-    // Inicializar tempLocation com a localização atual para evitar erro de "escolha endereço"
     if (userLocation) tempLocation = { ...userLocation };
 
-    document.getElementById('locationModal').style.display = 'flex';
+    const modal = document.getElementById('locationModal');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
-    // Pequeno delay para garantir que o container do mapa esteja visível antes de carregar
     setTimeout(() => {
         initLocationMap();
 
-        // Extrair Cidade e Estado base do lojista
-        let tenantCity = "";
-        let tenantState = "";
-        if (restaurant && restaurant.address) {
-            // Tenta pegar de algo como "Rua X, Cidade - UF" ou apenas "Cidade - UF"
-            const parts = restaurant.address.split('-');
-            if (parts.length > 1) {
-                tenantState = parts[parts.length - 1].trim().substring(0, 2).toUpperCase();
-                const cityParts = parts[parts.length - 2].split(',');
-                tenantCity = cityParts[cityParts.length - 1].trim();
-            }
-        }
-
-        // Se falhar a extração, deixa vazio para o cliente preencher, 
-        // mas idealmente o lojista tem isso bem configurado.
         const modalCity = document.getElementById('modalCity');
         const modalState = document.getElementById('modalState');
 
-        if (modalCity && tenantCity) modalCity.value = tenantCity;
+        // Se o modal estiver vazio, tenta preencher com dados da loja como sugestão
+        if (modalCity && modalState && !modalCity.value && restaurant && restaurant.address) {
+            const parts = restaurant.address.split(',');
+            // Ex: "Rua X, Bairro, Cidade - UF" ou "Cidade - UF"
+            const lastPart = parts[parts.length - 1].trim();
+            if (lastPart.includes('-')) {
+                const subParts = lastPart.split('-');
+                const state = subParts[subParts.length - 1].trim().substring(0, 2).toUpperCase();
+                const city = subParts[subParts.length - 2].trim();
 
-        // Se ainda não tiver estado nas options do HTML, o JS força
-        if (modalState && tenantState) {
-            let optionExists = Array.from(modalState.options).some(opt => opt.value === tenantState);
-            if (!optionExists) {
-                const opt = document.createElement('option');
-                opt.value = tenantState;
-                opt.text = tenantState;
-                modalState.add(opt);
+                if (!modalState.value) modalState.value = state;
+                if (!modalCity.value) modalCity.value = city;
+            } else {
+                modalCity.value = restaurant.city || "";
+                modalState.value = restaurant.state || "";
             }
-            modalState.value = tenantState;
         }
 
-        // Se o cliente já tiver endereço, preenche os novos campos do modal
-        if (userLocation && userLocation.address) {
-            // Exemplo de address antigo: "Rua X, 123, Bairro"
-            // No novo formato vamos guardar mais estruturado no objeto userLocation
+        // Se o cliente já tiver localização salva, prioriza ela nos campos do modal
+        if (userLocation) {
+            if (userLocation.state && modalState) modalState.value = userLocation.state;
+            if (userLocation.city && modalCity) modalCity.value = userLocation.city;
             if (userLocation.district) document.getElementById('modalDistrict').value = userLocation.district;
             if (userLocation.street) document.getElementById('modalStreet').value = userLocation.street;
             if (userLocation.number) document.getElementById('modalNumber').value = userLocation.number;
             if (userLocation.complement) document.getElementById('modalComplement').value = userLocation.complement;
-
-            // Fallback para caso seja um userLocation legado (apenas string address)
-            if (!userLocation.district && userLocation.address) {
-                const parts = userLocation.address.split(',');
-                if (parts.length >= 3) {
-                    document.getElementById('modalStreet').value = parts[0]?.trim() || '';
-                    // Tentativa básica. A nova versão salva os campos isolados.
-                }
-            }
         }
     }, 100);
 };

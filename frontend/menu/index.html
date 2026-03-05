@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Cardápio Digital | SmartPede</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/menu.css?v=2.3">
+    <link rel="stylesheet" href="./css/menu.css?v=2.4">
 
     <!-- Leaflet.js for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -257,13 +257,40 @@
                 style="padding: 15px; background: #fff; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.05); overflow-y: auto;">
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px;">
                     <select id="modalState"
-                        style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #f3f4f6; pointer-events: none;"
-                        readonly>
+                        style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff;"
+                        onchange="searchLocationFromFields()">
                         <option value="">UF</option>
+                        <option value="AC">AC</option>
+                        <option value="AL">AL</option>
+                        <option value="AP">AP</option>
+                        <option value="AM">AM</option>
+                        <option value="BA">BA</option>
+                        <option value="CE">CE</option>
+                        <option value="DF">DF</option>
+                        <option value="ES">ES</option>
+                        <option value="GO">GO</option>
+                        <option value="MA">MA</option>
+                        <option value="MT">MT</option>
+                        <option value="MS">MS</option>
+                        <option value="MG">MG</option>
+                        <option value="PA">PA</option>
+                        <option value="PB">PB</option>
+                        <option value="PR">PR</option>
+                        <option value="PE">PE</option>
+                        <option value="PI">PI</option>
+                        <option value="RJ">RJ</option>
+                        <option value="RN">RN</option>
+                        <option value="RS">RS</option>
+                        <option value="RO">RO</option>
+                        <option value="RR">RR</option>
+                        <option value="SC">SC</option>
+                        <option value="SP">SP</option>
+                        <option value="SE">SE</option>
+                        <option value="TO">TO</option>
                     </select>
                     <input type="text" id="modalCity" placeholder="Cidade Base"
-                        style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #f3f4f6; pointer-events: none;"
-                        readonly>
+                        style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff;"
+                        oninput="searchLocationFromFields()">
                 </div>
 
                 <div style="margin-bottom: 10px; position: relative;">
@@ -315,7 +342,7 @@
         </div>
     </div>
 
-    <script src="./js/menu.js?v=2.3"></script>
+    <script src="./js/menu.js?v=2.4"></script>
 </body>
 
 </html>
