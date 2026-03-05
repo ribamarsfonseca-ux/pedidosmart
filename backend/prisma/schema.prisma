@@ -161,6 +161,8 @@ model Order {
   addressStreet   String?
   addressNumber   String?
   addressDistrict String?
+  addressCity     String?
+  addressState    String?
   addressComplement String?
   
   createdAt      DateTime @default(now())

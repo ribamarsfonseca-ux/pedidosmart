@@ -739,10 +739,56 @@ window.openLocationModal = () => {
     // Pequeno delay para garantir que o container do mapa esteja visível antes de carregar
     setTimeout(() => {
         initLocationMap();
-        // Se já temos endereço no autocomplete, preencher o input inicial do modal
+
+        // Extrair Cidade e Estado base do lojista
+        let tenantCity = "";
+        let tenantState = "";
+        if (restaurant && restaurant.address) {
+            // Tenta pegar de algo como "Rua X, Cidade - UF" ou apenas "Cidade - UF"
+            const parts = restaurant.address.split('-');
+            if (parts.length > 1) {
+                tenantState = parts[parts.length - 1].trim().substring(0, 2).toUpperCase();
+                const cityParts = parts[parts.length - 2].split(',');
+                tenantCity = cityParts[cityParts.length - 1].trim();
+            }
+        }
+
+        // Se falhar a extração, deixa vazio para o cliente preencher, 
+        // mas idealmente o lojista tem isso bem configurado.
+        const modalCity = document.getElementById('modalCity');
+        const modalState = document.getElementById('modalState');
+
+        if (modalCity && tenantCity) modalCity.value = tenantCity;
+
+        // Se ainda não tiver estado nas options do HTML, o JS força
+        if (modalState && tenantState) {
+            let optionExists = Array.from(modalState.options).some(opt => opt.value === tenantState);
+            if (!optionExists) {
+                const opt = document.createElement('option');
+                opt.value = tenantState;
+                opt.text = tenantState;
+                modalState.add(opt);
+            }
+            modalState.value = tenantState;
+        }
+
+        // Se o cliente já tiver endereço, preenche os novos campos do modal
         if (userLocation && userLocation.address) {
-            const input = document.getElementById('addressAutocomplete');
-            if (input) input.value = userLocation.address;
+            // Exemplo de address antigo: "Rua X, 123, Bairro"
+            // No novo formato vamos guardar mais estruturado no objeto userLocation
+            if (userLocation.district) document.getElementById('modalDistrict').value = userLocation.district;
+            if (userLocation.street) document.getElementById('modalStreet').value = userLocation.street;
+            if (userLocation.number) document.getElementById('modalNumber').value = userLocation.number;
+            if (userLocation.complement) document.getElementById('modalComplement').value = userLocation.complement;
+
+            // Fallback para caso seja um userLocation legado (apenas string address)
+            if (!userLocation.district && userLocation.address) {
+                const parts = userLocation.address.split(',');
+                if (parts.length >= 3) {
+                    document.getElementById('modalStreet').value = parts[0]?.trim() || '';
+                    // Tentativa básica. A nova versão salva os campos isolados.
+                }
+            }
         }
     }, 100);
 };
@@ -772,11 +818,11 @@ function initLocationMap() {
 
     marker.on('dragend', function (e) {
         const pos = marker.getLatLng();
-        reverseGeocode(pos.lat, pos.lng);
+        reverseGeocodeStructured(pos.lat, pos.lng);
     });
 }
 
-async function reverseGeocode(lat, lon) {
+async function reverseGeocodeStructured(lat, lon) {
     if (!geoapifyApiKey) return;
     try {
         const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${geoapifyApiKey}`;
@@ -784,94 +830,155 @@ async function reverseGeocode(lat, lon) {
 
         if (res.features && res.features.length > 0) {
             const props = res.features[0].properties;
-            const address = `${props.street || ''}, ${props.housenumber || ''}, ${props.suburb || ''}`.replace(/,,/g, ',').trim();
-            document.getElementById('addressAutocomplete').value = address;
-            tempLocation = { lat, lon, address };
+
+            const district = props.suburb || props.district || '';
+            const street = props.street || '';
+            const number = props.housenumber || '';
+            const city = props.city || document.getElementById('modalCity').value;
+            const state = props.state_code || document.getElementById('modalState').value;
+
+            // Atualiza os inputs do modal visualmente se o arrasto trouxe dados melhores
+            if (district && !document.getElementById('modalDistrict').value) document.getElementById('modalDistrict').value = district;
+            if (street) document.getElementById('modalStreet').value = street;
+            if (number) document.getElementById('modalNumber').value = number;
+
+            // Constrói o endereço final de exibição
+            const fullAddress = `${street || 'Rua não identificada'}, ${number || 'S/N'}, ${district || 'Bairro Base'} - ${city} / ${state}`.replace(/,,/g, ',').trim();
+
+            tempLocation = {
+                lat,
+                lon,
+                address: fullAddress,
+                district: district || document.getElementById('modalDistrict').value,
+                street: street || document.getElementById('modalStreet').value,
+                number: number || document.getElementById('modalNumber').value,
+                city: city,
+                state: state,
+                complement: document.getElementById('modalComplement').value
+            };
         }
     } catch (e) {
         console.error('Erro no reverse geocoding:', e);
     }
 }
 
+// Nova lógica de busca baseada nos campos
 let tempLocation = null;
-window.handleAddressAutocomplete = async (value) => {
-    if (!geoapifyApiKey || value.length < 3) {
-        document.getElementById('autocompleteResults').style.display = 'none';
-        return;
-    }
+window.searchLocationFromFields = async () => {
+    if (!geoapifyApiKey) return;
+
+    const state = document.getElementById('modalState').value;
+    const city = document.getElementById('modalCity').value;
+    const district = document.getElementById('modalDistrict').value;
+    const street = document.getElementById('modalStreet').value;
+
+    // Precisa pelo menos da cidade e bairro para tentar buscar
+    if (!city || !district) return;
+
+    // Constrói a query forçando a localidade
+    // Ex: "Centro, São Luís, MA" ou "Rua X, Centro, São Luís, MA"
+    const queryParts = [];
+    if (street) queryParts.push(street);
+    queryParts.push(district);
+    queryParts.push(city);
+    if (state) queryParts.push(state);
+
+    const query = queryParts.join(', ');
 
     try {
-        const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(value)}&apiKey=${geoapifyApiKey}`;
+        const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=1&apiKey=${geoapifyApiKey}`;
         const res = await fetch(url).then(r => r.json());
 
-        const resultsDiv = document.getElementById('autocompleteResults');
         if (res.features && res.features.length > 0) {
-            resultsDiv.innerHTML = res.features.map(f => `
-                <div class="list-group-item" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" 
-                     onclick="selectAddress(${f.properties.lat}, ${f.properties.lon}, '${f.properties.formatted.replace(/'/g, "\\'")}')">
-                    ${f.properties.formatted}
-                </div>
-            `).join('');
-            resultsDiv.style.display = 'block';
-        } else {
-            resultsDiv.style.display = 'none';
+            const props = res.features[0].properties;
+            const lat = props.lat;
+            const lon = props.lon;
+
+            // Move o pino do mapa
+            if (map && marker) {
+                const pos = [lat, lon];
+                // Dá um zoom maior se tiver rua, menor se for só bairro
+                map.setView(pos, street ? 17 : 14);
+                marker.setLatLng(pos);
+            }
+
+            // Prepara o tempLocation base (o reverseGeocode do dragend pode afinar isso depois)
+            const number = document.getElementById('modalNumber').value;
+            const complement = document.getElementById('modalComplement').value;
+            const fullAddress = `${street || props.street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
+
+            tempLocation = {
+                lat, lon, address: fullAddress, district, street: street || props.street || '', number, city, state, complement
+            };
         }
     } catch (e) {
-        console.error('Erro no autocomplete:', e);
+        console.error('Erro ao buscar localização pelos campos:', e);
     }
 };
 
-window.selectAddress = (lat, lon, address) => {
-    tempLocation = { lat, lon, address };
-    document.getElementById('addressAutocomplete').value = address;
-    document.getElementById('autocompleteResults').style.display = 'none';
+window.selectFavorite = (type) => {
+    if (favorites[type]) {
+        userLocation = favorites[type];
+        tempLocation = { ...favorites[type] }; // Sincroniza
 
-    if (map && marker) {
-        const pos = [lat, lon];
-        map.setView(pos, 16);
-        marker.setLatLng(pos);
+        // Preenche campos se existirem na estrutura nova do favorito
+        if (favorites[type].district) document.getElementById('modalDistrict').value = favorites[type].district;
+        if (favorites[type].street) document.getElementById('modalStreet').value = favorites[type].street;
+        if (favorites[type].number) document.getElementById('modalNumber').value = favorites[type].number;
+
+        if (map && marker) {
+            const pos = [userLocation.lat, userLocation.lon];
+            map.setView(pos, 16);
+            marker.setLatLng(pos);
+        }
+    } else {
+        alert('Nenhum endereço salvo como ' + (type === 'home' ? 'Casa' : 'Trabalho') + ' ainda. Salva ao confirmar do pedido.');
     }
 };
 
 window.confirmLocation = () => {
-    // Verificação robusta: se não tem temp nem user, aí sim avisa
-    if (!tempLocation && !userLocation) {
-        alert('Por favor, selecione um endereço no mapa ou na busca.');
-        return;
+    // Lê os campos diretos do modal, caso o cliente apenas tenha digitado e não clicou fora (onblur não ativou searchLocationFromFields)
+    if (!tempLocation) {
+        const state = document.getElementById('modalState').value;
+        const city = document.getElementById('modalCity').value;
+        const district = document.getElementById('modalDistrict').value;
+        const street = document.getElementById('modalStreet').value;
+
+        if (!district) {
+            alert('Por favor, informe pelo menos o seu bairro para continuarmos.');
+            return;
+        }
+
+        const number = document.getElementById('modalNumber').value;
+        const complement = document.getElementById('modalComplement').value;
+        const address = `${street || 'Rua não informada'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
+
+        tempLocation = {
+            lat: restaurant?.lat || -23.5505, // fallback temporário
+            lon: restaurant?.lon || -46.6333,
+            address, district, street, number, city, state, complement
+        };
     }
 
-    // Prioriza tempLocation (ajuste atual) sobre userLocation (antigo)
-    userLocation = tempLocation || userLocation;
-
-    // Garantir que temos o objeto correto
-    if (!userLocation.address) {
-        alert('Endereço incompleto. Por favor selecione novamente no mapa.');
-        return;
-    }
-
+    userLocation = tempLocation;
     localStorage.setItem('userLocation', JSON.stringify(userLocation));
 
-    // Atualizar Labels
-    document.getElementById('currentAddressLabel').textContent = userLocation.address;
+    // Atualizar Labels no Header e Checkout
+    const headerLabel = document.getElementById('currentAddressLabel');
+    if (headerLabel) headerLabel.textContent = userLocation.address;
+
     const checkoutLabel = document.getElementById('checkoutAddressLabel');
     if (checkoutLabel) checkoutLabel.textContent = userLocation.address;
 
-    // Preencher campos do checkout de forma inteligente
-    if (document.getElementById('custStreet')) {
-        const parts = userLocation.address.split(',');
-        // Formato tipicamente: Rua, Número, Bairro, CEP...
-        document.getElementById('custStreet').value = parts[0]?.trim() || '';
+    // Preencher campos do checkout com precisão (Formulário Estruturado)
+    if (document.getElementById('custState')) document.getElementById('custState').value = userLocation.state || '';
+    if (document.getElementById('custCity')) document.getElementById('custCity').value = userLocation.city || '';
+    if (document.getElementById('custDistrict')) document.getElementById('custDistrict').value = userLocation.district || '';
+    if (document.getElementById('custStreet')) document.getElementById('custStreet').value = userLocation.street || '';
+    if (document.getElementById('custNumber')) document.getElementById('custNumber').value = userLocation.number || '';
+    if (document.getElementById('custComplement')) document.getElementById('custComplement').value = userLocation.complement || '';
 
-        // Tenta pegar o número se parecer um número, senão deixa vazio pro cliente preencher
-        const secondPart = parts[1]?.trim() || '';
-        if (/\d/.test(secondPart)) {
-            document.getElementById('custNumber').value = secondPart;
-            document.getElementById('custDistrict').value = parts[2]?.trim() || '';
-        } else {
-            document.getElementById('custDistrict').value = secondPart;
-        }
-    }
-
+    // Atualizar Frete baseado nas coordenadas
     updateDeliveryFee();
     closeLocationModal();
 };
@@ -951,13 +1058,15 @@ async function checkout() {
     let addressData = {};
     if (fulfillmentType === 'delivery') {
         addressData = {
+            addressState: document.getElementById('custState').value.trim(),
+            addressCity: document.getElementById('custCity').value.trim(),
+            addressDistrict: document.getElementById('custDistrict').value.trim(),
             addressStreet: document.getElementById('custStreet').value.trim(),
             addressNumber: document.getElementById('custNumber').value.trim(),
-            addressDistrict: document.getElementById('custDistrict').value.trim(),
             addressComplement: document.getElementById('custComplement').value.trim()
         };
-        if (!addressData.addressStreet || !addressData.addressNumber) {
-            alert('Por favor, preencha a rua e o número.');
+        if (!addressData.addressStreet || !addressData.addressDistrict) {
+            alert('Por favor, preencha o Bairro e a Rua do seu endereço.');
             return;
         }
     }
@@ -1012,9 +1121,10 @@ async function checkout() {
                 message += `*Tempo Estimado (Delivery):* ${restaurant.estimatedTimeDelivery}\n\n`;
             }
             message += `*Endereço de Entrega:*\n`;
-            message += `📍 ${addressData.addressStreet}, ${addressData.addressNumber}\n`;
+            message += `📍 Rua: ${addressData.addressStreet}, ${addressData.addressNumber || 'S/N'}\n`;
             message += `📍 Bairro: ${addressData.addressDistrict}\n`;
-            if (addressData.addressComplement) message += `📍 Comp: ${addressData.addressComplement}\n`;
+            message += `📍 Cidade: ${addressData.addressCity} / ${addressData.addressState}\n`;
+            if (addressData.addressComplement) message += `📍 Complemento: ${addressData.addressComplement}\n`;
             message += `\n`;
         } else {
             // Retirada ou Local

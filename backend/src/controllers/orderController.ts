@@ -15,6 +15,8 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             addressStreet,
             addressNumber,
             addressDistrict,
+            addressCity,
+            addressState,
             addressComplement
         } = req.body;
 
@@ -67,6 +69,8 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
                 addressStreet,
                 addressNumber,
                 addressDistrict,
+                addressCity,
+                addressState,
                 addressComplement,
                 items: {
                     create: orderItemsData
@@ -267,7 +271,8 @@ export const getThermalReceipt = async (req: Request, res: Response): Promise<vo
 
         if (!order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
 
-        const html = generateThermalReceipt(order, (width?.toString() as any) || '80mm');
+        const paperWidth = typeof width === 'string' ? width : '80mm';
+        const html = generateThermalReceipt(order, paperWidth);
         res.header('Content-Type', 'text/html');
         res.send(html);
     } catch (error) {
