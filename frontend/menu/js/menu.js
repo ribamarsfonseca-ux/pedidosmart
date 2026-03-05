@@ -706,7 +706,10 @@ window.repeatOrder = async (id) => {
 window.toggleAddressFields = async () => {
     const type = document.getElementById('fulfillmentType').value;
     const fields = document.getElementById('addressFields');
-    if (fields) fields.style.display = type === 'delivery' ? 'block' : 'none';
+    if (fields) {
+        fields.style.display = type === 'delivery' ? 'block' : 'none';
+        console.log('Toggle Delivery Fields:', type, fields.style.display);
+    }
 
     if (type === 'delivery') {
         if (userLocation) {
@@ -856,14 +859,15 @@ window.searchLocationFromFields = () => {
         const city = document.getElementById('modalCity').value;
         const district = document.getElementById('modalDistrict').value;
         const street = document.getElementById('modalStreet').value;
+        const number = document.getElementById('modalNumber').value;
 
         // Precisa pelo menos da cidade e bairro para tentar buscar
         if (!city || !district) return;
 
         // Constrói a query forçando a localidade
-        // Ex: "Centro, São Luís, MA" ou "Rua X, Centro, São Luís, MA"
         const queryParts = [];
         if (street) queryParts.push(street);
+        if (number) queryParts.push(number);
         queryParts.push(district);
         queryParts.push(city);
         if (state) queryParts.push(state);
