@@ -942,27 +942,34 @@ window.selectFavorite = (type) => {
 };
 
 window.confirmLocation = () => {
-    // Lê os campos diretos do modal, caso o cliente apenas tenha digitado e não clicou fora (onblur não ativou searchLocationFromFields)
+    // Sempre lê os campos atuais do modal para garantir que Número e Complemento estão frescos
+    const state = document.getElementById('modalState').value;
+    const city = document.getElementById('modalCity').value;
+    const district = document.getElementById('modalDistrict').value;
+    const street = document.getElementById('modalStreet').value;
+    const number = document.getElementById('modalNumber').value;
+    const complement = document.getElementById('modalComplement').value;
+
+    if (!district) {
+        alert('Por favor, informe pelo menos o seu bairro para continuarmos.');
+        return;
+    }
+
     if (!tempLocation) {
-        const state = document.getElementById('modalState').value;
-        const city = document.getElementById('modalCity').value;
-        const district = document.getElementById('modalDistrict').value;
-        const street = document.getElementById('modalStreet').value;
-
-        if (!district) {
-            alert('Por favor, informe pelo menos o seu bairro para continuarmos.');
-            return;
-        }
-
-        const number = document.getElementById('modalNumber').value;
-        const complement = document.getElementById('modalComplement').value;
+        // Se ainda não houve busca no mapa, gera um tempLocation base com coordenadas da loja
         const address = `${street || 'Rua não informada'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
-
         tempLocation = {
-            lat: restaurant?.lat || -23.5505, // fallback temporário
+            lat: restaurant?.lat || -23.5505,
             lon: restaurant?.lon || -46.6333,
             address, district, street, number, city, state, complement
         };
+    } else {
+        // Se já existe tempLocation (pelo mapa ou busca), apenas atualiza os campos de texto/número
+        tempLocation.number = number;
+        tempLocation.complement = complement;
+        tempLocation.district = district;
+        tempLocation.street = street;
+        tempLocation.address = `${street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
     }
 
     userLocation = tempLocation;

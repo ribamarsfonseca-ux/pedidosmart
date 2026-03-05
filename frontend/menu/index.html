@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Cardápio Digital | SmartPede</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css/menu.css?v=2.2">
+    <link rel="stylesheet" href="./css/menu.css?v=2.3">
 
     <!-- Leaflet.js for Maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -272,7 +272,7 @@
                         Qual o seu bairro?</label>
                     <input type="text" id="modalDistrict" placeholder="Digite o bairro para buscar..."
                         style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--primary); outline: none; font-weight: 500;"
-                        onblur="searchLocationFromFields()">
+                        oninput="searchLocationFromFields()">
                 </div>
 
                 <div style="margin-bottom: 15px;">
@@ -281,7 +281,7 @@
                         Rua</label>
                     <input type="text" id="modalStreet" placeholder="Ex: Rua das Flores"
                         style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none;"
-                        onblur="searchLocationFromFields()">
+                        oninput="searchLocationFromFields()">
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -315,7 +315,7 @@
         </div>
     </div>
 
-    <script src="./js/menu.js?v=2.2"></script>
+    <script src="./js/menu.js?v=2.3"></script>
 </body>
 
 </html>
