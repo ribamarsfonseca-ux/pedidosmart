@@ -144,6 +144,18 @@
             border-left: 4px solid #6366f1;
         }
 
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+
+        .btn-outline-danger {
+            background: transparent;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
         .dev-card h3 {
             margin: 0 0 1rem;
             color: #6366f1;
@@ -304,6 +316,8 @@
             <input type="text" id="newTenantName" placeholder="Ex: Pizzaria do Zé" style="margin-bottom:0.8rem;">
             <label>URL (Slug)</label>
             <input type="text" id="newTenantSlug" placeholder="ex: pizzaria-do-ze" style="margin-bottom:0.8rem;">
+            <label>Nome do Responsável</label>
+            <input type="text" id="newTenantOwner" placeholder="Ex: João Silva" style="margin-bottom:0.8rem;">
             <label>E-mail Admin</label>
             <input type="email" id="newTenantEmail" placeholder="admin@loja.com" style="margin-bottom:0.8rem;">
             <label>Senha Provisória</label>
@@ -442,6 +456,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                         <div>
                             <h4>${t.name} <small style="font-weight:400;color:#94a3b8;">(${t.slug})</small></h4>
+                            ${t.ownerName ? `<p class="tenant-info">👤 <strong>Responsável:</strong> ${t.ownerName}</p>` : ''}
                             ${t.whatsapp ? `<p class="tenant-info">📱 <a href="https://wa.me/${t.whatsapp}" target="_blank">${t.whatsapp}</a></p>` : '<p class="tenant-info" style="color:#ccc;">📱 Sem WhatsApp cadastrado</p>'}
                             ${t.contactEmail ? `<p class="tenant-info">📧 ${t.contactEmail}</p>` : '<p class="tenant-info" style="color:#ccc;">📧 Sem e-mail cadastrado</p>'}
                             <p class="tenant-info">📅 Cadastro: ${new Date(t.createdAt).toLocaleDateString('pt-BR')}</p>
@@ -457,9 +472,36 @@
                         <button class="btn-sm btn-renew" onclick="renewSubscription(${t.id})">💳 Confirmar Pagamento</button>
                         <button class="btn-sm btn-reset" onclick="openResetModal(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🔑 Resetar Senha</button>
                         <a href="/menu/#${t.slug}" target="_blank" class="btn-sm" style="background:#f1f5f9;color:#475569;text-decoration:none;">👁 Ver Cardápio</a>
+                        <button class="btn-sm btn-outline-danger" onclick="deleteTenant(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🗑 Excluir Restaurante</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        async function deleteTenant(id, name) {
+            if (!confirm(`⚠️ AÇÃO IRREVERSÍVEL!\nDeseja realmente EXCLUIR o restaurante "${name}" e TODOS os seus dados (pedidos, produtos, usuários)?`)) {
+                return;
+            }
+            if (!confirm(`Confirme MAIS UMA VEZ para apagar permanentemente "${name}":`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/super-admin/tenant/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-admin-password': masterPass }
+                });
+
+                if (res.ok) {
+                    alert('✅ Restaurante excluído com sucesso!');
+                    loadTenants();
+                } else {
+                    const err = await res.json();
+                    alert('❌ Erro ao excluir: ' + (err.error || 'Erro desconhecido'));
+                }
+            } catch (e) {
+                alert('Erro na conexão ao excluir.');
+            }
         }
 
         async function toggleStatus(id, currentActive) {
@@ -516,6 +558,7 @@
         function openNewTenantModal() {
             document.getElementById('newTenantName').value = '';
             document.getElementById('newTenantSlug').value = '';
+            document.getElementById('newTenantOwner').value = '';
             document.getElementById('newTenantEmail').value = '';
             document.getElementById('newTenantPassword').value = '';
             document.getElementById('newTenantModal').style.display = 'flex';
@@ -540,7 +583,13 @@
                 const res = await fetch('/api/super-admin/tenant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
-                    body: JSON.stringify({ name, slug, adminEmail, adminPassword })
+                    body: JSON.stringify({
+                        name,
+                        slug,
+                        ownerName: document.getElementById('newTenantOwner').value.trim(),
+                        adminEmail,
+                        adminPassword
+                    })
                 });
 
                 const data = await res.json();
