@@ -24,6 +24,7 @@ router.post('/super-admin/change-password', superAdminAuth, superAdmin.changeMas
 router.get('/super-admin/config', superAdminAuth, superAdmin.getConfigs);
 router.post('/super-admin/config', superAdminAuth, superAdmin.updateConfigs);
 router.post('/super-admin/tenant', superAdminAuth, superAdmin.createTenant);
+router.delete('/super-admin/tenant/:id', superAdminAuth, superAdmin.deleteTenant);
 
 // Protected Admin Routes - Com verificação de assinatura e status
 router.use('/categories', checkSubscription, categoryRoutes);

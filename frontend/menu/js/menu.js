@@ -862,58 +862,63 @@ async function reverseGeocodeStructured(lat, lon) {
     }
 }
 
-// Nova lógica de busca baseada nos campos
+// Nova lógica de busca baseada nos campos com debounce
 let tempLocation = null;
-window.searchLocationFromFields = async () => {
-    if (!geoapifyApiKey) return;
+let searchTimeout = null;
 
-    const state = document.getElementById('modalState').value;
-    const city = document.getElementById('modalCity').value;
-    const district = document.getElementById('modalDistrict').value;
-    const street = document.getElementById('modalStreet').value;
+window.searchLocationFromFields = () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+        if (!geoapifyApiKey) return;
 
-    // Precisa pelo menos da cidade e bairro para tentar buscar
-    if (!city || !district) return;
+        const state = document.getElementById('modalState').value;
+        const city = document.getElementById('modalCity').value;
+        const district = document.getElementById('modalDistrict').value;
+        const street = document.getElementById('modalStreet').value;
 
-    // Constrói a query forçando a localidade
-    // Ex: "Centro, São Luís, MA" ou "Rua X, Centro, São Luís, MA"
-    const queryParts = [];
-    if (street) queryParts.push(street);
-    queryParts.push(district);
-    queryParts.push(city);
-    if (state) queryParts.push(state);
+        // Precisa pelo menos da cidade e bairro para tentar buscar
+        if (!city || !district) return;
 
-    const query = queryParts.join(', ');
+        // Constrói a query forçando a localidade
+        // Ex: "Centro, São Luís, MA" ou "Rua X, Centro, São Luís, MA"
+        const queryParts = [];
+        if (street) queryParts.push(street);
+        queryParts.push(district);
+        queryParts.push(city);
+        if (state) queryParts.push(state);
 
-    try {
-        const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=1&apiKey=${geoapifyApiKey}`;
-        const res = await fetch(url).then(r => r.json());
+        const query = queryParts.join(', ');
 
-        if (res.features && res.features.length > 0) {
-            const props = res.features[0].properties;
-            const lat = props.lat;
-            const lon = props.lon;
+        try {
+            const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=1&apiKey=${geoapifyApiKey}`;
+            const res = await fetch(url).then(r => r.json());
 
-            // Move o pino do mapa
-            if (map && marker) {
-                const pos = [lat, lon];
-                // Dá um zoom maior se tiver rua, menor se for só bairro
-                map.setView(pos, street ? 17 : 14);
-                marker.setLatLng(pos);
+            if (res.features && res.features.length > 0) {
+                const props = res.features[0].properties;
+                const lat = props.lat;
+                const lon = props.lon;
+
+                // Move o pino do mapa
+                if (map && marker) {
+                    const pos = [lat, lon];
+                    // Dá um zoom maior se tiver rua, menor se for só bairro
+                    map.setView(pos, street ? 17 : 14);
+                    marker.setLatLng(pos);
+                }
+
+                // Prepara o tempLocation base (o reverseGeocode do dragend pode afinar isso depois)
+                const number = document.getElementById('modalNumber').value;
+                const complement = document.getElementById('modalComplement').value;
+                const fullAddress = `${street || props.street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
+
+                tempLocation = {
+                    lat, lon, address: fullAddress, district, street: street || props.street || '', number, city, state, complement
+                };
             }
-
-            // Prepara o tempLocation base (o reverseGeocode do dragend pode afinar isso depois)
-            const number = document.getElementById('modalNumber').value;
-            const complement = document.getElementById('modalComplement').value;
-            const fullAddress = `${street || props.street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
-
-            tempLocation = {
-                lat, lon, address: fullAddress, district, street: street || props.street || '', number, city, state, complement
-            };
+        } catch (e) {
+            console.error('Erro ao buscar localização pelos campos:', e);
         }
-    } catch (e) {
-        console.error('Erro ao buscar localização pelos campos:', e);
-    }
+    }, 800);
 };
 
 window.selectFavorite = (type) => {
@@ -970,13 +975,8 @@ window.confirmLocation = () => {
     const checkoutLabel = document.getElementById('checkoutAddressLabel');
     if (checkoutLabel) checkoutLabel.textContent = userLocation.address;
 
-    // Preencher campos do checkout com precisão (Formulário Estruturado)
-    if (document.getElementById('custState')) document.getElementById('custState').value = userLocation.state || '';
-    if (document.getElementById('custCity')) document.getElementById('custCity').value = userLocation.city || '';
-    if (document.getElementById('custDistrict')) document.getElementById('custDistrict').value = userLocation.district || '';
-    if (document.getElementById('custStreet')) document.getElementById('custStreet').value = userLocation.street || '';
-    if (document.getElementById('custNumber')) document.getElementById('custNumber').value = userLocation.number || '';
-    if (document.getElementById('custComplement')) document.getElementById('custComplement').value = userLocation.complement || '';
+    // Como os campos individuais foram removidos do DOM para simplificar o UX,
+    // não precisamos mais tentar preenchê-los aqui. O envio no checkout usa o objeto userLocation.
 
     // Atualizar Frete baseado nas coordenadas
     updateDeliveryFee();
@@ -1057,16 +1057,23 @@ async function checkout() {
     // Coletar campos de endereço se for delivery
     let addressData = {};
     if (fulfillmentType === 'delivery') {
+        if (!userLocation || !userLocation.street) {
+            alert('Por favor, defina um local de entrega clicando no botão editar no mapa.');
+            return;
+        }
         addressData = {
-            addressState: document.getElementById('custState').value.trim(),
-            addressCity: document.getElementById('custCity').value.trim(),
-            addressDistrict: document.getElementById('custDistrict').value.trim(),
-            addressStreet: document.getElementById('custStreet').value.trim(),
-            addressNumber: document.getElementById('custNumber').value.trim(),
-            addressComplement: document.getElementById('custComplement').value.trim()
+            addressState: userLocation.state || '',
+            addressCity: userLocation.city || '',
+            addressDistrict: userLocation.district || '',
+            addressStreet: userLocation.street || '',
+            addressNumber: userLocation.number || '',
+            addressComplement: userLocation.complement || '',
+            lat: userLocation.lat,
+            lon: userLocation.lon
         };
+
         if (!addressData.addressStreet || !addressData.addressDistrict) {
-            alert('Por favor, preencha o Bairro e a Rua do seu endereço.');
+            alert('O endereço selecionado está incompleto. Por favor, ajuste pelo mapa preenchendo Bairro e Rua.');
             return;
         }
     }

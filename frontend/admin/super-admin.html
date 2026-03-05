@@ -71,6 +71,17 @@
         .btn-action:hover {
             background: var(--primary);
         }
+
+        .btn-danger {
+            background: #ef444433;
+            color: #f87171;
+            border: 1px solid #ef444455;
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
     </style>
 </head>
 
@@ -100,20 +111,29 @@
                 list.innerHTML = tenants.map(t => `
           <div class="tenant-card">
             <div>
-              <h3 style="margin: 0;">${t.name}</h3>
+              <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                ${t.name} 
+                <span style="font-size: 0.75rem; font-weight: normal; color: #94a3b8;">${t.ownerName ? `(Resp: ${t.ownerName})` : ''}</span>
+              </h3>
               <p style="font-size: 0.875rem; color: #94a3b8; margin: 4px 0;">URL: /${t.slug}</p>
+              ${t.contactEmail || t.whatsapp ? `<p style="font-size: 0.8rem; color: #cbd5e1; margin: 2px 0;">📞 ${t.whatsapp || ''} | 📧 ${t.contactEmail || ''}</p>` : ''}
               <div style="margin-top: 8px;">
                 <span class="status-badge ${getStatusClass(t)}">${translateSubscriptionStatus(t.subscriptionStatus)}</span>
                 <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 10px;">Vence em: ${t.nextBillingDate ? new Date(t.nextBillingDate).toLocaleDateString() : 'N/A'}</span>
               </div>
             </div>
-            <div style="display: flex; gap: 10px;">
-              <button class="btn-action" onclick="toggleStatus(${t.id}, ${t.active})">
-                ${t.active ? 'Bloquear Loja' : 'Desbloquear'}
-              </button>
-              <button class="btn-action" onclick="renewSubscription(${t.id})">
-                Confirmar Pagamento
-              </button>
+            <div style="display: flex; flex-direction: column; gap: 10px; align-items: end;">
+                <div style="display: flex; gap: 10px;">
+                  <button class="btn-action" onclick="toggleStatus(${t.id}, ${t.active})">
+                    ${t.active ? 'Bloquear Loja' : 'Desbloquear'}
+                  </button>
+                  <button class="btn-action" onclick="renewSubscription(${t.id})">
+                    Confirmar Pagamento
+                  </button>
+                </div>
+                <button class="btn-action btn-danger" onclick="deleteTenant(${t.id}, '${t.name.replace(/'/g, "\\'")}')" style="align-self: flex-end; padding: 6px 12px; font-size: 0.8rem;">
+                  Excluir Restaurante
+                </button>
             </div>
           </div>
         `).join('');
@@ -163,6 +183,26 @@
             });
             alert('Assinatura renovada com sucesso!');
             loadTenants();
+        }
+
+        async function deleteTenant(id, name) {
+            if (confirm(`Atenção! Você está prestes a EXCLUIR DEFINITIVAMENTE o restaurante "${name}".\\n\\nIsso apagará todos os pedidos, produtos, usuários e dados dessa loja. Esta ação NÃO PODE SER DESFEITA.\\n\\nDeseja realmente excluir?`)) {
+                try {
+                    const response = await fetch(`${API_URL}/tenant/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Erro ao excluir');
+                    }
+
+                    alert('Restaurante excluído com sucesso.');
+                    loadTenants();
+                } catch (error) {
+                    alert(error.message);
+                }
+            }
         }
 
         loadTenants();

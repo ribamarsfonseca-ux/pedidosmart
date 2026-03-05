@@ -11,6 +11,7 @@ model Tenant {
   id         Int      @id @default(autoincrement())
   slug       String   @unique // The unique URL for the restaurant (e.g., /acai-do-joao)
   name       String
+  ownerName  String?  // Nome do Responsável do Restaurante
   planType           String   @default("basico") // basico, profissional, premium
   active             Boolean  @default(true)
   subscriptionStatus String   @default("trial") // trial, active, past_due, canceled

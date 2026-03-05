@@ -135,10 +135,10 @@ export const updateConfigs = async (req: Request, res: Response): Promise<void> 
 
 export const createTenant = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, slug, adminEmail, adminPassword } = req.body;
+        const { name, slug, ownerName, adminEmail, adminPassword } = req.body;
 
         if (!name || !slug || !adminEmail || !adminPassword) {
-            res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+            res.status(400).json({ error: 'Todos os campos obrigatórios (nome, slug, email, senha) não foram preenchidos' });
             return;
         }
 
@@ -158,7 +158,7 @@ export const createTenant = async (req: Request, res: Response): Promise<void> =
 
         const result = await prisma.$transaction(async (tx) => {
             const tenant = await tx.tenant.create({
-                data: { name, slug, active: true, subscriptionStatus: 'active' }
+                data: { name, slug, ownerName: ownerName || null, active: true, subscriptionStatus: 'active' }
             });
 
             await tx.user.create({
@@ -177,5 +177,32 @@ export const createTenant = async (req: Request, res: Response): Promise<void> =
     } catch (error) {
         console.error('Create Tenant Error:', error);
         res.status(500).json({ error: 'Erro ao cadastrar empresa' });
+    }
+};
+
+export const deleteTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        // Ensure tenant exists
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: parseInt(id as string) }
+        });
+
+        if (!tenant) {
+            res.status(404).json({ error: 'Restaurante não encontrado' });
+            return;
+        }
+
+        // Deleting the tenant will cascade delete all users, products, categories, orders, tables, and drivers 
+        // because of the onDelete: Cascade rule we set in prisma schema.
+        await prisma.tenant.delete({
+            where: { id: parseInt(id as string) }
+        });
+
+        res.json({ message: 'Restaurante excluído com sucesso!' });
+    } catch (error) {
+        console.error('Delete Tenant Error:', error);
+        res.status(500).json({ error: 'Erro ao excluir o restaurante' });
     }
 };
