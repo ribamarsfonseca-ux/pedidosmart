@@ -575,7 +575,7 @@
 
             grid.innerHTML = displayList.map(p => `
                 <div class="product-card" onclick="addToCart(${p.id})">
-                    ${p.imageUrl ? `<img src="${formatImageUrl(p.imageUrl)}" class="product-img">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;color:#ccc">S/ FOTO</div>'}
+                    ${p.imageUrl ? `<img src="${formatImageUrl(p.imageUrl)}" class="product-img" onerror="this.onerror=null; this.outerHTML='<div class=\\'product-img\\' style=\\'display:flex;align-items:center;justify-content:center;color:#ccc;background:#f3f4f6;font-size:0.7rem;\\'>s/ foto</div>';">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;color:#ccc">S/ FOTO</div>'}
                     <div class="product-info">
                         <h4>${p.name}</h4>
                         <p>${p.description || ''}</p>

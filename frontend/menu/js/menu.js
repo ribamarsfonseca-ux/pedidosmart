@@ -346,7 +346,7 @@ function renderMenu(data) {
     // Logo
     const logoEl = document.getElementById('restLogo');
     if (data.logoUrl) {
-        logoEl.innerHTML = `<img src="${formatImageUrl(data.logoUrl)}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+        logoEl.innerHTML = `<img src="${formatImageUrl(data.logoUrl)}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.onerror=null; this.outerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eee;font-weight:bold;color:#666;border-radius:50%;\\'>' + '${data.name}'.charAt(0).toUpperCase() + '</div>';">`;
     } else {
         logoEl.innerHTML = data.name.charAt(0).toUpperCase();
     }
@@ -376,7 +376,7 @@ function renderMenu(data) {
             <div class="products-grid">
                 ${cat.products.map(prod => `
                     <div class="product-card">
-                        ${prod.imageUrl ? `<img src="${formatImageUrl(prod.imageUrl)}" class="product-img" alt="${prod.name}">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
+                        ${prod.imageUrl ? `<img src="${formatImageUrl(prod.imageUrl)}" class="product-img" alt="${prod.name}" onerror="this.onerror=null; this.outerHTML='<div class=\\'product-img\\' style=\\'background: #f3f4f6; display: flex; text-align: center; align-items: center; justify-content: center; color: #999; font-size: 0.7rem; padding: 4px;\\'>Link não é imagem</div>';">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
                         <div class="product-info">
                             <div>
                                 <h3 class="product-title">${prod.name}</h3>
@@ -579,6 +579,9 @@ function updateCartUI() {
         document.getElementById('floatingCartTotal').textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
+    // Atualiza a lista visual do modal e botões de +/- em tempo real
+    renderCartItemsList();
+
     if (totalItems > 0) {
         if (count) count.textContent = totalItems;
         const modalTotal = document.getElementById('modalTotal');
@@ -589,6 +592,25 @@ function updateCartUI() {
 
     // Check orders on every cart update too
     checkOrdersStatus();
+}
+
+function renderCartItemsList() {
+    const list = document.getElementById('cartItemsList');
+    if (list) {
+        list.innerHTML = cart.map(item => `
+            <div class="cart-item">
+                <div>
+                    <h4 style="margin: 0;">${item.name}</h4>
+                    <small style="color: #6B7280;">${item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} un.</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button onclick="removeFromCart(${item.id})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">-</button>
+                    <span>${item.quantity}</span>
+                    <button onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">+</button>
+                </div>
+            </div>
+        `).join('');
+    }
 }
 
 async function checkOrdersStatus() {
@@ -645,19 +667,7 @@ function openCart() {
         }
     }
 
-    list.innerHTML = cart.map(item => `
-        <div class="cart-item">
-            <div>
-                <h4 style="margin: 0;">${item.name}</h4>
-                <small style="color: #6B7280;">${item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} un.</small>
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <button onclick="removeFromCart(${item.id})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">-</button>
-                <span>${item.quantity}</span>
-                <button onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">+</button>
-            </div>
-        </div>
-    `).join('');
+    renderCartItemsList(); // A lista é gerada por essa função agora
 
     const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     modalTotal.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

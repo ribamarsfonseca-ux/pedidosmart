@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Setup Base UI Elements
     const renderLogo = () => {
         if (tenantData.logoUrl) {
-            return `<img src="${formatImageUrl(tenantData.logoUrl)}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;">`;
+            return `<img src="${formatImageUrl(tenantData.logoUrl)}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;" onerror="this.onerror=null; this.outerHTML='<div style=\\'width:40px;height:40px;margin-right:10px;border-radius:4px;background:#eee;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#666;\\'>${tenantData.name.charAt(0).toUpperCase()}</div>';">`;
         }
         return ``;
     };
@@ -676,7 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        ${p.imageUrl ? `<img src="${formatImageUrl(p.imageUrl)}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover;">` : '<div style="width: 32px; height: 32px; border-radius: 4px; background: #eee;"></div>'}
+                                        ${p.imageUrl ? `<img src="${formatImageUrl(p.imageUrl)}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover;" onerror="this.onerror=null; this.outerHTML='<div style=\\'width: 32px; height: 32px; border-radius: 4px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;\\'>Err</div>';">` : '<div style="width: 32px; height: 32px; border-radius: 4px; background: #eee;"></div>'}
                                         <span>${p.name}</span>
                                     </div>
                                 </td>
