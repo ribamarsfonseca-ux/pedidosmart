@@ -897,9 +897,9 @@ window.searchLocationFromFields = async () => {
 
     const state = document.getElementById('modalState').value;
     const city = document.getElementById('modalCity').value;
-    const district = document.getElementById('modalDistrict').value;
-    const street = document.getElementById('modalStreet').value;
-    const number = document.getElementById('modalNumber').value;
+    const district = document.getElementById('modalDistrict').value.trim();
+    const street = document.getElementById('modalStreet').value.trim();
+    const number = document.getElementById('modalNumber').value.trim();
 
     if (!city || !district) {
         alert("Por favor, preencha pelo menos o Bairro para o mapa poder localizar e calcular o frete corretamente.");
@@ -914,6 +914,7 @@ window.searchLocationFromFields = async () => {
     }
 
     try {
+        // HIERARQUIA: Tentar busca completa primeiro
         const queryParts = [];
         if (street) queryParts.push(street);
         if (number) queryParts.push(number);
@@ -923,33 +924,50 @@ window.searchLocationFromFields = async () => {
 
         const query = queryParts.join(', ');
         const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=1&apiKey=${geoapifyApiKey}`;
-        let res = await fetch(url).then(r => r.json());
 
-        if (!res.features || res.features.length === 0) {
-            // Em vez de falhar, tenta só pelo Bairro e Cidade
-            const fallbackQuery = `${district}, ${city}, ${state}`;
-            const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(fallbackQuery)}&limit=1&apiKey=${geoapifyApiKey}`;
-            res = await fetch(fallbackUrl).then(r => r.json());
-        }
+        let res = await fetch(url).then(r => r.json());
+        let found = false;
 
         if (res.features && res.features.length > 0) {
             const props = res.features[0].properties;
-            const lat = props.lat;
-            const lon = props.lon;
 
-            if (map && marker) {
-                const pos = [lat, lon];
-                map.setView(pos, (street && res.features[0].properties.street) ? 17 : 14);
-                marker.setLatLng(pos);
+            // SENIOR LOGIC: Validar se o bairro retornado é compatível com o digitado
+            // Se o usuário digitou rua, mas o Geoapify achou essa rua em OUTRO bairro, priorizamos o BAIRRO.
+            const returnedDistrict = (props.suburb || props.district || props.neighborhood || "").toLowerCase();
+            const inputDistrict = district.toLowerCase();
+
+            if (street && !returnedDistrict.includes(inputDistrict) && !inputDistrict.includes(returnedDistrict)) {
+                console.warn("Rua encontrada, mas em bairro diferente. Fazendo fallback para o bairro correto.");
+                // Forçar busca apenas pelo Bairro para não errar o frete
+                const fallbackQuery = `${district}, ${city}, ${state}`;
+                const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(fallbackQuery)}&limit=1&apiKey=${geoapifyApiKey}`;
+                res = await fetch(fallbackUrl).then(r => r.json());
             }
 
-            const complement = document.getElementById('modalComplement').value;
-            const fullAddress = `${street || props.street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
+            if (res.features && res.features.length > 0) {
+                const finalProps = res.features[0].properties;
+                const lat = finalProps.lat;
+                const lon = finalProps.lon;
 
-            tempLocation = {
-                lat, lon, address: fullAddress, district, street: street || props.street || '', number, city, state, complement
-            };
-        } else {
+                if (map && marker) {
+                    const pos = [lat, lon];
+                    // Zoom: Se encontrou a rua e ela bate com o bairro, zoom 17. Se for só bairro, zoom 15.
+                    const isStreetLevel = street && finalProps.street;
+                    map.setView(pos, isStreetLevel ? 17 : 15);
+                    marker.setLatLng(pos);
+                }
+
+                const complement = document.getElementById('modalComplement').value;
+                const fullAddress = `${street || finalProps.street || 'Rua'}, ${number || 'S/N'}, ${district} - ${city} / ${state}`;
+
+                tempLocation = {
+                    lat, lon, address: fullAddress, district, street: street || finalProps.street || '', number, city, state, complement
+                };
+                found = true;
+            }
+        }
+
+        if (!found) {
             alert("⚠️ Bairro ou localização não encontrada no mapa automaticamente. \n\nPor favor, arraste o pino azul pelo mapa até o seu local exato para garantirmos o cálculo correto do frete!");
         }
     } catch (e) {
