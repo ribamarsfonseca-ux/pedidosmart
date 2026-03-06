@@ -584,8 +584,8 @@ function updateCartUI() {
 
     if (totalItems > 0) {
         if (count) count.textContent = totalItems;
-        const modalTotal = document.getElementById('modalTotal');
-        if (modalTotal) modalTotal.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        // SENIOR: Centralizar atualização do total para incluir frete
+        updateCartTotalUI();
     } else {
         closeCart();
     }
@@ -668,9 +668,7 @@ function openCart() {
     }
 
     renderCartItemsList(); // A lista é gerada por essa função agora
-
-    const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    modalTotal.textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    updateCartTotalUI(); // Centralizar total
 
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1109,12 +1107,15 @@ async function updateDeliveryFee() {
 function updateCartTotalUI() {
     const modalTotal = document.getElementById('modalTotal');
     const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const fee = calculatedDeliveryFee;
+    const fulfillmentType = document.getElementById('fulfillmentType')?.value || 'dine_in';
+    const fee = fulfillmentType === 'delivery' ? calculatedDeliveryFee : 0;
 
     if (modalTotal) {
-        modalTotal.innerHTML = fee > 0
-            ? `R$ ${(itemsPrice).toFixed(2).replace('.', ',')} <small class="text-secondary">+ R$ ${fee.toFixed(2).replace('.', ',')} (entrega)</small>`
-            : (itemsPrice + fee).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        if (fee > 0) {
+            modalTotal.innerHTML = `R$ ${(itemsPrice).toFixed(2).replace('.', ',')} <small class="text-secondary" style="font-weight: 400; font-size: 0.8rem;">+ R$ ${fee.toFixed(2).replace('.', ',')} (entrega)</small>`;
+        } else {
+            modalTotal.textContent = (itemsPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
     }
 }
 
