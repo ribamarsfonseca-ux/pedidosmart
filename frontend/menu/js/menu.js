@@ -141,6 +141,17 @@ function renderMenu(data) {
         if (delOption) delOption.remove();
     }
 
+    // Garante que a URL da imagem seja absoluta (resolve erro de links colados sem http://)
+    const formatImageUrl = (url) => {
+        if (!url) return '';
+        url = url.trim();
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image')) {
+            return url;
+        }
+        return 'https://' + url;
+    };
+
+
     // Perfil da Loja
     const populateProfile = () => {
         document.getElementById('restAddressModal').innerHTML = `📍 <b>Endereço:</b> ${data.address || 'Não informado'}`;
@@ -332,13 +343,12 @@ function renderMenu(data) {
         hoursEl.textContent = ' • Consulte nossos horários';
     }
 
-
+    // Logo
     const logoEl = document.getElementById('restLogo');
     if (data.logoUrl) {
-        logoEl.innerHTML = `<img src="${data.logoUrl}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
-        logoEl.style.background = 'none';
+        logoEl.innerHTML = `<img src="${formatImageUrl(data.logoUrl)}" alt="${data.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
     } else {
-        logoEl.textContent = data.name.substring(0, 2).toUpperCase();
+        logoEl.innerHTML = data.name.charAt(0).toUpperCase();
     }
 
     const catNav = document.getElementById('catNav');
@@ -366,7 +376,7 @@ function renderMenu(data) {
             <div class="products-grid">
                 ${cat.products.map(prod => `
                     <div class="product-card">
-                        ${prod.imageUrl ? `<img src="${prod.imageUrl}" class="product-img" alt="${prod.name}">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
+                        ${prod.imageUrl ? `<img src="${formatImageUrl(prod.imageUrl)}" class="product-img" alt="${prod.name}">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
                         <div class="product-info">
                             <div>
                                 <h3 class="product-title">${prod.name}</h3>
@@ -941,6 +951,40 @@ window.selectFavorite = (type) => {
     } else {
         alert('Nenhum endereço salvo como ' + (type === 'home' ? 'Casa' : 'Trabalho') + ' ainda. Salva ao confirmar do pedido.');
     }
+};
+
+window.clearLocation = () => {
+    // 1. Limpa os campos do Modal (exceto UF e Cidade Base, que vêm da loja idealmente)
+    document.getElementById('modalDistrict').value = '';
+    document.getElementById('modalStreet').value = '';
+    document.getElementById('modalNumber').value = '';
+    document.getElementById('modalComplement').value = '';
+
+    // 2. Limpa variáveis de estado e armazenamento
+    userLocation = null;
+    tempLocation = null;
+    localStorage.removeItem('userLocation');
+
+    // 3. Reseta os labels no Frontend
+    const headerLabel = document.getElementById('currentAddressLabel');
+    if (headerLabel) headerLabel.textContent = 'Escolher localização...';
+
+    const checkoutLabel = document.getElementById('checkoutAddressLabel');
+    if (checkoutLabel) checkoutLabel.textContent = 'Ajustar no mapa...';
+
+    // 4. Se tiver mapa, tenta voltar pro centro base da loja
+    if (map && marker) {
+        const defaultLat = restaurant?.lat || -23.55052;
+        const defaultLon = restaurant?.lon || -46.633308;
+        const pos = [defaultLat, defaultLon];
+        map.setView(pos, 15);
+        marker.setLatLng(pos);
+    }
+
+    // 5. Atualiza frete pra 0
+    updateDeliveryFee();
+
+    alert('Endereço limpo! Você pode digitar um novo bairro BEM devagar para o mapa buscar.');
 };
 
 window.confirmLocation = () => {

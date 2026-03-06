@@ -1,5 +1,14 @@
 const API_URL = '/api';
 
+const formatImageUrl = (url) => {
+    if (!url) return '';
+    url = url.trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image')) {
+        return url;
+    }
+    return 'https://' + url;
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Auth Check
     const token = localStorage.getItem('auth_token');
@@ -99,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Setup Base UI Elements
     const renderLogo = () => {
         if (tenantData.logoUrl) {
-            return `<img src="${tenantData.logoUrl}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;">`;
+            return `<img src="${formatImageUrl(tenantData.logoUrl)}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;">`;
         }
         return ``;
     };
@@ -667,7 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        ${p.imageUrl ? `<img src="${p.imageUrl}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover;">` : '<div style="width: 32px; height: 32px; border-radius: 4px; background: #eee;"></div>'}
+                                        ${p.imageUrl ? `<img src="${formatImageUrl(p.imageUrl)}" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover;">` : '<div style="width: 32px; height: 32px; border-radius: 4px; background: #eee;"></div>'}
                                         <span>${p.name}</span>
                                     </div>
                                 </td>
