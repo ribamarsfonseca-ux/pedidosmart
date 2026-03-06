@@ -790,20 +790,27 @@ function initLocationMap() {
 
     const defaultLat = restaurant?.lat || -23.55052;
     const defaultLon = restaurant?.lon || -46.633308;
-    const startPos = userLocation ? [userLocation.lat, userLocation.lon] : [defaultLat, defaultLon];
+    // Proteção contra fallback legado (sem lat/lon)
+    const startPos = (userLocation && typeof userLocation.lat !== "undefined")
+        ? [userLocation.lat, userLocation.lon]
+        : [defaultLat, defaultLon];
 
-    map = L.map('locationMap').setView(startPos, 15);
+    try {
+        map = L.map('locationMap').setView(startPos, 15);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-    marker = L.marker(startPos, { draggable: true }).addTo(map);
+        marker = L.marker(startPos, { draggable: true }).addTo(map);
 
-    marker.on('dragend', function (e) {
-        const pos = marker.getLatLng();
-        reverseGeocodeStructured(pos.lat, pos.lng);
-    });
+        marker.on('dragend', function (e) {
+            const pos = marker.getLatLng();
+            reverseGeocodeStructured(pos.lat, pos.lng);
+        });
+    } catch (e) {
+        console.error("Erro ao inicializar mapa:", e);
+    }
 }
 
 async function reverseGeocodeStructured(lat, lon) {
@@ -876,7 +883,14 @@ window.searchLocationFromFields = () => {
 
         try {
             const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&limit=1&apiKey=${geoapifyApiKey}`;
-            const res = await fetch(url).then(r => r.json());
+            let res = await fetch(url).then(r => r.json());
+
+            if (!res.features || res.features.length === 0) {
+                // Fallback: Busca apenas por Bairro e Cidade
+                const fallbackQuery = `${district}, ${city}, ${state}`;
+                const fallbackUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(fallbackQuery)}&limit=1&apiKey=${geoapifyApiKey}`;
+                res = await fetch(fallbackUrl).then(r => r.json());
+            }
 
             if (res.features && res.features.length > 0) {
                 const props = res.features[0].properties;
@@ -886,8 +900,8 @@ window.searchLocationFromFields = () => {
                 // Move o pino do mapa
                 if (map && marker) {
                     const pos = [lat, lon];
-                    // Dá um zoom maior se tiver rua, menor se for só bairro
-                    map.setView(pos, street ? 17 : 14);
+                    // Dá um zoom maior se tiver rua E encontrou resultado de rua
+                    map.setView(pos, (street && res.features[0].properties.street) ? 17 : 14);
                     marker.setLatLng(pos);
                 }
 
@@ -899,6 +913,9 @@ window.searchLocationFromFields = () => {
                 tempLocation = {
                     lat, lon, address: fullAddress, district, street: street || props.street || '', number, city, state, complement
                 };
+            } else {
+                // Último caso: não encontrou nem o bairro na cidade. Pode estar mal escrito.
+                console.warn('Localização não encontrada pelo Geoapify.');
             }
         } catch (e) {
             console.error('Erro ao buscar localização pelos campos:', e);
@@ -973,21 +990,6 @@ window.confirmLocation = () => {
     // Atualizar Frete baseado nas coordenadas
     updateDeliveryFee();
     closeLocationModal();
-};
-
-window.selectFavorite = (type) => {
-    const fav = favorites[type];
-    if (fav) {
-        selectAddress(fav.lat, fav.lon, fav.address);
-    } else {
-        if (!userLocation) {
-            alert('Selecione uma localização primeiro para salvá-á como favorita.');
-            return;
-        }
-        favorites[type] = userLocation;
-        localStorage.setItem('locationFavorites', JSON.stringify(favorites));
-        alert(`${type === 'home' ? 'Casa' : 'Trabalho'} salvo com sucesso!`);
-    }
 };
 
 async function updateDeliveryFee() {
