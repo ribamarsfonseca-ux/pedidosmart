@@ -19,7 +19,9 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             addressState,
             addressComplement,
             couponCode,
-            tableNumber
+            tableNumber,
+            tableId: bodyTableId,
+            status
         } = req.body;
 
         if (!tenantId || !customerName || !customerPhone || !items || !items.length) {
@@ -123,9 +125,11 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
 
         const totalAmount = subtotal - discountAmount;
 
-        // 4. Buscar Mesa se fornecida
+        // 4. Buscar Mesa se fornecida (tableNumber legado ou tableId direto)
         let tableId = null;
-        if (tableNumber) {
+        if (bodyTableId) {
+            tableId = bodyTableId;
+        } else if (tableNumber) {
             const table = await (prisma as any).table.findFirst({
                 where: { tenantId, number: parseInt(tableNumber as string), active: true }
             });
@@ -151,7 +155,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
                 customerPhone,
                 totalAmount,
                 discountAmount,
-                status: 'pending',
+                status: status || 'pending',
                 fulfillmentType: fulfillmentType || 'delivery',
                 paymentMethod: paymentMethod || 'money',
                 addressStreet,
@@ -208,11 +212,24 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
 export const getOrders = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
+        const { status, tableId } = req.query;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
+        let whereClause: any = { tenantId };
+
+        if (status === 'active') {
+            whereClause.status = { notIn: ['finished', 'cancelled'] };
+        } else if (status) {
+            whereClause.status = status as string;
+        }
+
+        if (tableId) {
+            whereClause.tableId = parseInt(tableId as string);
+        }
+
         const orders = await prisma.order.findMany({
-            where: { tenantId },
+            where: whereClause,
             include: {
                 items: {
                     include: {

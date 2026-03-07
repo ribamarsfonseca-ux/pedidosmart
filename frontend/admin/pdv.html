@@ -460,7 +460,17 @@
                 <p class="text-secondary" style="text-align: center; margin-top: 2rem;">Carrinho Vazio</p>
             </div>
 
-            <div class="cart-footer">
+            <div class="cart-footer" style="border-top: 1px solid #eee; padding-top: 15px;">
+                <div class="form-group">
+                    <label>MESA / LOCAL</label>
+                    <select id="cart-table" onchange="handleTableSelection()">
+                        <option value="">Venda Direta (Balcão)</option>
+                    </select>
+                </div>
+                <div id="table-status-info"
+                    style="display: none; margin-bottom: 1rem; font-size: 0.85rem; padding: 10px; border-radius: 8px;">
+                    <!-- Info da mesa ocupada aqui -->
+                </div>
                 <div class="form-group">
                     <label>CLIENTE (OPCIONAL)</label>
                     <input type="text" id="cart-customer" placeholder="Nome do cliente">
@@ -485,7 +495,9 @@
                     style="display: none; margin-bottom: 1rem; padding: 10px; background: #d1fae5; border-radius: 8px; font-weight: 700; color: #065f46; text-align: center;">
                     TROCO: <span id="cart-change">R$ 0,00</span>
                 </div>
-                <button class="btn btn-success" onclick="finishOrder()">FINALIZAR VENDA (F10)</button>
+                <button id="btn-finish" class="btn btn-success" onclick="finishOrder()">FINALIZAR VENDA (F10)</button>
+                <button id="btn-kitchen" class="btn btn-primary" style="display: none; margin-top: 10px;"
+                    onclick="sendToKitchen()">ENVIAR PARA COZINHA</button>
             </div>
         </aside>
     </div>
@@ -558,6 +570,7 @@
 
             setupSocket();
             await loadProducts();
+            await loadTables();
         }
 
         function setupSocket() {
@@ -592,6 +605,36 @@
                     renderProducts(); // Render with current filters
                 }
             } catch (e) { console.error('Erro ao carregar dados'); }
+        }
+
+        async function loadTableOrder(tableId) {
+            try {
+                const token = localStorage.getItem('pdv_token');
+                const res = await fetch(`${API_URL}/orders?status=active&tableId=${tableId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const activeOrders = await res.json();
+                    if (activeOrders.length > 0) {
+                        const combinedItems = [];
+                        activeOrders.forEach(order => {
+                            order.items.forEach(item => {
+                                const prod = products.find(p => p.id === item.productId);
+                                if (prod) {
+                                    combinedItems.push({
+                                        ...prod,
+                                        qty: item.quantity,
+                                        price: item.unitPrice,
+                                        fromOrder: true
+                                    });
+                                }
+                            });
+                        });
+                        cart = combinedItems;
+                        renderCart();
+                    }
+                }
+            } catch (e) { console.error('Erro ao carregar consumo da mesa'); }
         }
 
         function renderCategories() {
@@ -720,20 +763,91 @@
             }
         }
 
-        async function finishOrder() {
-            if (cart.length === 0) return alert('O carrinho está vazio!');
+        let allTables = [];
+        let selectedTableId = null;
 
-            const btn = document.querySelector('.btn-success');
-            const originalText = btn.textContent;
+        async function loadTables() {
+            try {
+                const token = localStorage.getItem('pdv_token');
+                const res = await fetch(`${API_URL}/tables`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    allTables = await res.json();
+                    renderTableSelect();
+                }
+            } catch (e) { console.error('Erro ao buscar mesas'); }
+        }
+
+        function renderTableSelect() {
+            const select = document.getElementById('cart-table');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">Venda Direta (Balcão)</option>';
+            allTables.forEach(t => {
+                const status = t.isOccupied ? '🔴 OCUPADA' : '🟢 LIVRE';
+                select.innerHTML += `<option value="${t.id}" ${currentVal == t.id ? 'selected' : ''}>Mesa ${t.number} (${status})</option>`;
+            });
+        }
+
+        async function handleTableSelection() {
+            const select = document.getElementById('cart-table');
+            selectedTableId = select.value ? parseInt(select.value) : null;
+
+            const btnFinish = document.getElementById('btn-finish');
+            const btnKitchen = document.getElementById('btn-kitchen');
+            const info = document.getElementById('table-status-info');
+
+            if (!selectedTableId) {
+                btnFinish.style.display = 'block';
+                btnFinish.textContent = 'FINALIZAR VENDA (F10)';
+                btnKitchen.style.display = 'none';
+                info.style.display = 'none';
+                return;
+            }
+
+            const table = allTables.find(t => t.id === selectedTableId);
+            if (table && table.isOccupied) {
+                btnFinish.textContent = 'FECHAR CONTA / PAGAR (F10)';
+                btnFinish.style.display = 'block';
+                btnKitchen.style.display = 'block';
+                btnKitchen.textContent = 'ADICIONAR À COZINHA';
+
+                info.style.display = 'block';
+                info.style.background = '#fee2e2';
+                info.style.color = '#991b1b';
+                info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Carregando consumo...`;
+
+                await loadTableOrder(selectedTableId);
+                info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Finalize o pagamento para liberar.`;
+            } else {
+                cart = [];
+                renderCart();
+                btnFinish.style.display = 'none';
+                btnKitchen.style.display = 'block';
+                btnKitchen.textContent = 'ENVIAR PARA COZINHA';
+
+                info.style.display = 'block';
+                info.style.background = '#d1fae5';
+                info.style.color = '#065f46';
+                info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>.`;
+            }
+        }
+
+        async function sendToKitchen() {
+            if (cart.length === 0) return alert('O carrinho está vazio!');
+            if (!selectedTableId) return alert('Selecione uma mesa para enviar à cozinha.');
+
+            const btn = document.getElementById('btn-kitchen');
             btn.disabled = true;
-            btn.textContent = 'FINALIZANDO...';
+            btn.textContent = 'ENVIANDO...';
 
             const payload = {
                 tenantId: tenant.id,
-                customerName: document.getElementById('cart-customer').value || 'Cliente Balcão',
+                customerName: document.getElementById('cart-customer').value || `Mesa ${allTables.find(t => t.id === selectedTableId)?.number}`,
                 customerPhone: '0000000000',
-                fulfillmentType: 'counter', // Venda direta/balcão
-                paymentMethod: document.getElementById('cart-payment').value,
+                fulfillmentType: 'dine_in',
+                tableId: selectedTableId,
+                status: 'preparing',
                 items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
             };
 
@@ -741,23 +855,62 @@
                 const token = localStorage.getItem('pdv_token');
                 const res = await fetch(`${API_URL}/orders`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert('🔥 Pedido enviado para a Cozinha!');
+                    cart = [];
+                    renderCart();
+                    await loadTables();
+                    handleTableSelection();
+                } else {
+                    const err = await res.json();
+                    alert('Erro: ' + err.error);
+                }
+            } catch (e) { alert('Erro ao enviar para cozinha.'); }
+            finally { btn.disabled = false; }
+        }
+
+        async function finishOrder() {
+            if (cart.length === 0 && !selectedTableId) return alert('O carrinho está vazio!');
+
+            const btn = document.getElementById('btn-finish');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'PROCESSANDO...';
+
+            const payload = {
+                tenantId: tenant.id,
+                customerName: document.getElementById('cart-customer').value || (selectedTableId ? `Mesa ${allTables.find(t => t.id === selectedTableId)?.number}` : 'Cliente Balcão'),
+                customerPhone: '0000000000',
+                fulfillmentType: selectedTableId ? 'dine_in' : 'counter',
+                paymentMethod: document.getElementById('cart-payment').value,
+                tableId: selectedTableId,
+                status: 'finished', // Finaliza direto
+                items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
+            };
+
+            try {
+                const token = localStorage.getItem('pdv_token');
+                const res = await fetch(`${API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
                     const result = await res.json();
-                    if (confirm('✅ Venda realizada com sucesso!\n\nDeseja imprimir o recibo?')) {
-                        const token = localStorage.getItem('pdv_token');
+                    alert('✅ Venda finalizada e Mesa liberada!');
+                    if (confirm('Deseja imprimir o recibo?')) {
                         window.open(`${API_URL}/orders/${result.order.id}/receipt?token=${token}`, '_blank');
                     }
                     cart = [];
                     document.getElementById('cart-customer').value = '';
                     renderCart();
-                    // Opcional: imprimir recibo aqui automaticamente no futuro
+                    await loadTables();
+                    handleTableSelection();
                 } else {
                     const err = await res.json();
                     alert('Erro: ' + err.error);

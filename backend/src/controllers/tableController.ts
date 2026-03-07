@@ -8,10 +8,21 @@ export const getTables = async (req: Request, res: Response): Promise<void> => {
 
         const tables = await (prisma as any).table.findMany({
             where: { tenantId },
+            include: {
+                orders: {
+                    where: { status: { notIn: ['finished', 'cancelled'] } },
+                    select: { id: true }
+                }
+            },
             orderBy: { number: 'asc' }
         });
 
-        res.json(tables);
+        const tablesWithStatus = tables.map((t: any) => ({
+            ...t,
+            isOccupied: t.orders.length > 0
+        }));
+
+        res.json(tablesWithStatus);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar mesas' });
     }
