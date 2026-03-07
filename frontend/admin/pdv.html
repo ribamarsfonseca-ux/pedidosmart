@@ -62,6 +62,86 @@
             grid-template-rows: 70px 1fr;
         }
 
+        /* Mobile Adjustments */
+        @media (max-width: 992px) {
+            #main-pdv {
+                grid-template-columns: 1fr;
+                grid-template-rows: 70px 1fr 60px;
+                /* Header, Content, Mobile Nav */
+            }
+
+            .cart-sidebar {
+                display: none;
+                /* Hide by default on mobile */
+                position: fixed;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                height: calc(100vh - 130px);
+                z-index: 100;
+                border-left: none;
+            }
+
+            .cart-sidebar.active {
+                display: flex;
+            }
+
+            .pdv-container {
+                padding: 1rem;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 0.75rem;
+            }
+
+            .product-img {
+                height: 100px;
+            }
+
+            .header {
+                padding: 0 1rem;
+            }
+
+            #pdv-store-name {
+                font-size: 1.1rem !important;
+            }
+
+            .pdv-mobile-nav {
+                display: flex !important;
+                grid-row: 3;
+                background: var(--white);
+                border-top: 1px solid var(--border);
+                align-items: center;
+                justify-content: space-around;
+            }
+        }
+
+        .pdv-mobile-nav {
+            display: none;
+        }
+
+        .mobile-nav-btn {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray);
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .mobile-nav-btn.active {
+            color: var(--primary);
+            border-top: 3px solid var(--primary);
+        }
+
         .header {
             grid-column: 1 / -1;
             background: var(--white);
@@ -500,6 +580,21 @@
                     onclick="sendToKitchen()">ENVIAR PARA COZINHA</button>
             </div>
         </aside>
+
+        <nav class="pdv-mobile-nav">
+            <button class="mobile-nav-btn active" id="btn-nav-catalog" onclick="switchMobileTab('catalog')">
+                <span style="font-size: 1.2rem;">📖</span>
+                Cardápio
+            </button>
+            <button class="mobile-nav-btn" id="btn-nav-cart" onclick="switchMobileTab('cart')">
+                <div style="position: relative;">
+                    <span style="font-size: 1.2rem;">🛒</span>
+                    <span id="mobile-cart-badge"
+                        style="position: absolute; top: -5px; right: -8px; background: var(--primary); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;">0</span>
+                </div>
+                Carrinho
+            </button>
+        </nav>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -531,6 +626,25 @@
                 document.getElementById('pdv-clock').textContent = new Date().toLocaleTimeString();
             }, 1000);
         });
+
+        function switchMobileTab(tab) {
+            const container = document.querySelector('.pdv-container');
+            const cartSidebar = document.querySelector('.cart-sidebar');
+            const btnNavCatalog = document.getElementById('btn-nav-catalog');
+            const btnNavCart = document.getElementById('btn-nav-cart');
+
+            if (tab === 'cart') {
+                container.style.display = 'none';
+                cartSidebar.classList.add('active');
+                btnNavCart.classList.add('active');
+                btnNavCatalog.classList.remove('active');
+            } else {
+                container.style.display = 'block';
+                cartSidebar.classList.remove('active');
+                btnNavCatalog.classList.add('active');
+                btnNavCart.classList.remove('active');
+            }
+        }
 
         // Shortcuts
         document.addEventListener('keydown', (e) => {
@@ -759,6 +873,7 @@
             }).join('');
 
             document.getElementById('cart-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('mobile-cart-badge').textContent = cart.reduce((acc, item) => acc + item.qty, 0);
             calculateChange(); // Recalcular troco ao mexer no carrinho
         }
 
@@ -831,6 +946,10 @@
                     cart = [];
                     renderCart();
                 }
+
+                // For mobile: if a free table is selected, switch to catalog to pick products
+                if (window.innerWidth < 992) switchMobileTab('catalog');
+
                 btnFinish.style.display = 'none';
                 btnKitchen.style.display = 'block';
                 btnKitchen.textContent = 'ENVIAR PARA COZINHA';
