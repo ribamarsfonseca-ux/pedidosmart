@@ -7,7 +7,7 @@ const API_URL = window.location.origin.includes('localhost') || window.location.
     ? 'http://localhost:3000/api'
     : window.location.origin + '/api';
 
-const token = localStorage.getItem('token');
+const token = localStorage.getItem('auth_token');
 let socket;
 let orders = [];
 
