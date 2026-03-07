@@ -229,8 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bind clicks to navigation
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault();
             const pageId = e.target.closest('a').dataset.page;
+            if (!pageId) return; // Permite que links com onclick (KDS) funcionem normalmente
+
+            e.preventDefault();
             loadView(pageId);
         });
     });
