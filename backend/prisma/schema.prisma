@@ -49,12 +49,16 @@ model Tenant {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  users      User[]
-  categories Category[]
-  products   Product[]
-  orders     Order[]
-  tables     Table[]
-  drivers    Driver[]
+  users       User[]
+  categories  Category[]
+  products    Product[]
+  orders      Order[]
+  tables      Table[]
+  drivers     Driver[]
+  addonGroups AddonGroup[]
+  coupons     Coupon[]
+  customers   Customer[]
+  cashRegisterEvents CashRegisterEvent[]
 
   @@map("tenants")
 }
@@ -134,13 +138,93 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Professional Fields
+  useStock      Boolean @default(false)
+  stockQuantity Int     @default(0)
+  
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
+  addonGroups AddonGroup[] @relation("ProductAddonGroups")
 
   @@index([tenantId])
   @@index([categoryId])
   @@map("products")
+}
+
+model AddonGroup {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  name        String   // Ex: Seus Molhos, Tamanho, Meio a Meio
+  minChoices  Int      @default(0)
+  maxChoices  Int      @default(1)
+  isRequired  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  addons      Addon[]
+  products    Product[] @relation("ProductAddonGroups")
+
+  @@index([tenantId])
+  @@map("addon_groups")
+}
+
+model Addon {
+  id           Int      @id @default(autoincrement())
+  addonGroupId Int
+  name         String
+  price        Float    @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  group        AddonGroup @relation(fields: [addonGroupId], references: [id], onDelete: Cascade)
+  orderItemAddons OrderItemAddon[]
+
+  @@index([addonGroupId])
+  @@map("addons")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  phone     String   // Unique identifier for customer in a tenant
+  name      String?
+  address   String?
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders    Order[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Coupon {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  code        String
+  type        String   // fixed, percentage
+  value       Float
+  minOrder    Float    @default(0)
+  maxUsage    Int?
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("coupons")
 }
 
 model Order {
@@ -149,9 +233,14 @@ model Order {
   tenantId       Int
   tableId        Int?     // Vínculo opcional com Mesa
   driverId       Int?     // Vínculo opcional com Entregador
+  customerId     Int?     // Vínculo com Cliente persistente
+  couponId       Int?     // Cupom aplicado
+
   customerName   String
   customerPhone  String
   totalAmount    Float
+  discountAmount Float    @default(0)
+  deliveryFeeAmount Float @default(0)
   status         String   @default("pending") // pending, accepted, preparing, ready, finished, cancelled
   cancelReason   String?  // Motivo do cancelamento
   cancellationRequested Boolean @default(false) // Se o cliente pediu cancelamento
@@ -172,11 +261,15 @@ model Order {
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table          Table?   @relation(fields: [tableId], references: [id])
   driver         Driver?  @relation(fields: [driverId], references: [id])
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  coupon         Coupon?   @relation(fields: [couponId], references: [id])
   items          OrderItem[]
 
   @@index([tenantId])
   @@index([tableId])
   @@index([driverId])
+  @@index([customerId])
+  @@index([couponId])
   @@map("orders")
 }
 
@@ -186,13 +279,45 @@ model OrderItem {
   productId Int
   quantity  Int
   unitPrice Float
+  notes     String?
 
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  addons    OrderItemAddon[]
 
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model OrderItemAddon {
+  id          Int      @id @default(autoincrement())
+  orderItemId Int
+  addonId     Int
+  name        String   // Snapshot for history
+  price       Float    // Snapshot for history
+
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  addon       Addon     @relation(fields: [addonId], references: [id])
+
+  @@index([orderItemId])
+  @@index([addonId])
+  @@map("order_item_addons")
+}
+
+model CashRegisterEvent {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  type        String   // open, close, inflow (reforço), outflow (sangria)
+  amount      Float    @default(0)
+  description String?
+  userId      Int?      // Quem realizou a operação
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("cash_register_events")
 }
 
 model Config {
@@ -202,3 +327,4 @@ model Config {
 
   @@map("configs")
 }
+

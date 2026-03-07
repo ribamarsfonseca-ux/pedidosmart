@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDS | Tela de Cozinha - SmartPedidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ef4444;
+            --secondary: #64748b;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --pending: #f59e0b;
+            --preparing: #3b82f6;
+            --ready: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #1e293b;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .kds-container {
+            flex: 1;
+            padding: 20px;
+            overflow-x: auto;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .kds-column {
+            min-width: 320px;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .column-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--secondary);
+        }
+
+        .column-header.pending {
+            border-color: var(--pending);
+            color: var(--pending);
+        }
+
+        .column-header.preparing {
+            border-color: var(--preparing);
+            color: var(--preparing);
+        }
+
+        .orders-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-right: 5px;
+        }
+
+        .order-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            border-left: 5px solid var(--secondary);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .order-card.pending {
+            border-left-color: var(--pending);
+        }
+
+        .order-card.preparing {
+            border-left-color: var(--preparing);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .order-id {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .order-time {
+            font-size: 0.85rem;
+            color: var(--secondary);
+        }
+
+        .order-type {
+            font-size: 0.75rem;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .order-items {
+            margin-bottom: 15px;
+        }
+
+        .item-row {
+            margin-bottom: 8px;
+        }
+
+        .item-main {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+        }
+
+        .item-quantity {
+            color: var(--primary);
+            margin-right: 5px;
+        }
+
+        .item-addons {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-left: 20px;
+            line-height: 1.2;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-start {
+            background: var(--preparing);
+            color: white;
+        }
+
+        .btn-ready {
+            background: var(--ready);
+            color: white;
+        }
+
+        .btn:hover {
+            filter: brightness(0.9);
+            transform: scale(0.98);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h2 style="font-size: 1.5rem;">KDS <span style="font-weight: 400; opacity: 0.7;">| Cozinha</span></h2>
+            <div id="connectionStatus"
+                style="font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1);">
+                Conectando...</div>
+        </div>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div id="currentTime" style="font-weight: 600; font-size: 1.1rem;">00:00:00</div>
+            <button onclick="window.close()"
+                style="background: none; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 15px; border-radius: 6px; cursor: pointer;">Sair</button>
+        </div>
+    </header>
+
+    <div class="kds-container">
+        <!-- Pendentes -->
+        <div class="kds-column">
+            <div class="column-header pending">PENDENTES (<span id="count-pending">0</span>)</div>
+            <div id="list-pending" class="orders-list">
+                <div class="empty-state">Sem novos pedidos</div>
+            </div>
+        </div>
+
+        <!-- Em Preparo -->
+        <div class="kds-column">
+            <div class="column-header preparing">EM PREPARO (<span id="count-preparing">0</span>)</div>
+            <div id="list-preparing" class="orders-list">
+                <div class="empty-state">Nenhum item em preparo</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./js/kds.js"></script>
+</body>
+
+</html>

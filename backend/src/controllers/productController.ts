@@ -12,7 +12,10 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 
         const products = await prisma.product.findMany({
             where: { tenantId },
-            include: { category: { select: { name: true } } },
+            include: {
+                category: { select: { name: true } },
+                addonGroups: { include: { addons: true } }
+            },
             orderBy: { order: 'asc' },
         });
 
@@ -26,7 +29,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 export const createProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
-        const { name, description, price, imageUrl, categoryId, active, order } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
         if (!name || price === undefined || !categoryId) {
@@ -54,6 +57,8 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
                 imageUrl,
                 active: active !== undefined ? active : true,
                 order: order !== undefined ? parseInt(order as string) : 0,
+                useStock: useStock !== undefined ? Boolean(useStock) : false,
+                stockQuantity: stockQuantity !== undefined ? parseInt(stockQuantity as string) : 0,
             },
         });
 
@@ -68,7 +73,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
     try {
         const tenantId = req.user?.tenantId;
         const { id } = req.params;
-        const { name, description, price, imageUrl, categoryId, active, order } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
@@ -101,6 +106,8 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
                 imageUrl: imageUrl !== undefined ? imageUrl : existingProduct.imageUrl,
                 active: active !== undefined ? active : existingProduct.active,
                 order: order !== undefined ? parseInt(order as string) : (existingProduct as any).order || 0,
+                useStock: useStock !== undefined ? Boolean(useStock) : existingProduct.useStock,
+                stockQuantity: stockQuantity !== undefined ? parseInt(stockQuantity as string) : existingProduct.stockQuantity,
             },
         });
 

@@ -7,6 +7,8 @@ let cart = [];
 let restaurant = null;
 let userLocation = JSON.parse(localStorage.getItem('userLocation')) || null;
 let calculatedDeliveryFee = 0;
+let appliedCoupon = null; // { code, type, value }
+let tableNumber = null;
 let map = null;
 let marker = null;
 let favorites = JSON.parse(localStorage.getItem('locationFavorites')) || { home: null, work: null };
@@ -43,7 +45,12 @@ function initLocationUI() {
 
 async function loadTenantData() {
     // 1. Get Slug from Subdomain or Hash
-    let slug = window.location.hash.substring(1);
+    let hash = window.location.hash.substring(1);
+    let slug = hash.split('?')[0];
+
+    // Parse query params from hash
+    const params = new URLSearchParams(hash.split('?')[1] || '');
+    tableNumber = params.get('table');
 
     // Check for subdomain (e.g., loja.smartpede.com.br)
     const hostname = window.location.hostname;
@@ -69,6 +76,27 @@ async function loadTenantData() {
 
         restaurant = data;
         renderMenu(data);
+
+        // Auto-select Table if present in URL
+        if (tableNumber) {
+            setTimeout(() => {
+                const ft = document.getElementById('fulfillmentType');
+                if (ft) {
+                    ft.value = 'dine_in';
+                    ft.disabled = true; // Lock it
+                    toggleAddressFields(); // Update UI
+                    // Inform user
+                    const cartFooter = document.querySelector('.cart-footer');
+                    if (cartFooter) {
+                        const alert = document.createElement('div');
+                        alert.style.cssText = 'background: #f0fdf4; color: #166534; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #bbf7d0;';
+                        alert.innerHTML = `<strong>📍 Atendimento na Mesa ${tableNumber}</strong><br>Seu pedido será entregue diretamente nesta mesa.`;
+                        cartFooter.prepend(alert);
+                    }
+                }
+            }, 500);
+        }
+
         document.getElementById('loading').style.display = 'none';
         checkOrdersStatus(); // Check on load
         setInterval(checkOrdersStatus, 30000); // Polling every 30s
@@ -374,9 +402,14 @@ function renderMenu(data) {
         <section class="menu-section" id="cat-${cat.id}">
             <h2 class="section-title">${cat.name}</h2>
             <div class="products-grid">
-                ${cat.products.map(prod => `
-                    <div class="product-card">
-                        ${prod.imageUrl ? `<img src="${formatImageUrl(prod.imageUrl)}" class="product-img" alt="${prod.name}" onerror="this.onerror=null; this.outerHTML='<div class=\\'product-img\\' style=\\'background: #f3f4f6; display: flex; text-align: center; align-items: center; justify-content: center; color: #999; font-size: 0.7rem; padding: 4px;\\'>Link não é imagem</div>';">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
+                ${cat.products.map(prod => {
+        const isSoldOut = prod.useStock && (prod.stockQuantity || 0) <= 0;
+        return `
+                    <div class="product-card ${isSoldOut ? 'sold-out' : ''}" onclick="${isSoldOut ? '' : `openProductDetail(${JSON.stringify(prod).replace(/"/g, '&quot;')})`}">
+                        <div style="position: relative;">
+                            ${prod.imageUrl ? `<img src="${formatImageUrl(prod.imageUrl)}" class="product-img" alt="${prod.name}" onerror="this.onerror=null; this.outerHTML='<div class=\\'product-img\\' style=\\'background: #f3f4f6; display: flex; text-align: center; align-items: center; justify-content: center; color: #999; font-size: 0.7rem; padding: 4px;\\'>Link não é imagem</div>';">` : '<div class="product-img" style="background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #ccc;">🖼️</div>'}
+                            ${isSoldOut ? '<div style="position: absolute; inset:0; background: rgba(255,255,255,0.7); display:flex; align-items:center; justify-content:center;"><span style="background:#ef4444; color:white; padding:4px 10px; border-radius:4px; font-weight:700; font-size:0.75rem;">ESGOTADO</span></div>' : ''}
+                        </div>
                         <div class="product-info">
                             <div>
                                 <h3 class="product-title">${prod.name}</h3>
@@ -384,11 +417,14 @@ function renderMenu(data) {
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span class="product-price">${prod.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                                <button class="btn-add" onclick="addToCart(${JSON.stringify(prod).replace(/"/g, '&quot;')})">+</button>
+                                <button class="btn-add" ${isSoldOut ? 'disabled' : ''} onclick="event.stopPropagation(); ${isSoldOut ? '' : `openProductDetail(${JSON.stringify(prod).replace(/"/g, '&quot;')})`}">
+                                    ${isSoldOut ? 'Off' : '+'}
+                                </button>
                             </div>
                         </div>
                     </div>
-                `).join('')}
+                `;
+    }).join('')}
             </div>
         </section>
     `).join('');
@@ -471,6 +507,156 @@ window.toggleMyOrdersModal = (show) => {
     if (show) refreshMyOrders();
 };
 
+// PRODUCT DETAIL & ADDONS LOGIC
+let currentBaseProduct = null;
+let detailQuantity = 1;
+
+window.openProductDetail = (product) => {
+    currentBaseProduct = product;
+    detailQuantity = 1;
+    document.getElementById('detailQuantity').textContent = detailQuantity;
+    document.getElementById('detailProductName').textContent = product.name;
+    document.getElementById('detailProductDesc').textContent = product.description || '';
+
+    const imgContainer = document.getElementById('detailProductImgContainer');
+    if (product.imageUrl) {
+        imgContainer.innerHTML = `<img src="${product.imageUrl}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 10px;">`;
+        imgContainer.style.display = 'block';
+    } else {
+        imgContainer.style.display = 'none';
+    }
+
+    renderDetailAddons(product.addonGroups || []);
+    updateDetailTotal();
+    document.getElementById('productDetailModal').style.display = 'flex';
+
+    // Configurar botão de adicionar
+    const btn = document.getElementById('addWithAddonsBtn');
+    btn.onclick = () => addSelectedProductToCart();
+};
+
+window.closeProductDetailModal = () => {
+    document.getElementById('productDetailModal').style.display = 'none';
+    currentBaseProduct = null;
+};
+
+function renderDetailAddons(groups) {
+    const container = document.getElementById('detailAddonGroups');
+    if (!groups || groups.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = groups.map(g => `
+        <div class="addon-group" style="margin-bottom: 20px; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; background: #fafafa;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h4 style="margin:0; font-size: 1rem; color: #1e293b;">${g.name}</h4>
+                    <p style="margin: 2px 0 10px; font-size: 0.75rem; color: #64748b;">
+                        ${g.isRequired ? '<span style="color: #ef4444; font-weight: 700;">Obrigatório</span>' : 'Opcional'} • 
+                        Mín: ${g.minChoices} | Máx: ${g.maxChoices}
+                    </p>
+                </div>
+            </div>
+            <div class="addon-options">
+                ${g.addons.map(a => `
+                    <label style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="${g.maxChoices === 1 ? 'radio' : 'checkbox'}" 
+                                   name="group-${g.id}" 
+                                   value="${a.id}" 
+                                   data-price="${a.price}" 
+                                   data-name="${a.name}"
+                                   onchange="validateAddonChoice(${g.id}, ${g.maxChoices}, this); updateDetailTotal();"
+                                   style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <span style="font-size: 0.9rem; color: #334155;">${a.name}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+window.validateAddonChoice = (groupId, max, element) => {
+    if (max === 1) return; // Radio handling is native
+    const checked = document.querySelectorAll(`input[name="group-${groupId}"]:checked`);
+    if (checked.length > max) {
+        element.checked = false;
+        alert(`Você pode escolher no máximo ${max} opções para este grupo.`);
+    }
+};
+
+window.changeDetailQuantity = (delta) => {
+    detailQuantity = Math.max(1, detailQuantity + delta);
+    document.getElementById('detailQuantity').textContent = detailQuantity;
+    updateDetailTotal();
+};
+
+window.updateDetailTotal = () => {
+    if (!currentBaseProduct) return;
+    let total = currentBaseProduct.price;
+
+    // Somar adicionais selecionados
+    const selectedAddons = document.querySelectorAll('#detailAddonGroups input:checked');
+    selectedAddons.forEach(input => {
+        total += parseFloat(input.dataset.price);
+    });
+
+    const subtotal = total * detailQuantity;
+    document.getElementById('detailTotalPrice').textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
+
+function addSelectedProductToCart() {
+    // Validar obrigatórios
+    const groups = currentBaseProduct.addonGroups || [];
+    for (const g of groups) {
+        if (g.isRequired) {
+            const checked = document.querySelectorAll(`input[name="group-${g.id}"]:checked`);
+            if (checked.length < g.minChoices) {
+                alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
+                return;
+            }
+        }
+    }
+
+    const selectedAddons = Array.from(document.querySelectorAll('#detailAddonGroups input:checked')).map(input => ({
+        id: parseInt(input.value),
+        name: input.dataset.name,
+        price: parseFloat(input.dataset.price)
+    }));
+
+    // No SmartPede, itens com adicionais diferentes devem ser entradas separadas no carrinho
+    // Para simplificar, vamos gerar um ID único baseado no produto e nos IDs dos adicionais
+    const addonIdsKey = selectedAddons.map(a => a.id).sort().join('-');
+    const cartItemId = `${currentBaseProduct.id}-${addonIdsKey}`;
+
+    const cartItem = {
+        cartItemId,
+        id: currentBaseProduct.id,
+        name: currentBaseProduct.name,
+        price: currentBaseProduct.price,
+        imageUrl: currentBaseProduct.imageUrl,
+        quantity: detailQuantity,
+        addons: selectedAddons,
+        totalItemPrice: currentBaseProduct.price + selectedAddons.reduce((acc, a) => acc + a.price, 0)
+    };
+
+    const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+    if (existingIndex > -1) {
+        cart[existingIndex].quantity += detailQuantity;
+    } else {
+        cart.push(cartItem);
+    }
+
+    updateCartUI();
+    closeProductDetailModal();
+
+    // Abrir carrinho automaticamente para confirmal
+    openCart();
+}
+
 async function refreshMyOrders() {
     const list = document.getElementById('myOrdersList');
     const orderIds = JSON.parse(localStorage.getItem('my_orders') || '[]');
@@ -526,27 +712,45 @@ function translateStatus(status) {
 
 // CART LOGIC
 function addToCart(product) {
-    const existing = cart.find(item => item.id === product.id);
+    if (product.addonGroups && product.addonGroups.length > 0) {
+        openProductDetail(product);
+        return;
+    }
+
+    // Fallback para produtos sem adicionais (comportamento antigo mantido/melhorado)
+    const cartItemId = `${product.id}`;
+    const existing = cart.find(item => item.cartItemId === cartItemId);
     if (existing) {
         existing.quantity += 1;
     } else {
-        cart.push({ ...product, quantity: 1 });
+        cart.push({
+            cartItemId,
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageUrl: product.imageUrl,
+            quantity: 1,
+            addons: [],
+            totalItemPrice: product.price
+        });
     }
     updateCartUI();
 
     // Simple toast effect
     const btn = event.target;
-    const original = btn.textContent;
-    btn.textContent = '✓';
-    btn.style.background = '#10B981';
-    setTimeout(() => {
-        btn.textContent = original;
-        btn.style.background = '';
-    }, 1000);
+    if (btn && btn.classList.contains('btn-add')) {
+        const original = btn.textContent;
+        btn.textContent = '✓';
+        btn.style.background = '#10B981';
+        setTimeout(() => {
+            btn.textContent = original;
+            btn.style.background = '';
+        }, 1000);
+    }
 }
 
-function removeFromCart(id) {
-    const index = cart.findIndex(item => item.id === id);
+function removeFromCart(cartItemId) {
+    const index = cart.findIndex(item => item.cartItemId === cartItemId);
     if (index > -1) {
         if (cart[index].quantity > 1) {
             cart[index].quantity -= 1;
@@ -558,11 +762,8 @@ function removeFromCart(id) {
 }
 
 function updateCartUI() {
-    const count = document.getElementById('cartCount');
-    const totalDisp = document.getElementById('cartTotal');
-
     const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const totalPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const totalPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
 
     // Update Bottom Nav Badge
     const navCount = document.getElementById('navCartCount');
@@ -583,35 +784,55 @@ function updateCartUI() {
     renderCartItemsList();
 
     if (totalItems > 0) {
+        const count = document.getElementById('cartCount');
         if (count) count.textContent = totalItems;
-        // SENIOR: Centralizar atualização do total para incluir frete
         updateCartTotalUI();
     } else {
         closeCart();
     }
-
-    // Check orders on every cart update too
-    checkOrdersStatus();
 }
 
 function renderCartItemsList() {
     const list = document.getElementById('cartItemsList');
-    if (list) {
-        list.innerHTML = cart.map(item => `
-            <div class="cart-item">
-                <div>
-                    <h4 style="margin: 0;">${item.name}</h4>
-                    <small style="color: #6B7280;">${item.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} un.</small>
-                </div>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <button onclick="removeFromCart(${item.id})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">-</button>
-                    <span>${item.quantity}</span>
-                    <button onclick="addToCart(${JSON.stringify(item).replace(/"/g, '&quot;')})" style="border: 1px solid #ddd; background: none; border-radius: 4px; width: 24px;">+</button>
+    if (!list) return;
+
+    if (cart.length === 0) {
+        list.innerHTML = '<p class="text-secondary" style="text-align:center; padding: 20px;">Carrinho vazio</p>';
+        return;
+    }
+
+    list.innerHTML = cart.map(item => `
+        <div class="cart-item" style="display: flex; gap: 12px; padding: 15px 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start;">
+            <div style="flex: 1;">
+                <h4 style="margin: 0; font-size: 0.95rem; color: #1e293b;">${item.name}</h4>
+                ${item.addons && item.addons.length > 0 ? `
+                    <p style="margin: 4px 0; font-size: 0.8rem; color: #64748b; line-height: 1.2;">
+                        ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
+                    </p>
+                ` : ''}
+                <div style="margin-top: 8px; font-weight: 700; color: var(--primary);">
+                    ${(item.totalItemPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
             </div>
-        `).join('');
-    }
+            <div class="quantity-controls" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 4px 8px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <button onclick="removeFromCart('${item.cartItemId}')" style="border:none; background:none; font-size: 1.1rem; color: var(--primary); font-weight: 800; cursor:pointer;">-</button>
+                <span style="font-size: 0.9rem; font-weight: 700;">${item.quantity}</span>
+                <button onclick="addOneMore('${item.cartItemId}')" style="border:none; background:none; font-size: 1.1rem; color: var(--primary); font-weight: 800; cursor:pointer;">+</button>
+            </div>
+        </div>
+    `).join('');
 }
+
+// Helper to increment item in cart
+window.addOneMore = (cartItemId) => {
+    const item = cart.find(i => i.cartItemId === cartItemId);
+    if (item) {
+        item.quantity += 1;
+        updateCartUI();
+    }
+};
+// Check orders on every cart update too
+checkOrdersStatus();
 
 async function checkOrdersStatus() {
     const orderIds = JSON.parse(localStorage.getItem('my_orders') || '[]');
@@ -714,7 +935,7 @@ window.repeatOrder = async (id) => {
         }));
 
         updateCartUI();
-        alert('Items adicionados ao carrinho!');
+        alert('Itens adicionados ao carrinho!');
         switchTab('cart', document.getElementById('nav-cart'));
     } catch (e) {
         alert('Erro ao repetir pedido.');
@@ -1104,18 +1325,67 @@ async function updateDeliveryFee() {
     }
 }
 
+window.applyCoupon = async () => {
+    const code = document.getElementById('couponInput').value.trim();
+    if (!code) return;
+
+    const itemsPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
+    const msg = document.getElementById('couponMessage');
+
+    try {
+        const res = await fetch(`${API_URL}/marketing/coupons/validate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, tenantId: restaurant.id, orderAmount: itemsPrice })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            msg.textContent = data.error;
+            msg.style.color = '#ef4444';
+            msg.style.display = 'block';
+            appliedCoupon = null;
+        } else {
+            appliedCoupon = { code: code.toUpperCase(), ...data };
+            msg.textContent = `Cupom aplicado! Desconto de ${data.type === 'percentage' ? data.value + '%' : 'R$ ' + data.value.toFixed(2)}`;
+            msg.style.color = '#10b981';
+            msg.style.display = 'block';
+        }
+        updateCartTotalUI();
+    } catch (e) {
+        msg.textContent = 'Erro ao validar cupom.';
+        msg.style.display = 'block';
+    }
+};
+
 function updateCartTotalUI() {
     const modalTotal = document.getElementById('modalTotal');
-    const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const itemsPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
     const fulfillmentType = document.getElementById('fulfillmentType')?.value || 'dine_in';
     const fee = fulfillmentType === 'delivery' ? calculatedDeliveryFee : 0;
 
-    if (modalTotal) {
-        if (fee > 0) {
-            modalTotal.innerHTML = `R$ ${(itemsPrice).toFixed(2).replace('.', ',')} <small class="text-secondary" style="font-weight: 400; font-size: 0.8rem;">+ R$ ${fee.toFixed(2).replace('.', ',')} (entrega)</small>`;
+    let discount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage') {
+            discount = itemsPrice * (appliedCoupon.value / 100);
         } else {
-            modalTotal.textContent = (itemsPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            discount = appliedCoupon.value;
         }
+        discount = Math.min(discount, itemsPrice);
+    }
+
+    const finalTotal = itemsPrice + fee - discount;
+
+    if (modalTotal) {
+        let breakDown = `R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
+        if (fee > 0 || discount > 0) {
+            let details = `(Itens: R$ ${itemsPrice.toFixed(2).replace('.', ',')}`;
+            if (fee > 0) details += ` + Entrega: R$ ${fee.toFixed(2).replace('.', ',')}`;
+            if (discount > 0) details += ` - Desconto: R$ ${discount.toFixed(2).replace('.', ',')}`;
+            details += `)`;
+            breakDown += ` <small class="text-secondary" style="font-weight: 400; font-size: 0.8rem; display:block;">${details}</small>`;
+        }
+        modalTotal.innerHTML = breakDown;
     }
 }
 
@@ -1131,14 +1401,14 @@ async function checkout() {
         return;
     }
 
-    const itemsPrice = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const itemsPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
     const minVal = getMinOrderValue(fulfillmentType);
     if (itemsPrice < minVal) {
         alert(`O valor mínimo dos itens para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
         return;
     }
 
-    const fee = calculatedDeliveryFee;
+    const fee = fulfillmentType === 'delivery' ? calculatedDeliveryFee : 0;
     const totalPrice = itemsPrice + fee;
 
     // Coletar campos de endereço se for delivery
@@ -1158,11 +1428,6 @@ async function checkout() {
             lat: userLocation.lat,
             lon: userLocation.lon
         };
-
-        if (!addressData.addressStreet || !addressData.addressDistrict) {
-            alert('O endereço selecionado está incompleto. Por favor, ajuste pelo mapa preenchendo Bairro e Rua.');
-            return;
-        }
     }
 
     try {
@@ -1176,11 +1441,14 @@ async function checkout() {
             customerPhone: phone,
             fulfillmentType,
             paymentMethod,
+            couponCode: appliedCoupon ? appliedCoupon.code : null,
+            tableNumber: tableNumber, // Incluir numero da mesa
             ...addressData,
-            totalAmount: totalPrice, // explicit total sent to DB just in case
+            totalAmount: totalPrice,
             items: cart.map(item => ({
                 productId: item.id,
-                quantity: item.quantity
+                quantity: item.quantity,
+                addons: (item.addons || []).map(a => ({ addonId: a.id })) // Backend deve suportar isso conforme novo schema
             }))
         };
 
@@ -1201,42 +1469,33 @@ async function checkout() {
         let message = `*Nova Mensagem de: ${restaurant.name}*\n`;
         message += `*Pedido: #${orderNum}*\n`;
         message += `--------------------------\n`;
-        if (restaurant.extraInfo) {
-            message += `📢 *AVISO:* ${restaurant.extraInfo}\n`;
-            message += `--------------------------\n`;
-        }
         message += `*Cliente:* ${name}\n`;
         message += `*Telefone:* ${phone}\n`;
         message += `*Tipo:* ${localTranslateFulfillment[fulfillmentType]}\n`;
+        if (tableNumber) message += `*MESA:* ${tableNumber} 🪑\n`;
         message += `*Pagamento:* ${localTranslatePayment[paymentMethod]}\n\n`;
 
         if (fulfillmentType === 'delivery') {
-            if (restaurant.estimatedTimeDelivery) {
-                message += `*Tempo Estimado (Delivery):* ${restaurant.estimatedTimeDelivery}\n\n`;
-            }
             message += `*Endereço de Entrega:*\n`;
             message += `📍 Rua: ${addressData.addressStreet}, ${addressData.addressNumber || 'S/N'}\n`;
             message += `📍 Bairro: ${addressData.addressDistrict}\n`;
-            message += `📍 Cidade: ${addressData.addressCity} / ${addressData.addressState}\n`;
             if (addressData.addressComplement) message += `📍 Complemento: ${addressData.addressComplement}\n`;
             message += `\n`;
-        } else {
-            // Retirada ou Local
-            if (restaurant.estimatedTimePickup) {
-                message += `*Tempo Estimado:* ${restaurant.estimatedTimePickup}\n\n`;
-            }
         }
 
         message += `*Itens:*\n`;
         cart.forEach(item => {
-            message += `- ${item.quantity}x ${item.name} (${(item.price * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
+            message += `- ${item.quantity}x ${item.name} (${(item.totalItemPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
+            if (item.addons && item.addons.length > 0) {
+                item.addons.forEach(a => {
+                    message += `  └ + ${a.name} (${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
+                });
+            }
         });
 
         message += `\n*Subtotal:* ${itemsPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
         if (fee > 0) message += `*Taxa de Entrega:* ${fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
         message += `*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
-        message += `--------------------------\n`;
-        message += `*Acompanhe seu pedido aqui:* \n🔗 ${window.location.host}/menu/#${restaurant.slug}\n`;
         message += `--------------------------\n`;
         message += `_Pedido realizado via SmartPede_`;
 

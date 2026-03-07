@@ -9,12 +9,25 @@ export const generateThermalReceipt = (order: any, width: '80mm' | '58mm' = '80m
     const { tenant, items } = order;
     const dateStr = new Date(order.createdAt).toLocaleString('pt-BR');
 
-    let itemsHtml = items.map((item: any) => `
-        <tr>
-            <td style="padding: 4px 0;">${item.quantity}x ${item.product.name}</td>
-            <td style="text-align: right; padding: 4px 0;">${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-        </tr>
-    `).join('');
+    let itemsHtml = items.map((item: any) => {
+        const addonsHtml = item.addons && item.addons.length > 0
+            ? `<div style="font-size: 10px; color: #555; margin-left: 10px;">
+                ${item.addons.map((a: any) => `+ ${a.addon?.name || a.name}`).join('<br>')}
+               </div>`
+            : '';
+
+        return `
+            <tr>
+                <td style="padding: 4px 0;">
+                    ${item.quantity}x ${item.product.name}
+                    ${addonsHtml}
+                </td>
+                <td style="text-align: right; padding: 4px 0; vertical-align: top;">
+                    ${(item.unitPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </td>
+            </tr>
+        `;
+    }).join('');
 
     return `
         <!DOCTYPE html>

@@ -354,6 +354,42 @@
             font-weight: 600;
             font-size: 0.9rem;
         }
+
+        /* Cash Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .modal-footer {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 
@@ -388,6 +424,10 @@
             </div>
             <div style="display: flex; align-items: center; gap: 20px;">
                 <div class="badge-live"><span class="dot"></span> TERMINAL ATIVO</div>
+                <button onclick="openCashModal('outflow')" class="btn btn-outline"
+                    style="width: auto; padding: 0.5rem 1rem; color: #ef4444; border-color: #fecaca;">SANGRIA</button>
+                <button onclick="openCashModal('inflow')" class="btn btn-outline"
+                    style="width: auto; padding: 0.5rem 1rem; color: #10b981; border-color: #d1fae5;">REFORÇO</button>
                 <button onclick="logoutPDV()" class="btn btn-outline"
                     style="width: auto; padding: 0.5rem 1rem;">SAIR</button>
             </div>
@@ -710,7 +750,74 @@
             localStorage.removeItem('pdv_tenant');
             window.location.reload();
         }
+
+        // Cash Register Functions
+        let currentCashType = 'inflow';
+
+        function openCashModal(type) {
+            currentCashType = type;
+            const title = type === 'inflow' ? 'Reforço de Caixa 💰' : 'Sangria de Caixa 💸';
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('cash-modal').style.display = 'flex';
+        }
+
+        function closeCashModal() {
+            document.getElementById('cash-modal').style.display = 'none';
+            document.getElementById('cash-amount').value = '';
+            document.getElementById('cash-desc').value = '';
+        }
+
+        async function submitCashEvent() {
+            const amount = parseFloat(document.getElementById('cash-amount').value);
+            const description = document.getElementById('cash-desc').value;
+
+            if (isNaN(amount) || amount <= 0) return alert('Informe um valor válido.');
+
+            try {
+                const token = localStorage.getItem('pdv_token');
+                const res = await fetch(`${API_URL}/cash-register/events`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        type: currentCashType,
+                        amount,
+                        description
+                    })
+                });
+
+                if (res.ok) {
+                    alert('Evento de caixa registrado com sucesso!');
+                    closeCashModal();
+                } else {
+                    alert('Erro ao registrar evento.');
+                }
+            } catch (e) { alert('Erro na conexão com o servidor.'); }
+        }
     </script>
+
+    <!-- Modal de Caixa -->
+    <div id="cash-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Movimentação de Caixa</h2>
+            </div>
+            <div class="form-group">
+                <label>VALOR (R$)</label>
+                <input type="number" id="cash-amount" step="0.01" placeholder="0,00">
+            </div>
+            <div class="form-group">
+                <label>DESCRIÇÃO / MOTIVO</label>
+                <input type="text" id="cash-desc" placeholder="Ex: Troco inicial, Retirada para frete...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeCashModal()">CANCELAR</button>
+                <button class="btn btn-primary" onclick="submitCashEvent()">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

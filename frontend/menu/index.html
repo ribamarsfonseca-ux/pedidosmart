@@ -159,6 +159,42 @@
         </button>
     </nav>
 
+    <!-- Product Detail Modal (Addons Selection) -->
+    <div class="modal-overlay" id="productDetailModal" style="display: none; z-index: 1050;">
+        <div class="modal-content glass-card" style="max-width: 500px; height: auto; max-height: 90vh;">
+            <div class="modal-header">
+                <h3 id="detailProductName">Produto</h3>
+                <button onclick="closeProductDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0 15px 15px;">
+                <div id="detailProductImgContainer"></div>
+                <p id="detailProductDesc" style="color: #64748b; font-size: 0.9rem; margin: 10px 0;"></p>
+                <div id="detailAddonGroups" style="margin-top: 20px;">
+                    <!-- Addon groups will be injected here -->
+                </div>
+            </div>
+            <div class="cart-footer"
+                style="padding: 15px; background: #fff; border-top: 1px solid #eee; border-radius: 0 0 20px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="quantity-controls"
+                        style="display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 5px 15px; border-radius: 99px;">
+                        <button onclick="changeDetailQuantity(-1)"
+                            style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">-</button>
+                        <span id="detailQuantity" style="font-weight: 700;">1</span>
+                        <button onclick="changeDetailQuantity(1)"
+                            style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">+</button>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.8rem; color: #64748b; display: block;">Subtotal</span>
+                        <span id="detailTotalPrice"
+                            style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">R$ 0,00</span>
+                    </div>
+                </div>
+                <button id="addWithAddonsBtn" class="btn-checkout" style="width: 100%;">Adicionar ao Carrinho</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Cart Modal -->
     <div class="cart-modal" id="cartModal">
         <div class="cart-modal-header">
@@ -234,17 +270,26 @@
                     <option value="card">Cartão (Crédito/Débito)</option>
                     <option value="money">Dinheiro</option>
                 </select>
+                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <label>Cupom de Desconto</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="couponInput" placeholder="Possui um cupom?"
+                            style="flex: 1; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; text-transform: uppercase;">
+                        <button onclick="applyCoupon()"
+                            style="padding: 0 15px; border-radius: 8px; border: 1px solid var(--primary); background: white; color: var(--primary); font-weight: 700;">Aplicar</button>
+                    </div>
+                    <p id="couponMessage" style="font-size: 0.75rem; margin-top: 5px; display: none;"></p>
+                </div>
             </div>
-        </div>
 
-        <div
-            style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.2rem; font-weight: 700;">
-            <span>Total:</span>
-            <span id="modalTotal">R$ 0,00</span>
-        </div>
+            <div
+                style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.2rem; font-weight: 700;">
+                <span>Total:</span>
+                <span id="modalTotal">R$ 0,00</span>
+            </div>
 
-        <button class="btn-checkout" id="checkoutBtn" onclick="checkout()">Finalizar Pedido pelo WhatsApp</button>
-    </div>
+            <button class="btn-checkout" id="checkoutBtn" onclick="checkout()">Finalizar Pedido pelo WhatsApp</button>
+        </div>
     </div>
 
     <!-- v7 Structured Location Selection Modal -->

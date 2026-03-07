@@ -17,7 +17,9 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             addressDistrict,
             addressCity,
             addressState,
-            addressComplement
+            addressComplement,
+            couponCode,
+            tableNumber
         } = req.body;
 
         if (!tenantId || !customerName || !customerPhone || !items || !items.length) {
@@ -25,44 +27,130 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        // Calcular o total e montar os itens verificando os produtos no banco
-        let totalAmount = 0;
-        const orderItemsData = [];
+        // 1. Gerenciar Cliente (Busca ou Criação)
+        let customer = await prisma.customer.findUnique({
+            where: { tenantId_phone: { tenantId, phone: customerPhone } }
+        });
+
+        if (!customer) {
+            customer = await prisma.customer.create({
+                data: { tenantId, phone: customerPhone, name: customerName }
+            });
+        } else if (customer.name !== customerName) {
+            // Opcional: Atualizar nome se mudou
+            await prisma.customer.update({
+                where: { id: customer.id },
+                data: { name: customerName }
+            });
+        }
+
+        // 2. Calcular o total e montar os itens verificando os produtos no banco
+        let subtotal = 0;
+        const validItems = [];
 
         for (const item of items) {
-            const product = await prisma.product.findUnique({ where: { id: item.productId } });
+            const product = await prisma.product.findUnique({
+                where: { id: item.productId },
+                include: { addonGroups: { include: { addons: true } } }
+            });
 
             if (!product || product.tenantId !== tenantId || !product.active) {
                 res.status(400).json({ error: `Produto ID ${item.productId} inválido ou inativo` });
                 return;
             }
 
-            const unitPrice = product.price;
-            totalAmount += unitPrice * item.quantity;
+            let itemPrice = product.price;
+            const itemAddons = [];
 
-            orderItemsData.push({
+            if (item.addons && item.addons.length > 0) {
+                for (const addonReq of item.addons) {
+                    let foundAddon = null;
+                    for (const group of product.addonGroups) {
+                        const a = group.addons.find(oa => oa.id === addonReq.addonId);
+                        if (a) {
+                            foundAddon = a;
+                            break;
+                        }
+                    }
+
+                    if (foundAddon) {
+                        itemPrice += foundAddon.price;
+                        itemAddons.push({
+                            addonId: foundAddon.id,
+                            name: foundAddon.name,
+                            price: foundAddon.price
+                        });
+                    }
+                }
+            }
+
+            subtotal += itemPrice * item.quantity;
+            validItems.push({
                 productId: product.id,
                 quantity: item.quantity,
-                unitPrice: unitPrice
+                unitPrice: itemPrice,
+                addons: { create: itemAddons }
             });
         }
 
-        // 2. Gerar Número do Pedido (Sequencial por Tenant)
+        // 3. Validar Cupom e Calcular Desconto
+        let discountAmount = 0;
+        let couponId = null;
+
+        if (couponCode) {
+            const coupon = await prisma.coupon.findFirst({
+                where: { tenantId, code: couponCode.toUpperCase(), active: true }
+            });
+
+            if (coupon) {
+                const now = new Date();
+                const isExpired = coupon.expiresAt && new Date(coupon.expiresAt) < now;
+                const limitReached = coupon.maxUsage && coupon.usedCount >= coupon.maxUsage;
+                const minMet = subtotal >= coupon.minOrder;
+
+                if (!isExpired && !limitReached && minMet) {
+                    couponId = coupon.id;
+                    if (coupon.type === 'percentage') {
+                        discountAmount = subtotal * (coupon.value / 100);
+                    } else {
+                        discountAmount = coupon.value;
+                    }
+                    // Garantir que desconto não seja maior que o subtotal
+                    discountAmount = Math.min(discountAmount, subtotal);
+                }
+            }
+        }
+
+        const totalAmount = subtotal - discountAmount;
+
+        // 4. Buscar Mesa se fornecida
+        let tableId = null;
+        if (tableNumber) {
+            const table = await (prisma as any).table.findFirst({
+                where: { tenantId, number: parseInt(tableNumber as string), active: true }
+            });
+            if (table) tableId = table.id;
+        }
+
+        // 5. Gerar Número do Pedido
         const lastOrder = await prisma.order.findFirst({
             where: { tenantId },
             orderBy: { orderNumber: 'desc' },
         });
-
         const nextOrderNumber = (lastOrder?.orderNumber || 0) + 1;
 
-        // Criar o pedido (Nested Write Prisma)
+        // 6. Criar o pedido (Nested Write Prisma)
         const order = await prisma.order.create({
             data: {
                 tenantId,
                 orderNumber: nextOrderNumber,
+                customerId: customer.id,
+                couponId,
+                tableId, // Vínculo com Mesa
                 customerName,
                 customerPhone,
                 totalAmount,
+                discountAmount,
                 status: 'pending',
                 fulfillmentType: fulfillmentType || 'delivery',
                 paymentMethod: paymentMethod || 'money',
@@ -73,13 +161,34 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
                 addressState,
                 addressComplement,
                 items: {
-                    create: orderItemsData
+                    create: validItems.map(vi => ({
+                        product: { connect: { id: vi.productId } },
+                        quantity: vi.quantity,
+                        unitPrice: vi.unitPrice,
+                        addons: vi.addons
+                    }))
                 }
             },
-            include: { items: true }
+            include: {
+                items: {
+                    include: {
+                        product: { select: { name: true } },
+                        addons: { include: { addon: true } }
+                    }
+                },
+                coupon: { select: { code: true } }
+            }
         });
 
-        // Emitir evento Socket.io para o lojista
+        // 6. Atualizar Uso do Cupom
+        if (couponId) {
+            await prisma.coupon.update({
+                where: { id: couponId },
+                data: { usedCount: { increment: 1 } }
+            });
+        }
+
+        // 7. Emitir evento Socket.io
         const io = req.app.get('io');
         if (io) {
             io.to(`tenant-${tenantId}`).emit('new-order', order);
@@ -106,7 +215,10 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
             where: { tenantId },
             include: {
                 items: {
-                    include: { product: { select: { name: true } } }
+                    include: {
+                        product: { select: { name: true } },
+                        addons: { include: { addon: true } }
+                    }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -146,7 +258,10 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
             },
             include: {
                 items: {
-                    include: { product: { select: { name: true } } }
+                    include: {
+                        product: { select: { name: true } },
+                        addons: { include: { addon: true } }
+                    }
                 }
             }
         });
@@ -187,6 +302,11 @@ export const getOrderPublicStatus = async (req: Request, res: Response): Promise
                                 price: true,
                                 imageUrl: true,
                                 description: true
+                            }
+                        },
+                        addons: {
+                            include: {
+                                addon: true
                             }
                         }
                     }
@@ -262,7 +382,7 @@ export const getThermalReceipt = async (req: Request, res: Response): Promise<vo
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
         const order = await prisma.order.findFirst({
-            where: { id: parseInt(id), tenantId },
+            where: { id: parseInt(id as string), tenantId },
             include: {
                 items: { include: { product: { select: { name: true } } } },
                 tenant: true
@@ -271,8 +391,8 @@ export const getThermalReceipt = async (req: Request, res: Response): Promise<vo
 
         if (!order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
 
-        const paperWidth = typeof width === 'string' ? width : '80mm';
-        const html = generateThermalReceipt(order, paperWidth);
+        const paperWidth = (width as "80mm" | "58mm") || '80mm';
+        const html = generateThermalReceipt(order as any, paperWidth);
         res.header('Content-Type', 'text/html');
         res.send(html);
     } catch (error) {
@@ -347,7 +467,7 @@ export const requestCancellation = async (req: Request, res: Response): Promise<
         const { reason } = req.body;
 
         const order = await prisma.order.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id as string) }
         });
 
         if (!order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
@@ -359,7 +479,7 @@ export const requestCancellation = async (req: Request, res: Response): Promise<
         }
 
         const updatedOrder = await prisma.order.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: {
                 cancellationRequested: true,
                 cancelReason: reason || 'Solicitado pelo cliente'

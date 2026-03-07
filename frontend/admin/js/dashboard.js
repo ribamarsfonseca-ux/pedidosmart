@@ -159,6 +159,36 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Configurações',
             subtitle: 'Ajuste os dados da sua loja e informações',
             render: () => renderSettingsView()
+        },
+        'addons': {
+            title: 'Complementos',
+            subtitle: 'Gerencie grupos de adicionais e opções para seus produtos',
+            render: () => renderAddonsView()
+        },
+        'finance': {
+            title: 'Inteligência Financeira',
+            subtitle: 'Acompanhe o faturamento e fluxo de caixa em tempo real',
+            render: () => renderFinanceView()
+        },
+        'coupons': {
+            title: 'Cupons & Promoções',
+            subtitle: 'Crie códigos de desconto para atrair mais clientes',
+            render: () => renderCouponsView()
+        },
+        'customers': {
+            title: 'Gestão de Clientes',
+            subtitle: 'Base de dados automática com histórico de compras',
+            render: () => renderCustomersView()
+        },
+        'tables': {
+            title: 'Gerenciar Mesas',
+            subtitle: 'Configure suas mesas físicas e gere QR Codes de pedido',
+            render: () => renderTablesView()
+        },
+        'team': {
+            title: 'Minha Equipe',
+            subtitle: 'Gerencie os acessos dos seus funcionários',
+            render: () => renderTeamView()
         }
     };
 
@@ -814,17 +844,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 <small class="text-secondary">Você pode usar links do Imgur, PostImages, Google Drive, etc.</small>
             </div>
             <div class="form-group">
+                <label>Vincular Grupos de Complementos</label>
+                <div id="pAddonGroups" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 150px; overflow-y: auto;">
+                    <p class="text-secondary" style="font-size: 0.8rem;">Carregando grupos...</p>
+                </div>
+            </div>
+            <div class="form-group" style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="pUseStock" onchange="document.getElementById('pStockQtyRow').style.display = this.checked ? 'block' : 'none'">
+                    <label for="pUseStock" style="margin: 0;">Controlar Estoque deste Produto</label>
+                </div>
+                <div id="pStockQtyRow" style="display: none; margin-top: 10px;">
+                    <label>Quantidade em Estoque</label>
+                    <input type="number" id="pStockQty" value="0">
+                </div>
+            </div>
+            <div class="form-group">
                 <label>Ordem de Exibição</label>
                 <input type="number" id="pOrder" value="0">
             </div>
         `, 'Salvar Produto', async () => {
+            const selectedGroups = Array.from(document.querySelectorAll('#pAddonGroups input:checked')).map(i => parseInt(i.value));
             const payload = {
                 name: document.getElementById('pName').value,
                 description: document.getElementById('pDesc').value,
                 price: parseFloat(document.getElementById('pPrice').value),
                 categoryId: parseInt(document.getElementById('pCat').value),
                 imageUrl: document.getElementById('pImg').value,
-                order: parseInt(document.getElementById('pOrder').value) || 0
+                order: parseInt(document.getElementById('pOrder').value) || 0,
+                useStock: document.getElementById('pUseStock').checked,
+                stockQuantity: parseInt(document.getElementById('pStockQty').value) || 0,
+                productAddonGroupIds: selectedGroups
             };
             await apiFetch('/products', {
                 method: 'POST',
@@ -832,6 +882,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             loadProducts();
         });
+
+        // Load addon groups into modal asynchronously
+        setTimeout(async () => {
+            try {
+                const groups = await apiFetch('/addons/groups');
+                const container = document.getElementById('pAddonGroups');
+                if (container) {
+                    if (groups.length === 0) {
+                        container.innerHTML = '<p class="text-secondary" style="font-size: 0.8rem; grid-column: 1/-1;">Nenhum grupo criado. Vá em "Complementos" primeiro.</p>';
+                    } else {
+                        container.innerHTML = groups.map(g => `
+                            <div style="display: flex; align-items: center; gap: 5px; font-size: 0.85rem;">
+                                <input type="checkbox" value="${g.id}" id="group-${g.id}">
+                                <label for="group-${g.id}" style="margin: 0;">${g.name}</label>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }, 300);
     };
 
     window.openEditProductModal = (product) => {
@@ -857,21 +927,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="form-group">
-                <label>Link da Imagem do Produto</label>
-                <input type="text" id="pImgEdit" value="${product.imageUrl || ''}" placeholder="https://...">
+                <label>Vincular Grupos de Complementos</label>
+                <div id="pAddonGroupsEdit" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 150px; overflow-y: auto;">
+                    <p class="text-secondary" style="font-size: 0.8rem;">Carregando grupos...</p>
+                </div>
+            </div>
+            <div class="form-group" style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="pUseStockEdit" ${product.useStock ? 'checked' : ''} onchange="document.getElementById('pStockQtyRowEdit').style.display = this.checked ? 'block' : 'none'">
+                    <label for="pUseStockEdit" style="margin: 0;">Controlar Estoque</label>
+                </div>
+                <div id="pStockQtyRowEdit" style="display: ${product.useStock ? 'block' : 'none'}; margin-top: 10px;">
+                    <label>Quantidade em Estoque</label>
+                    <input type="number" id="pStockQtyEdit" value="${product.stockQuantity || 0}">
+                </div>
             </div>
             <div class="form-group">
                 <label>Ordem de Exibição</label>
                 <input type="number" id="pOrderEdit" value="${product.order || 0}">
             </div>
         `, 'Salvar Alterações', async () => {
+            const selectedGroups = Array.from(document.querySelectorAll('#pAddonGroupsEdit input:checked')).map(i => parseInt(i.value));
             const payload = {
                 name: document.getElementById('pNameEdit').value,
                 description: document.getElementById('pDescEdit').value,
                 price: parseFloat(document.getElementById('pPriceEdit').value),
                 categoryId: parseInt(document.getElementById('pCatEdit').value),
                 imageUrl: document.getElementById('pImgEdit').value,
-                order: parseInt(document.getElementById('pOrderEdit').value) || 0
+                order: parseInt(document.getElementById('pOrderEdit').value) || 0,
+                useStock: document.getElementById('pUseStockEdit').checked,
+                stockQuantity: parseInt(document.getElementById('pStockQtyEdit').value) || 0,
+                productAddonGroupIds: selectedGroups
             };
             await apiFetch(`/products/${product.id}`, {
                 method: 'PUT',
@@ -879,6 +965,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             loadProducts();
         });
+
+        // Load addon groups into modal asynchronously
+        setTimeout(async () => {
+            try {
+                const groups = await apiFetch('/addons/groups');
+                const container = document.getElementById('pAddonGroupsEdit');
+                if (container) {
+                    if (groups.length === 0) {
+                        container.innerHTML = '<p class="text-secondary" style="font-size: 0.8rem; grid-column: 1/-1;">Nenhum grupo criado. Vá em "Complementos" primeiro.</p>';
+                    } else {
+                        const currentGroupIds = (product.addonGroups || []).map(g => g.id);
+                        container.innerHTML = groups.map(g => `
+                            <div style="display: flex; align-items: center; gap: 5px; font-size: 0.85rem;">
+                                <input type="checkbox" value="${g.id}" id="group-edit-${g.id}" ${currentGroupIds.includes(g.id) ? 'checked' : ''}>
+                                <label for="group-edit-${g.id}" style="margin: 0;">${g.name}</label>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }, 300);
     };
 
     window.deleteProduct = async (id) => {
@@ -1347,6 +1454,654 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { console.error('Badge update error:', e); }
     }
+
+    function renderAddonsView() {
+        return `
+            <div style="display: flex; gap: 1.5rem; flex-direction: column;">
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3>Grupos de Complementos</h3>
+                        <button class="btn btn-primary" style="width: auto;" onclick="openAddAddonGroupModal()">+ Novo Grupo</button>
+                    </div>
+                    <div id="addonGroupsList">
+                        <p class="text-secondary">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    window.initAddonsView = async () => {
+        await loadAddonGroups();
+    };
+
+    async function loadAddonGroups() {
+        const list = document.getElementById('addonGroupsList');
+        if (!list) return;
+        try {
+            const groups = await apiFetch('/addons/groups');
+            if (groups.length === 0) {
+                list.innerHTML = '<p class="text-secondary">Nenhum grupo de complementos criado.</p>';
+                return;
+            }
+
+            list.innerHTML = groups.map(g => `
+                <div class="glass-card" style="margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
+                            <p class="text-secondary" style="font-size: 0.85rem;">
+                                ${g.isRequired ? '<span class="badge" style="background:#fee2e2; color:#ef4444; padding: 2px 8px; border-radius: 4px;">Obrigatório</span>' : '<span class="badge" style="padding: 2px 8px; border-radius: 4px;">Opcional</span>'}
+                                <span style="margin-left: 10px;">Mín: ${g.minChoices} | Máx: ${g.maxChoices}</span>
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-outline btn-sm" onclick="openEditAddonGroupModal(${JSON.stringify(g).replace(/"/g, '&quot;')})">Editar Grupo</button>
+                            <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: #ef4444;" onclick="deleteAddonGroup(${g.id})">Excluir</button>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-weight: 700; font-size: 0.9rem; color: #475569;">Items / Opções:</span>
+                            <button class="btn btn-primary btn-sm" style="width: auto; padding: 4px 12px;" onclick="openAddAddonModal(${g.id})">+ Nova Opção</button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                            ${g.addons.map(a => `
+                                <div style="background: white; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                    <div>
+                                        <div style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${a.name}</div>
+                                        <div style="font-size: 0.85rem; color: var(--primary); font-weight: 700;">${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn-text" style="padding: 4px;" onclick="openEditAddonModal(${JSON.stringify(a).replace(/"/g, '&quot;')})">✏️</button>
+                                        <button class="btn-text" style="color: #ef4444; padding: 4px;" onclick="deleteAddon(${a.id})">&times;</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${g.addons.length === 0 ? '<p class="text-secondary" style="font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 10px;">Nenhuma opção cadastrada neste grupo.</p>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            if (list) list.innerHTML = `<p class="error">${error.message}</p>`;
+        }
+    }
+
+    window.openAddAddonGroupModal = () => {
+        renderModal('Novo Grupo de Complementos', `
+            <div class="form-group">
+                <label>Nome do Grupo</label>
+                <input type="text" id="groupName" placeholder="Ex: Escolha seu molho, Adicionais extras...">
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Escolha Mínima</label>
+                    <input type="number" id="groupMin" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Escolha Máxima</label>
+                    <input type="number" id="groupMax" value="1">
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                <input type="checkbox" id="groupRequired">
+                <label for="groupRequired" style="margin: 0;">Este grupo é obrigatório</label>
+            </div>
+        `, 'Criar Grupo', async () => {
+            const name = document.getElementById('groupName').value;
+            const minChoices = parseInt(document.getElementById('groupMin').value);
+            const maxChoices = parseInt(document.getElementById('groupMax').value);
+            const isRequired = document.getElementById('groupRequired').checked;
+
+            await apiFetch('/addons/groups', {
+                method: 'POST',
+                body: JSON.stringify({ name, minChoices, maxChoices, isRequired })
+            });
+            loadAddonGroups();
+        });
+    };
+
+    window.openEditAddonGroupModal = (g) => {
+        renderModal('Editar Grupo', `
+            <div class="form-group">
+                <label>Nome do Grupo</label>
+                <input type="text" id="editGroupName" value="${g.name}">
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Escolha Mínima</label>
+                    <input type="number" id="editGroupMin" value="${g.minChoices}">
+                </div>
+                <div class="form-group">
+                    <label>Escolha Máxima</label>
+                    <input type="number" id="editGroupMax" value="${g.maxChoices}">
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                <input type="checkbox" id="editGroupRequired" ${g.isRequired ? 'checked' : ''}>
+                <label for="editGroupRequired" style="margin: 0;">Este grupo é obrigatório</label>
+            </div>
+        `, 'Salvar Alterações', async () => {
+            const name = document.getElementById('editGroupName').value;
+            const minChoices = parseInt(document.getElementById('editGroupMin').value);
+            const maxChoices = parseInt(document.getElementById('editGroupMax').value);
+            const isRequired = document.getElementById('editGroupRequired').checked;
+
+            await apiFetch(`/addons/groups/${g.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name, minChoices, maxChoices, isRequired })
+            });
+            loadAddonGroups();
+        });
+    };
+
+    window.deleteAddonGroup = async (id) => {
+        if (!confirm('Deseja excluir este grupo e todos os seus adicionais?')) return;
+        try {
+            await apiFetch(`/addons/groups/${id}`, { method: 'DELETE' });
+            loadAddonGroups();
+        } catch (e) { alert(e.message); }
+    };
+
+    window.openAddAddonModal = (groupId) => {
+        renderModal('Nova Opção', `
+            <div class="form-group">
+                <label>Nome da Opção</label>
+                <input type="text" id="addonName" placeholder="Ex: Bacon, Maionese, Extra Queijo...">
+            </div>
+            <div class="form-group">
+                <label>Preço Adicional (R$)</label>
+                <input type="number" id="addonPrice" value="0" step="0.01">
+            </div>
+        `, 'Adicionar Opção', async () => {
+            const name = document.getElementById('addonName').value;
+            const price = parseFloat(document.getElementById('addonPrice').value);
+            await apiFetch('/addons', {
+                method: 'POST',
+                body: JSON.stringify({ addonGroupId: groupId, name, price })
+            });
+            loadAddonGroups();
+        });
+    };
+
+    window.openEditAddonModal = (a) => {
+        renderModal('Editar Opção', `
+            <div class="form-group">
+                <label>Nome da Opção</label>
+                <input type="text" id="editAddonName" value="${a.name}">
+            </div>
+            <div class="form-group">
+                <label>Preço Adicional (R$)</label>
+                <input type="number" id="editAddonPrice" value="${a.price}" step="0.01">
+            </div>
+        `, 'Salvar Alterações', async () => {
+            const name = document.getElementById('editAddonName').value;
+            const price = parseFloat(document.getElementById('editAddonPrice').value);
+            await apiFetch(`/addons/${a.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ name, price })
+            });
+            loadAddonGroups();
+        });
+    };
+
+    window.deleteAddon = async (id) => {
+        if (!confirm('Excluir esta opção?')) return;
+        try {
+            await apiFetch(`/addons/${id}`, { method: 'DELETE' });
+            loadAddonGroups();
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- FINANCE VIEW ---
+    function renderFinanceView() {
+        return `
+        <div class="grid-cols-3">
+            <div class="glass-card">
+                <p class="text-secondary">Faturamento (Vendas Online/PDV)</p>
+                <h2 id="fin-totalOrders" style="font-size: 2rem; margin-top: 5px; color: var(--success);">R$ 0,00</h2>
+            </div>
+            <div class="glass-card">
+                <p class="text-secondary">Saldo Atual em Caixa</p>
+                <h2 id="fin-currentBalance" style="font-size: 2rem; margin-top: 5px;">R$ 0,00</h2>
+            </div>
+            <div class="glass-card">
+                <p class="text-secondary">Movimentações Manuais</p>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <div><small>Entradas:</small> <span id="fin-totalInflow" style="color:var(--success); font-weight:bold;">R$ 0,00</span></div>
+                    <div><small>Saídas:</small> <span id="fin-totalOutflow" style="color:var(--primary); font-weight:bold;">R$ 0,00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card mt-6">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Fluxo de Caixa (Hoje)</h3>
+                <button onclick="window.initFinanceView()" class="btn btn-outline" style="width:auto; padding: 5px 15px;">🔄 Atualizar</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody id="finance-events-table">
+                        <tr><td colspan="4" style="text-align:center;">Carregando movimentações...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        `;
+    }
+
+    window.initFinanceView = async () => {
+        try {
+            const data = await apiFetch('/cash-register/daily-summary');
+            const { summary, events } = data;
+
+            // Update Summaries
+            document.getElementById('fin-totalOrders').textContent = summary.totalOrders.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('fin-currentBalance').textContent = summary.currentBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('fin-totalInflow').textContent = summary.totalInflow.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('fin-totalOutflow').textContent = summary.totalOutflow.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            // Render Table
+            const tbody = document.getElementById('finance-events-table');
+            if (events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--secondary);">Nenhuma movimentação manual registrada hoje.</td></tr>';
+                return;
+            }
+
+            const typeMap = {
+                'open': '🟢 Abertura',
+                'close': '🔴 Fechamento',
+                'inflow': '💰 Reforço',
+                'outflow': '💸 Sangria'
+            };
+
+            tbody.innerHTML = events.map(e => `
+                <tr>
+                    <td>${new Date(e.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><b>${typeMap[e.type] || e.type}</b></td>
+                    <td style="color: ${['outflow', 'close'].includes(e.type) ? 'var(--primary)' : 'var(--success)'}; font-weight:bold;">
+                        ${e.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                    <td class="text-secondary">${e.description || '-'}</td>
+                </tr>
+            `).join('');
+
+        } catch (e) {
+            console.error('Finance error:', e);
+        }
+    };
+
+    // --- COUPONS VIEW ---
+    function renderCouponsView() {
+        return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Seus Cupons de Desconto</h3>
+            <button onclick="window.openCreateCouponModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Cupom</button>
+        </div>
+        <div class="glass-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Uso</th>
+                            <th>Expiração</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coupons-table">
+                        <tr><td colspan="6" style="text-align:center;">Carregando cupons...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        `;
+    }
+
+    window.initCouponsView = async () => {
+        try {
+            const coupons = await apiFetch('/marketing/coupons');
+            const tbody = document.getElementById('coupons-table');
+
+            if (coupons.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nenhum cupom criado ainda.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = coupons.map(c => `
+                <tr>
+                    <td><span class="badge" style="background: var(--primary-light); color: var(--primary); font-weight: bold;">${c.code}</span></td>
+                    <td>${c.type === 'percentage' ? 'Porcentagem (%)' : 'Valor Fixo (R$)'}</td>
+                    <td><b>${c.type === 'percentage' ? c.value + '%' : c.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
+                    <td>${c.usedCount} / ${c.maxUsage || '∞'}</td>
+                    <td>${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Nuca expira'}</td>
+                    <td>
+                        <button onclick="window.deleteCoupon(${c.id})" class="btn btn-outline" style="padding: 2px 8px; color: var(--primary); border-color: #fecaca;">Excluir</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error(e); }
+    };
+
+    window.openCreateCouponModal = () => {
+        renderModal('Novo Cupom', `
+            <div class="form-group">
+                <label>Código do Cupom (Ex: QUERO10)</label>
+                <input type="text" id="couponCode" placeholder="EX: NATAL20" style="text-transform: uppercase;">
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="couponType">
+                        <option value="fixed">Fixo (R$)</option>
+                        <option value="percentage">Porcentagem (%)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor</label>
+                    <input type="number" id="couponValue" step="0.01">
+                </div>
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Pedido Mínimo (R$)</label>
+                    <input type="number" id="couponMin" value="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Limite de Uso</label>
+                    <input type="number" id="couponMax" placeholder="Vazio para ilimitado">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Data de Expiração</label>
+                <input type="date" id="couponExpires">
+            </div>
+        `, 'Criar Cupom', async () => {
+            const data = {
+                code: document.getElementById('couponCode').value,
+                type: document.getElementById('couponType').value,
+                value: parseFloat(document.getElementById('couponValue').value),
+                minOrder: parseFloat(document.getElementById('couponMin').value),
+                maxUsage: parseInt(document.getElementById('couponMax').value) || null,
+                expiresAt: document.getElementById('couponExpires').value || null
+            };
+            if (!data.code || isNaN(data.value)) throw new Error('Preencha os campos obrigatórios');
+            await apiFetch('/marketing/coupons', { method: 'POST', body: JSON.stringify(data) });
+            loadView('coupons');
+        });
+    };
+
+    window.deleteCoupon = async (id) => {
+        if (!confirm('Excluir este cupom definitivamente?')) return;
+        try {
+            await apiFetch(`/marketing/coupons/${id}`, { method: 'DELETE' });
+            loadView('coupons');
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- CUSTOMERS VIEW ---
+    function renderCustomersView() {
+        return `
+        <h3>Sua Base de Clientes</h3>
+        <p class="text-secondary mb-6">Clientes que já pediram na sua loja.</p>
+        <div class="glass-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>WhatsApp</th>
+                            <th>Total Pedidos</th>
+                            <th>Última Compra</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-table">
+                        <tr><td colspan="5" style="text-align:center;">Carregando clientes...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        `;
+    }
+
+    window.initCustomersView = async () => {
+        try {
+            const customers = await apiFetch('/marketing/customers');
+            const tbody = document.getElementById('customers-table');
+
+            if (customers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Nenhum cliente registrado ainda.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = customers.map(c => `
+                <tr>
+                    <td><b>${c.name || 'Cliente'}</b></td>
+                    <td>${c.phone}</td>
+                    <td>${c._count.orders}</td>
+                    <td>${new Date(c.updatedAt).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="window.viewCustomerDetail('${c.phone}')" class="btn btn-outline" style="padding: 2px 8px;">Detalhes</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error(e); }
+    };
+
+    window.viewCustomerDetail = async (phone) => {
+        try {
+            const c = await apiFetch(`/marketing/customers/${phone}`);
+            renderModal(`Histórico: ${c.name || c.phone}`, `
+                <div class="text-secondary mb-4">
+                    <p><b>Telefone:</b> ${c.phone}</p>
+                    <p><b>Total de Pedidos:</b> ${c.orders.length}</p>
+                </div>
+                <h4>Últimos Pedidos</h4>
+                <div style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                    ${c.orders.map(o => `
+                        <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                            <div>
+                                <small>${new Date(o.createdAt).toLocaleString()}</small><br>
+                                <b>#${o.orderNumber}</b> - ${o.items.map(i => i.product.name).join(', ')}
+                            </div>
+                            <div style="text-align: right;">
+                                <b>${o.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b><br>
+                                <small>${o.status}</small>
+                            </div>
+                        </div>
+                    `).join('') || '<p>Nenhum pedido encontrado.</p>'}
+                </div>
+            `, 'Fechar', async () => { });
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- TABLES VIEW ---
+    function renderTablesView() {
+        return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Suas Mesas (Consumo Local)</h3>
+            <button onclick="window.openCreateTableModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Nova Mesa</button>
+        </div>
+        <div class="glass-card">
+            <div id="tables-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
+                <p style="grid-column: 1/-1; text-align:center;">Carregando mesas...</p>
+            </div>
+        </div>
+        `;
+    }
+
+    window.initTablesView = async () => {
+        try {
+            const tables = await apiFetch('/tables');
+            const grid = document.getElementById('tables-grid');
+
+            if (tables.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:20px;">Nenhuma mesa cadastrada. Crie uma para vender presencialmente.</p>';
+                return;
+            }
+
+            grid.innerHTML = tables.map(t => `
+                <div class="glass-card" style="text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🪑</div>
+                    <h4 style="margin:0;">Mesa ${t.number}</h4>
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <button onclick="window.viewTableQR('${t.qrCodeUrl}', ${t.number})" class="btn btn-outline" style="font-size: 0.8rem; width: 100%;">Imprimir QR Code</button>
+                        <button onclick="window.deleteTable(${t.id})" class="btn btn-outline" style="font-size: 0.8rem; color: #ef4444; border-color: #fecaca; width: 100%;">Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) { console.error(e); }
+    };
+
+    window.openCreateTableModal = () => {
+        renderModal('Nova Mesa', `
+            <div class="form-group">
+                <label>Número da Mesa</label>
+                <input type="number" id="tableNumber" placeholder="Ex: 5">
+            </div>
+            <p class="text-secondary" style="font-size: 0.8rem;">O sistema gerará automaticamente o QR Code para esta mesa.</p>
+        `, 'Cadastrar Mesa', async () => {
+            const number = document.getElementById('tableNumber').value;
+            if (!number) throw new Error('Informe o número da mesa');
+            await apiFetch('/tables', { method: 'POST', body: JSON.stringify({ number }) });
+            loadView('tables');
+        });
+    };
+
+    window.viewTableQR = (url, number) => {
+        renderModal(`QR Code: Mesa ${number}`, `
+            <div style="text-align:center; padding: 10px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
+                <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
+                <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
+                <button onclick="window.printQR();" class="btn btn-primary" style="margin-top: 15px;">🖨️ Simular Impressão</button>
+            </div>
+        `, 'Fechar', () => { });
+    };
+
+    window.printQR = () => {
+        const img = document.querySelector('.modal-body img');
+        const number = document.querySelector('.modal-body b')?.textContent || 'Mesa';
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <div style="text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
+                <h1 style="margin-bottom:10px;">SmartPedidos</h1>
+                <h3>FAÇA SEU PEDIDO</h3>
+                <img src="${img.src}" style="width:200px;">
+                <p style="font-size: 2rem; font-weight: bold; margin-top:20px;">MESA ${number}</p>
+                <p>Aponte a câmera do celular</p>
+            </div>
+            <script>window.onload = () => { window.print(); window.close(); }</script>
+        `);
+    };
+
+    window.deleteTable = async (id) => {
+        if (!confirm('Deseja excluir esta mesa? O QR Code atual deixará de funcionar.')) return;
+        try {
+            await apiFetch(`/tables/${id}`, { method: 'DELETE' });
+            loadView('tables');
+        } catch (e) { alert(e.message); }
+    };
+
+    // --- TEAM VIEW ---
+    function renderTeamView() {
+        return `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Gestão de Equipe (Funcionários)</h3>
+            <button onclick="window.openCreateUserModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Membro</button>
+        </div>
+        <div class="glass-card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>E-mail</th>
+                            <th>Cargo/Permissão</th>
+                            <th>Desde</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="team-table">
+                        <tr><td colspan="4" style="text-align:center;">Carregando equipe...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        `;
+    }
+
+    window.initTeamView = async () => {
+        try {
+            const users = await apiFetch('/users');
+            const tbody = document.getElementById('team-table');
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Nenhum funcionário cadastrado.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td><b>${u.email}</b></td>
+                    <td><span class="badge" style="background: ${u.role === 'admin' ? '#dbeafe' : '#fef3c7'}; color: ${u.role === 'admin' ? '#1e40af' : '#92400e'}">${u.role === 'admin' ? 'Administrador' : 'Atendente / Garçom'}</span></td>
+                    <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="window.deleteUser(${u.id})" class="btn btn-outline" style="padding: 2px 8px; color: #ef4444; border-color: #fecaca;">Remover</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error(e); }
+    };
+
+    window.openCreateUserModal = () => {
+        renderModal('Novo Membro da Equipe', `
+            <div class="form-group">
+                <label>E-mail de Acesso</label>
+                <input type="email" id="userEmail" placeholder="ex: garcom@loja.com">
+            </div>
+            <div class="form-group">
+                <label>Senha Provisória</label>
+                <input type="password" id="userPass">
+            </div>
+            <div class="form-group">
+                <label>Permissão</label>
+                <select id="userRole">
+                    <option value="attendant" selected>Atendente / Garçom (Apenas Operacional)</option>
+                    <option value="admin">Administrador (Gestão Total)</option>
+                </select>
+            </div>
+        `, 'Criar Acesso', async () => {
+            const data = {
+                email: document.getElementById('userEmail').value,
+                password: document.getElementById('userPass').value,
+                role: document.getElementById('userRole').value
+            };
+            if (!data.email || !data.password) throw new Error('E-mail e senha são obrigatórios');
+            await apiFetch('/users', { method: 'POST', body: JSON.stringify(data) });
+            loadView('team');
+        });
+    };
+
+    window.deleteUser = async (id) => {
+        if (!confirm('Excluir este acesso definitivamente?')) return;
+        try {
+            await apiFetch(`/users/${id}`, { method: 'DELETE' });
+            loadView('team');
+        } catch (e) { alert(e.message); }
+    };
 
     // Update every 30 seconds
     setInterval(updatePendingBadge, 30000);
