@@ -201,6 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update Headers
         const viewConfig = views[pageId];
+        if (!viewConfig) {
+            console.error(`View "${pageId}" não configurada em dashboard.js.`);
+            return;
+        }
         pageTitle.textContent = viewConfig.title;
         pageSubtitle.textContent = viewConfig.subtitle;
 
