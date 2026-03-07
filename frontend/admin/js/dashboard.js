@@ -1533,7 +1533,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.openAddAddonGroupModal = () => {
+    window.openAddAddonGroupModal = async () => {
+        const products = await apiFetch('/products');
         renderModal('Novo Grupo de Complementos', `
             <div class="form-group">
                 <label>Nome do Grupo</label>
@@ -1549,25 +1550,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="groupMax" value="1">
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
                 <input type="checkbox" id="groupRequired">
                 <label for="groupRequired" style="margin: 0;">Este grupo é obrigatório</label>
+            </div>
+            <div class="form-group">
+                <label>Vincular aos Produtos:</label>
+                <div id="product-selection-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                    ${products.map(p => `
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; cursor: pointer;">
+                            <input type="checkbox" name="product-choice" value="${p.id}">
+                            <span>${p.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
         `, 'Criar Grupo', async () => {
             const name = document.getElementById('groupName').value;
             const minChoices = parseInt(document.getElementById('groupMin').value);
             const maxChoices = parseInt(document.getElementById('groupMax').value);
             const isRequired = document.getElementById('groupRequired').checked;
+            const productIds = Array.from(document.querySelectorAll('input[name="product-choice"]:checked')).map(i => parseInt(i.value));
 
             await apiFetch('/addons/groups', {
                 method: 'POST',
-                body: JSON.stringify({ name, minChoices, maxChoices, isRequired })
+                body: JSON.stringify({ name, minChoices, maxChoices, isRequired, productIds })
             });
             loadAddonGroups();
         });
     };
 
-    window.openEditAddonGroupModal = (g) => {
+    window.openEditAddonGroupModal = async (g) => {
+        const products = await apiFetch('/products');
+        const activeIds = (g.products || []).map(p => p.id);
+
         renderModal('Editar Grupo', `
             <div class="form-group">
                 <label>Nome do Grupo</label>
@@ -1583,19 +1599,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="editGroupMax" value="${g.maxChoices}">
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
                 <input type="checkbox" id="editGroupRequired" ${g.isRequired ? 'checked' : ''}>
                 <label for="editGroupRequired" style="margin: 0;">Este grupo é obrigatório</label>
+            </div>
+            <div class="form-group">
+                <label>Vincular aos Produtos:</label>
+                <div id="product-selection-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                    ${products.map(p => `
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; cursor: pointer;">
+                            <input type="checkbox" name="product-choice" value="${p.id}" ${activeIds.includes(p.id) ? 'checked' : ''}>
+                            <span>${p.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
         `, 'Salvar Alterações', async () => {
             const name = document.getElementById('editGroupName').value;
             const minChoices = parseInt(document.getElementById('editGroupMin').value);
             const maxChoices = parseInt(document.getElementById('editGroupMax').value);
             const isRequired = document.getElementById('editGroupRequired').checked;
+            const productIds = Array.from(document.querySelectorAll('input[name="product-choice"]:checked')).map(i => parseInt(i.value));
 
             await apiFetch(`/addons/groups/${g.id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ name, minChoices, maxChoices, isRequired })
+                body: JSON.stringify({ name, minChoices, maxChoices, isRequired, productIds })
             });
             loadAddonGroups();
         });
