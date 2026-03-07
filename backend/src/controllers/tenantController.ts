@@ -147,7 +147,16 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                     orderBy: { order: 'asc' },
                     include: {
                         products: {
-                            where: { active: true }
+                            where: { active: true },
+                            include: {
+                                addonGroups: {
+                                    include: {
+                                        addons: {
+                                            where: { active: true }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
