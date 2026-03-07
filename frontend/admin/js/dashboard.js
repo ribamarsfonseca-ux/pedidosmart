@@ -134,6 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageTitle = document.getElementById('pageTitle');
     const pageSubtitle = document.getElementById('pageSubtitle');
 
+    window.openKDS = () => {
+        const token = localStorage.getItem('auth_token');
+        window.open(`./kds.html?token=${token}`, '_blank');
+    };
+
     const views = {
         'home': {
             title: 'Visão Geral',
@@ -945,6 +950,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label>Quantidade em Estoque</label>
                     <input type="number" id="pStockQtyEdit" value="${product.stockQuantity || 0}">
                 </div>
+            </div>
+            <div class="form-group">
+                <label>Link da Imagem (Aceita qualquer URL)</label>
+                <input type="text" id="pImgEdit" value="${product.imageUrl || ''}" placeholder="https://exemplo.com/imagem.png">
+                <small class="text-secondary">Você pode usar links do Imgur, PostImages, Google Drive, etc.</small>
             </div>
             <div class="form-group">
                 <label>Ordem de Exibição</label>

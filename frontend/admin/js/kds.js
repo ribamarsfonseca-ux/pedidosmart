@@ -7,13 +7,16 @@ const API_URL = window.location.origin.includes('localhost') || window.location.
     ? 'http://localhost:3000/api'
     : window.location.origin + '/api';
 
-const token = localStorage.getItem('auth_token');
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token') || localStorage.getItem('auth_token');
 let socket;
 let orders = [];
 
 // Redireciona se não estiver logado
 if (!token) {
     window.location.href = './index.html';
+} else if (urlParams.get('token')) {
+    localStorage.setItem('auth_token', token); // Persiste para refresh posterior
 }
 
 function initKDS() {
@@ -150,7 +153,7 @@ function renderOrderCard(order) {
 async function updateStatus(orderId, newStatus) {
     try {
         const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
-            method: 'PATCH',
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

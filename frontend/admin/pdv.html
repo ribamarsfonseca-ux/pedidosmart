@@ -520,6 +520,7 @@
         let cart = [];
         let tenant = null;
         let socket;
+        let currentTableOrderIds = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('pdv_token');
@@ -577,9 +578,13 @@
             if (typeof io === 'undefined') return;
             socket = io();
             socket.emit('join-tenant', tenant.id);
-            socket.on('new-order', () => {
+            socket.on('new-order', (order) => {
+                console.log('Novo pedido recebido no PDV:', order);
                 // Notificar sobre novos pedidos online se necessário
-                console.log('Novo pedido online recebido!');
+            });
+            socket.on('order-updated', (order) => {
+                console.log('Pedido atualizado no PDV:', order);
+                loadTables(); // Refresh table statuses
             });
         }
 
@@ -630,6 +635,7 @@
                                 }
                             });
                         });
+                        currentTableOrderIds = activeOrders.map(o => o.id);
                         cart = combinedItems;
                         renderCart();
                     }
@@ -820,8 +826,11 @@
                 await loadTableOrder(selectedTableId);
                 info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Finalize o pagamento para liberar.`;
             } else {
-                cart = [];
-                renderCart();
+                // Table is free - ensure cart is cleared of previous consumption
+                if (cart.some(i => i.fromOrder)) {
+                    cart = [];
+                    renderCart();
+                }
                 btnFinish.style.display = 'none';
                 btnKitchen.style.display = 'block';
                 btnKitchen.textContent = 'ENVIAR PARA COZINHA';
@@ -841,6 +850,9 @@
             btn.disabled = true;
             btn.textContent = 'ENVIANDO...';
 
+            const newItems = cart.filter(i => !i.fromOrder);
+            if (newItems.length === 0) return alert('Não há novos itens para enviar à cozinha.');
+
             const payload = {
                 tenantId: tenant.id,
                 customerName: document.getElementById('cart-customer').value || `Mesa ${allTables.find(t => t.id === selectedTableId)?.number}`,
@@ -848,7 +860,7 @@
                 fulfillmentType: 'dine_in',
                 tableId: selectedTableId,
                 status: 'preparing',
-                items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
+                items: newItems.map(i => ({ productId: i.id, quantity: i.qty }))
             };
 
             try {
@@ -861,10 +873,8 @@
 
                 if (res.ok) {
                     alert('🔥 Pedido enviado para a Cozinha!');
-                    cart = [];
-                    renderCart();
                     await loadTables();
-                    handleTableSelection();
+                    await handleTableSelection();
                 } else {
                     const err = await res.json();
                     alert('Erro: ' + err.error);
@@ -888,12 +898,40 @@
                 fulfillmentType: selectedTableId ? 'dine_in' : 'counter',
                 paymentMethod: document.getElementById('cart-payment').value,
                 tableId: selectedTableId,
-                status: 'finished', // Finaliza direto
-                items: cart.map(i => ({ productId: i.id, quantity: i.qty }))
+                status: 'finished',
+                items: cart.filter(i => !i.fromOrder).map(i => ({ productId: i.id, quantity: i.qty })) // Only new items
             };
 
             try {
                 const token = localStorage.getItem('pdv_token');
+
+                // If there are existing orders for this table, finish them first
+                if (selectedTableId && currentTableOrderIds.length > 0) {
+                    const statusPromises = currentTableOrderIds.map(orderId =>
+                        fetch(`${API_URL}/orders/${orderId}/status`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify({ status: 'finished' })
+                        })
+                    );
+                    await Promise.all(statusPromises);
+                }
+
+                // If no new items, just skip the order creation and refresh
+                if (payload.items.length === 0 && selectedTableId) {
+                    alert('✅ Mesa liberada e consumo finalizado!');
+                    cart = [];
+                    currentTableOrderIds = [];
+                    document.getElementById('cart-table').value = ""; // Reset selection
+                    selectedTableId = null;
+                    renderCart();
+                    await loadTables();
+                    handleTableSelection();
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+
                 const res = await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -907,7 +945,10 @@
                         window.open(`${API_URL}/orders/${result.order.id}/receipt?token=${token}`, '_blank');
                     }
                     cart = [];
+                    currentTableOrderIds = [];
                     document.getElementById('cart-customer').value = '';
+                    document.getElementById('cart-table').value = ""; // Reset selection
+                    selectedTableId = null;
                     renderCart();
                     await loadTables();
                     handleTableSelection();

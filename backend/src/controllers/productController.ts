@@ -29,7 +29,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 export const createProduct = async (req: Request, res: Response): Promise<void> => {
     try {
         const tenantId = req.user?.tenantId;
-        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity, productAddonGroupIds } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
         if (!name || price === undefined || !categoryId) {
@@ -59,6 +59,9 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
                 order: order !== undefined ? parseInt(order as string) : 0,
                 useStock: useStock !== undefined ? Boolean(useStock) : false,
                 stockQuantity: stockQuantity !== undefined ? parseInt(stockQuantity as string) : 0,
+                addonGroups: productAddonGroupIds ? {
+                    connect: productAddonGroupIds.map((id: number) => ({ id }))
+                } : undefined
             },
         });
 
@@ -73,7 +76,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
     try {
         const tenantId = req.user?.tenantId;
         const { id } = req.params;
-        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity } = req.body;
+        const { name, description, price, imageUrl, categoryId, active, order, useStock, stockQuantity, productAddonGroupIds } = req.body;
 
         if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
@@ -108,6 +111,9 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
                 order: order !== undefined ? parseInt(order as string) : (existingProduct as any).order || 0,
                 useStock: useStock !== undefined ? Boolean(useStock) : existingProduct.useStock,
                 stockQuantity: stockQuantity !== undefined ? parseInt(stockQuantity as string) : existingProduct.stockQuantity,
+                addonGroups: productAddonGroupIds ? {
+                    set: productAddonGroupIds.map((id: number) => ({ id }))
+                } : undefined
             },
         });
 

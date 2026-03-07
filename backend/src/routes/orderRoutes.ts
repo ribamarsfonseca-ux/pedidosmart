@@ -19,5 +19,6 @@ router.get('/crm/dashboard', authenticateToken, require('../controllers/orderCon
 router.get('/crm/customers/export', authenticateToken, require('../controllers/orderController').exportCustomersCRM);
 router.get('/:id/receipt', authenticateToken, require('../controllers/orderController').getThermalReceipt);
 router.put('/:id/status', updateOrderStatus);
+router.patch('/:id/status', updateOrderStatus);
 
 export default router;

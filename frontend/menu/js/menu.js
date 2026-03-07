@@ -547,36 +547,49 @@ function renderDetailAddons(groups) {
         return;
     }
 
-    container.innerHTML = groups.map(g => `
-        <div class="addon-group" style="margin-bottom: 20px; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; background: #fafafa;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h4 style="margin:0; font-size: 1rem; color: #1e293b;">${g.name}</h4>
-                    <p style="margin: 2px 0 10px; font-size: 0.75rem; color: #64748b;">
-                        ${g.isRequired ? '<span style="color: #ef4444; font-weight: 700;">Obrigatório</span>' : 'Opcional'} • 
-                        Mín: ${g.minChoices} | Máx: ${g.maxChoices}
-                    </p>
+    container.innerHTML = groups.map(g => {
+        let instruction = '';
+        if (g.minChoices === g.maxChoices) {
+            instruction = `Escolha exatamente ${g.minChoices}`;
+        } else if (g.minChoices > 0) {
+            instruction = `Escolha de ${g.minChoices} a ${g.maxChoices}`;
+        } else {
+            instruction = `Escolha até ${g.maxChoices}`;
+        }
+
+        return `
+            <div class="addon-group" style="margin-bottom: 20px; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; background: #fafafa;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin:0; font-size: 1rem; color: #1e293b;">${g.name}</h4>
+                            ${g.isRequired ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Obrigatório</span>' : '<span style="background: #f1f5f9; color: #64748b; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Opcional</span>'}
+                        </div>
+                        <p style="margin: 4px 0 10px; font-size: 0.8rem; color: #64748b; font-weight: 500;">
+                            ${instruction}
+                        </p>
+                    </div>
+                </div>
+                <div class="addon-options" id="options-group-${g.id}">
+                    ${g.addons.map(a => `
+                        <label style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="${g.maxChoices === 1 ? 'radio' : 'checkbox'}" 
+                                       name="group-${g.id}" 
+                                       value="${a.id}" 
+                                       data-price="${a.price}" 
+                                       data-name="${a.name}"
+                                       onchange="validateAddonChoice(${g.id}, ${g.maxChoices}, this); updateDetailTotal();"
+                                       style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+                                <span style="font-size: 0.95rem; color: #334155;">${a.name}</span>
+                            </div>
+                            <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        </label>
+                    `).join('')}
                 </div>
             </div>
-            <div class="addon-options">
-                ${g.addons.map(a => `
-                    <label style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="${g.maxChoices === 1 ? 'radio' : 'checkbox'}" 
-                                   name="group-${g.id}" 
-                                   value="${a.id}" 
-                                   data-price="${a.price}" 
-                                   data-name="${a.name}"
-                                   onchange="validateAddonChoice(${g.id}, ${g.maxChoices}, this); updateDetailTotal();"
-                                   style="width: 18px; height: 18px; accent-color: var(--primary);">
-                            <span style="font-size: 0.9rem; color: #334155;">${a.name}</span>
-                        </div>
-                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 window.validateAddonChoice = (groupId, max, element) => {
