@@ -567,20 +567,25 @@ function renderDetailAddons(groups) {
                     </div>
                     ${g.isRequired ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">Obrigatório</span>' : ''}
                 </div>
-                <div class="addon-options" id="options-group-${g.id}" style="padding: 0 16px;">
-                    ${g.addons.map(a => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
-                            <div style="flex: 1; padding-right: 12px;">
-                                <div style="font-size: 0.95rem; color: #334155; font-weight: 600;">${a.name}</div>
-                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 2px;">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                <div class="addon-options" id="options-group-${g.id}" style="padding: 0 16px; background: white;">
+                    ${g.addons.map(a => {
+            const currentQty = selectedAddonState[a.id] || 0;
+            const isSelected = currentQty > 0;
+            return `
+                        <div id="addon-item-${a.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f1f5f9; background: ${isSelected ? '#fff8f1' : 'white'};">
+                            <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                                <span class="addon-name" style="font-size: 0.95rem; color: ${isSelected ? 'var(--primary)' : '#334155'}; font-weight: ${isSelected ? '700' : '600'};">${a.name}</span>
+                                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 500;">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 12px; background: #f1f5f9; padding: 4px 8px; border-radius: 100px;">
-                                <button onclick="changeAddonQty(${g.id}, ${a.id}, -1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: var(--primary); font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">-</button>
-                                <span id="addon-qty-${a.id}" style="font-size: 1rem; font-weight: 700; min-width: 15px; text-align: center;">0</span>
-                                <button onclick="changeAddonQty(${g.id}, ${a.id}, 1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">+</button>
+                            <div class="addon-qty-wrapper" style="display: flex; align-items: center; gap: 8px; background: ${isSelected ? 'var(--primary)' : '#f1f5f9'}; padding: 3px; border-radius: 100px; border: 1px solid ${isSelected ? 'var(--primary)' : 'transparent'};">
+                                <button class="addon-minus-btn" onclick="changeAddonQty(${g.id}, ${a.id}, -1, ${g.maxChoices})" 
+                                        style="width: 28px; height: 28px; border: none; background: ${isSelected ? 'rgba(255,255,255,0.2)' : 'white'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; color: ${isSelected ? 'white' : 'var(--primary)'}; font-weight: 800;">−</button>
+                                <span class="addon-qty-display" style="font-size: 0.95rem; font-weight: 800; min-width: 18px; text-align: center; color: ${isSelected ? 'white' : '#334155'};">${currentQty}</span>
+                                <button onclick="changeAddonQty(${g.id}, ${a.id}, 1, ${g.maxChoices})" 
+                                        style="width: 28px; height: 28px; border: none; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer; color: var(--primary); font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">+</button>
                             </div>
-                        </div>
-                    `).join('')}
+                        </div>`;
+        }).join('')}
                 </div>
             </div>
         `;
@@ -607,8 +612,40 @@ window.changeAddonQty = (groupId, addonId, delta, maxGroup) => {
     }
 
     selectedAddonState[addonId] = newQty;
-    const qtySpan = document.getElementById(`addon-qty-${addonId}`);
-    if (qtySpan) qtySpan.textContent = newQty;
+
+    // Re-renderizar o item específico para atualizar estado visual (cor, contador)
+    // Encontrar o adicional e re-injetar o HTML do bloco
+    const group = currentBaseProduct.addonGroups.find(g => g.id === groupId);
+    if (group) {
+        const addon = group.addons.find(a => a.id === addonId);
+        if (addon) {
+            const isSelected = newQty > 0;
+            const container = document.getElementById(`addon-item-${addonId}`);
+            if (container) {
+                container.style.backgroundColor = isSelected ? '#fff8f1' : '';
+                const nameSpan = container.querySelector('.addon-name');
+                if (nameSpan) {
+                    nameSpan.style.color = isSelected ? 'var(--primary)' : '#334155';
+                    nameSpan.style.fontWeight = isSelected ? '700' : '600';
+                }
+                const qtyWrapper = container.querySelector('.addon-qty-wrapper');
+                if (qtyWrapper) {
+                    qtyWrapper.style.background = isSelected ? 'var(--primary)' : '#f1f5f9';
+                    qtyWrapper.style.borderColor = isSelected ? 'var(--primary)' : 'transparent';
+                }
+                const minusBtn = container.querySelector('.addon-minus-btn');
+                if (minusBtn) {
+                    minusBtn.style.background = isSelected ? 'rgba(255,255,255,0.2)' : 'white';
+                    minusBtn.style.color = isSelected ? 'white' : 'var(--primary)';
+                }
+                const qtySpan = container.querySelector('.addon-qty-display');
+                if (qtySpan) {
+                    qtySpan.textContent = newQty;
+                    qtySpan.style.color = isSelected ? 'white' : '#334155';
+                }
+            }
+        }
+    }
 
     updateDetailTotal();
 };

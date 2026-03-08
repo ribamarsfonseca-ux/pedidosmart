@@ -246,28 +246,26 @@
 
                 <div id="addressFields" style="display: none;">
 
-                    <!-- Novo Card de Ajuste de Endereço no Checkout -->
-                    <div id="checkoutAddressCard" onclick="openLocationModal()"
-                        style="background: #fdf2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; position: relative; border-left: 4px solid #ef4444;">
-
-                        <!-- Overlay invisível para garantir clique em dispositivos móveis -->
-                        <div style="position: absolute; inset: 0; z-index: 5;"></div>
-
-                        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+                    <!-- Card de local de entrega: clique em qualquer área ou no botão EDITAR abre o mapa -->
+                    <div id="checkoutAddressCard"
+                        style="background: #fdf2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border-left: 4px solid #ef4444;"
+                        onclick="openLocationModal()">
+                        <div
+                            style="display: flex; align-items: center; gap: 12px; overflow: hidden; pointer-events: none;">
                             <span style="font-size: 1.5rem;">📍</span>
                             <div style="overflow: hidden;">
                                 <p
                                     style="margin: 0; font-size: 0.75rem; color: #b91c1c; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    Local de Entrega (Clique para ajustar)</p>
+                                    Local de Entrega</p>
                                 <p id="checkoutAddressLabel"
                                     style="margin: 0; font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333;">
                                     Ajustar no mapa...</p>
                             </div>
                         </div>
                         <span
-                            style="color: #ef4444; font-size: 0.7rem; font-weight: 800; border: 1.5px solid #ef4444; padding: 4px 10px; border-radius: 6px; background: white; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">EDITAR</span>
+                            style="color: #ef4444; font-size: 0.7rem; font-weight: 800; border: 1.5px solid #ef4444; padding: 4px 10px; border-radius: 6px; background: white; white-space: nowrap; pointer-events: none;">EDITAR</span>
                     </div>
-                    <!-- Os campos antigos foram removidos para manter o checkout profissional e limpo. Todo o dado agora flui do objeto userLocation gerenciado pelo modal de localização -->
+                    <!-- Os campos antigos foram removidos para manter o checkout profissional e limpo. -->
                 </div>
             </div>
 
@@ -302,7 +300,7 @@
     </div>
 
     <!-- v7 Structured Location Selection Modal -->
-    <div class="cart-modal" id="locationModal" style="z-index: 1100;">
+    <div class="cart-modal" id="locationModal" style="z-index: 3000;">
         <div class="cart-modal-header" style="border-bottom: 1px solid #eee;">
             <h2>Onde você está?</h2>
             <button onclick="closeLocationModal()"
