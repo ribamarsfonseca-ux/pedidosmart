@@ -732,10 +732,18 @@
                             order.items.forEach(item => {
                                 const prod = products.find(p => p.id === item.productId);
                                 if (prod) {
+                                    // Mapear adicionais que já vieram do banco
+                                    const itemAddons = (item.addons || []).map(ia => ({
+                                        id: ia.addonId,
+                                        name: ia.addon?.name || "Adicional",
+                                        price: ia.unitPrice
+                                    }));
+
                                     combinedItems.push({
                                         ...prod,
                                         qty: item.quantity,
                                         price: item.unitPrice,
+                                        addons: itemAddons,
                                         fromOrder: true
                                     });
                                 }
@@ -831,41 +839,81 @@
         function closeAddonModal() {
             document.getElementById('pdv-addon-modal').style.display = 'none';
             currentAddonProduct = null;
+            pdvAddonState = {};
         }
 
         function renderPdvAddonGroups(groups) {
             const container = document.getElementById('pdv-addon-groups');
-            container.innerHTML = groups.map(g => `
-                <div style="margin-bottom: 20px; text-align: left;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h4 style="margin:0; font-size: 0.95rem;">${g.name}</h4>
-                        <span style="font-size: 0.7rem; color: var(--gray);">${g.minChoices > 0 ? 'OBRIGATÓRIO' : 'OPCIONAL'} (Máx: ${g.maxChoices})</span>
+            container.innerHTML = groups.map(g => {
+                let instruction = g.minChoices > 0 ? `Escolha pelo menos ${g.minChoices}` : `Escolha até ${g.maxChoices}`;
+                return `
+                <div style="margin-bottom: 24px; background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div>
+                            <h4 style="margin:0; font-size: 1rem; color: #1e293b; font-weight: 700;">${g.name}</h4>
+                            <p style="margin: 2px 0 0; font-size: 0.75rem; color: #64748b; font-weight: 500;">${instruction}</p>
+                        </div>
+                        ${g.minChoices > 0 ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">Obrigatório</span>' : ''}
                     </div>
-                    ${g.addons.map(a => `
-                        <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="${g.maxChoices === 1 ? 'radio' : 'checkbox'}" 
-                                       name="pdv-group-${g.id}" 
-                                       value="${a.id}" 
-                                       data-price="${a.price}" 
-                                       data-name="${a.name}"
-                                       onchange="updateAddonModalTotal()"
-                                       style="width: 18px; height: 18px;">
-                                <span>${a.name}</span>
+                    ${g.addons.map(a => {
+                    const currentQty = pdvAddonState[a.id] || 0;
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.95rem; color: #334155; font-weight: 600;">${a.name}</div>
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                             </div>
-                            <span style="font-weight: 700; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                        </label>
-                    `).join('')}
-                </div>
-            `).join('');
+                            <div style="display: flex; align-items: center; gap: 12px; background: white; padding: 4px 8px; border-radius: 100px; border: 1px solid #cbd5e1;">
+                                <button onclick="changeAddonQtyPdv(${g.id}, ${a.id}, -1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: var(--primary);">-</button>
+                                <span id="pdv-addon-qty-${a.id}" style="font-size: 1rem; font-weight: 700; min-width: 15px; text-align: center;">${currentQty}</span>
+                                <button onclick="changeAddonQtyPdv(${g.id}, ${a.id}, 1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white;">+</button>
+                            </div>
+                        </div>`;
+                }).join('')}
+                </div>`;
+            }).join('');
+        }
+
+        let pdvAddonState = {};
+
+        window.changeAddonQtyPdv = (groupId, addonId, delta, maxGroup) => {
+            const currentQty = pdvAddonState[addonId] || 0;
+            const newQty = Math.max(0, currentQty + delta);
+
+            if (delta > 0) {
+                const group = currentAddonProduct.addonGroups.find(g => g.id === groupId);
+                const groupAddonIds = group.addons.map(a => a.id);
+                const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (pdvAddonState[id] || 0), 0);
+
+                if (totalInGroup >= maxGroup) {
+                    alert(`Máximo de ${maxGroup} itens neste grupo.`);
+                    return;
+                }
+            }
+
+            pdvAddonState[addonId] = newQty;
+            const qtySpan = document.getElementById(`pdv-addon-qty-${addonId}`);
+            if (qtySpan) qtySpan.textContent = newQty;
+            updateAddonModalTotal();
+        };
+
+        function openAddonModal(product) {
+            currentAddonProduct = product;
+            pdvAddonState = {}; // Reset state
+            document.getElementById('addon-modal-title').textContent = product.name;
+            renderPdvAddonGroups(product.addonGroups);
+            updateAddonModalTotal();
+            document.getElementById('pdv-addon-modal').style.display = 'flex';
         }
 
         function updateAddonModalTotal() {
             if (!currentAddonProduct) return;
             let total = currentAddonProduct.price;
-            const checked = document.querySelectorAll('#pdv-addon-groups input:checked');
-            checked.forEach(input => {
-                total += parseFloat(input.dataset.price);
+            currentAddonProduct.addonGroups.forEach(g => {
+                g.addons.forEach(a => {
+                    const qty = pdvAddonState[a.id] || 0;
+                    total += (a.price * qty);
+                });
             });
             document.getElementById('addon-modal-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
@@ -874,26 +922,23 @@
             const groups = currentAddonProduct.addonGroups;
             const selectedAddons = [];
 
-            // Validar obrigatoriedade
             for (const g of groups) {
-                const checked = document.querySelectorAll(`input[name="pdv-group-${g.id}"]:checked`);
-                if (g.minChoices > 0 && checked.length < g.minChoices) {
-                    return alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
-                }
-                if (checked.length > g.maxChoices) {
-                    return alert(`Você ultrapassou o limite de ${g.maxChoices} em "${g.name}"`);
+                const groupAddonIds = g.addons.map(a => a.id);
+                const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (pdvAddonState[id] || 0), 0);
+
+                if (g.minChoices > 0 && totalInGroup < g.minChoices) {
+                    alert(`Selecione pelo menos ${g.minChoices} em "${g.name}"`);
+                    return;
                 }
 
-                checked.forEach(input => {
-                    selectedAddons.push({
-                        id: parseInt(input.value),
-                        name: input.dataset.name,
-                        price: parseFloat(input.dataset.price)
-                    });
+                g.addons.forEach(a => {
+                    const qty = pdvAddonState[a.id] || 0;
+                    for (let i = 0; i < qty; i++) {
+                        selectedAddons.push({ id: a.id, name: a.name, price: a.price });
+                    }
                 });
             }
 
-            // Adicionar ao carrinho como item único (mesmo que já exista o produto, se os adicionais forem diferentes)
             const addonIdsKey = selectedAddons.map(a => a.id).sort().join('-');
             const uniqueKey = `${currentAddonProduct.id}-${addonIdsKey}`;
 
@@ -906,7 +951,7 @@
                     uniqueKey,
                     qty: 1,
                     addons: selectedAddons,
-                    price: currentAddonProduct.price // O subtotal por item é calculado no renderCart
+                    price: currentAddonProduct.price
                 });
             }
 
@@ -921,14 +966,22 @@
             if (item) {
                 item.qty += delta;
                 if (item.qty <= 0) {
-                    cart = cart.filter(i => i.id !== id);
+                    cart = cart.filter(i => i.uniqueKey !== uniqueId && i.id !== uniqueId);
                 }
                 renderCart();
             }
         }
 
         function calculateChange() {
-            const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            const total = cart.reduce((acc, item) => {
+                let itemBasePrice = item.price;
+                let addonsTotal = 0;
+                if (item.addons) {
+                    addonsTotal = item.addons.reduce((acc, a) => acc + a.price, 0);
+                }
+                const unitPriceWithAddons = itemBasePrice + addonsTotal;
+                return acc + (unitPriceWithAddons * item.qty);
+            }, 0);
             const received = parseFloat(document.getElementById('cash-received').value) || 0;
             const display = document.getElementById('change-display');
             const changeSpan = document.getElementById('cart-change');
@@ -953,39 +1006,65 @@
             }
 
             let total = 0;
-            list.innerHTML = cart.map(item => {
-                let itemBasePrice = item.price;
-                let addonsTotal = 0;
-                if (item.addons) {
-                    addonsTotal = item.addons.reduce((acc, a) => acc + a.price, 0);
-                }
-                const unitPriceWithAddons = itemBasePrice + addonsTotal;
-                const subtotal = unitPriceWithAddons * item.qty;
-                total += subtotal;
+            const newItems = cart.filter(i => !i.fromOrder);
+            const prevItems = cart.filter(i => i.fromOrder);
 
-                // Identificador único para o botão de +/-
-                const uniqueId = item.uniqueKey || item.id;
+            let html = "";
 
-                return `
-                    <div class="cart-item">
-                        <div class="cart-item-info">
-                            <h5 style="margin-bottom: 2px;">${item.name}</h5>
-                            ${item.addons && item.addons.length > 0 ? `
-                                <div style="font-size: 0.75rem; color: var(--gray); margin-bottom: 4px; line-height: 1.2;">
-                                    ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
-                                </div>
-                            ` : ''}
-                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${unitPriceWithAddons.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                            <div class="cart-item-qty">
-                                <button class="qty-btn" onclick="updateQty('${uniqueId}', -1)">-</button>
-                                <span>${item.qty}</span>
-                                <button class="qty-btn" onclick="updateQty('${uniqueId}', 1)">+</button>
+            if (prevItems.length > 0) {
+                html += `<div style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Consumo Anterior</div>`;
+                html += prevItems.map(item => {
+                    const subtotal = item.price * item.qty;
+                    total += subtotal;
+                    return `
+                        <div class="cart-item" style="opacity: 0.7; border-left: 3px solid #cbd5e1;">
+                            <div class="cart-item-info">
+                                <h5 style="margin-bottom: 2px;">${item.name}</h5>
+                                <span style="font-size: 0.8rem; font-weight: 600;">Qtd: ${item.qty}</span>
                             </div>
+                            <div style="font-weight: 700;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                         </div>
-                        <div style="font-weight: 700;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+                html += `<hr style="margin: 15px 0; border: none; border-top: 1px dashed #cbd5e1;">`;
+            }
+
+            if (newItems.length > 0) {
+                html += `<div style="background: #fff; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid var(--primary);">Novos Itens</div>`;
+                html += newItems.map(item => {
+                    let itemBasePrice = item.price;
+                    let addonsTotal = 0;
+                    if (item.addons) {
+                        addonsTotal = item.addons.reduce((acc, a) => acc + a.price, 0);
+                    }
+                    const unitPriceWithAddons = itemBasePrice + addonsTotal;
+                    const subtotal = unitPriceWithAddons * item.qty;
+                    total += subtotal;
+
+                    const uniqueId = item.uniqueKey || item.id;
+                    return `
+                        <div class="cart-item" style="border-left: 3px solid var(--primary); background: #fff;">
+                            <div class="cart-item-info">
+                                <h5 style="margin-bottom: 2px;">${item.name}</h5>
+                                ${item.addons && item.addons.length > 0 ? `
+                                    <div style="font-size: 0.75rem; color: var(--gray); margin-bottom: 4px; line-height: 1.2;">
+                                        ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
+                                    </div>
+                                ` : ''}
+                                <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${unitPriceWithAddons.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                                <div class="cart-item-qty">
+                                    <button class="qty-btn" onclick="updateQty('${uniqueId}', -1)">-</button>
+                                    <span>${item.qty}</span>
+                                    <button class="qty-btn" onclick="updateQty('${uniqueId}', 1)">+</button>
+                                </div>
+                            </div>
+                            <div style="font-weight: 700;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            list.innerHTML = html;
 
             document.getElementById('cart-total').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('mobile-cart-badge').textContent = cart.reduce((acc, item) => acc + item.qty, 0);
@@ -1038,15 +1117,21 @@
                 btnFinish.textContent = 'FINALIZAR VENDA (F10)';
                 btnKitchen.style.display = 'none';
                 info.style.display = 'none';
+
+                // Clear cart if it contains items from a previous table order
+                if (cart.some(i => i.fromOrder)) {
+                    cart = [];
+                    renderCart();
+                }
                 return;
             }
 
             const table = allTables.find(t => t.id === selectedTableId);
             if (table && table.isOccupied) {
-                btnFinish.textContent = 'FECHAR CONTA / PAGAR (F10)';
+                btnFinish.textContent = 'FECHAR CONTA (F10)';
                 btnFinish.style.display = 'block';
                 btnKitchen.style.display = 'block';
-                btnKitchen.textContent = 'ADICIONAR À COZINHA';
+                btnKitchen.textContent = 'ENVIAR PARA COZINHA';
 
                 info.style.display = 'block';
                 info.style.background = '#fee2e2';
@@ -1054,15 +1139,18 @@
                 info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Carregando consumo...`;
 
                 await loadTableOrder(selectedTableId);
-                info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Finalize o pagamento para liberar.`;
+                info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Garçom pode adicionar mais itens e enviar cozinha.`;
+
+                // Pular para o catálogo para o garçom escolher mais itens se quiser
+                if (window.innerWidth < 992) switchMobileTab('catalog');
             } else {
-                // Table is free - ensure cart is cleared of previous consumption
+                // Table is free
                 if (cart.some(i => i.fromOrder)) {
                     cart = [];
                     renderCart();
                 }
 
-                // For mobile: if a free table is selected, switch to catalog to pick products
+                // Pular para o catálogo imediatamente para iniciar o atendimento
                 if (window.innerWidth < 992) switchMobileTab('catalog');
 
                 btnFinish.style.display = 'none';
@@ -1072,7 +1160,7 @@
                 info.style.display = 'block';
                 info.style.background = '#d1fae5';
                 info.style.color = '#065f46';
-                info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>.`;
+                info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>. Escolha os itens.`;
             }
         }
 
@@ -1111,9 +1199,20 @@
 
                 if (res.ok) {
                     alert('🔥 Pedido enviado para a Cozinha!');
+
+                    // Reset para o garçom poder atender outra mesa
+                    cart = [];
+                    selectedTableId = null;
+                    document.getElementById('cart-table').value = "";
+                    document.getElementById('cart-customer').value = "";
+
+                    renderCart();
                     await loadTables();
                     await handleTableSelection();
-                } else {
+
+                    if (window.innerWidth < 992) switchMobileTab('catalog');
+                }
+                else {
                     const err = await res.json();
                     alert('Erro: ' + err.error);
                 }
@@ -1266,20 +1365,31 @@
     <!-- Modal de Adicionais (PDV) -->
     <div id="pdv-addon-modal" class="modal-overlay" style="display: none; align-items: flex-end;">
         <div class="modal-content"
-            style="max-width: 500px; width: 100%; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding: 20px; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header">
-                <h3 id="addon-modal-title">Escolha os Adicionais</h3>
+            style="max-width: 500px; width: 100%; border-radius: 24px 24px 0 0; padding: 0; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; background: #fff; box-shadow: 0 -10px 25px rgba(0,0,0,0.1);">
+            <div
+                style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="addon-modal-title" style="margin:0; font-size: 1.1rem; font-weight: 800; color: #1e293b;">
+                    Escolha os Adicionais</h3>
+                <button onclick="closeAddonModal()"
+                    style="border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; cursor: pointer;">&times;</button>
             </div>
-            <div id="pdv-addon-groups" style="margin: 15px 0;">
+
+            <div id="pdv-addon-groups" style="padding: 20px; overflow-y: auto; flex: 1;">
                 <!-- Adicionais injetados aqui -->
             </div>
-            <div class="total-row" style="margin: 15px 0; border-top: 1px solid #eee; padding-top: 15px;">
-                <span>Subtotal Item</span>
-                <span id="addon-modal-total">R$ 0,00</span>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeAddonModal()">CANCELAR</button>
-                <button class="btn btn-primary" onclick="confirmAddonSelection()">ADICIONAR AO CARRINHO</button>
+
+            <div
+                style="padding: 20px; border-top: 1px solid #f1f5f9; background: #fff; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div>
+                        <span style="display: block; font-size: 0.75rem; color: #64748b; font-weight: 600;">Subtotal
+                            Item</span>
+                        <span id="addon-modal-total" style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">R$
+                            0,00</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="confirmAddonSelection()"
+                        style="padding: 12px 24px; border-radius: 12px; font-weight: 800;">ADICIONAR</button>
+                </div>
             </div>
         </div>
     </div>

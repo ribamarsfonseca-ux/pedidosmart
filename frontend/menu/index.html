@@ -160,32 +160,41 @@
     </nav>
 
     <!-- Product Detail Modal (Addons Selection) -->
-    <div class="modal-overlay" id="productDetailModal" style="display: none; z-index: 1050;">
-        <div class="modal-content glass-card" style="max-width: 500px; height: auto; max-height: 90vh;">
-            <div class="modal-header">
-                <h3 id="detailProductName">Produto</h3>
-                <button onclick="closeProductDetailModal()">&times;</button>
+    <div class="modal-overlay" id="productDetailModal" style="display: none; z-index: 1050; align-items: flex-end;">
+        <div class="modal-content product-detail-content"
+            style="width: 100%; max-width: 500px; padding: 0; border-radius: 20px 20px 0 0; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; background: #fff;">
+
+            <!-- Header Fixo -->
+            <div
+                style="padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; z-index: 10;">
+                <h3 id="detailProductName" style="margin:0; font-size: 1.1rem; font-weight: 800; color: #1e293b;">
+                    Produto</h3>
+                <button onclick="closeProductDetailModal()"
+                    style="border: none; background: #f1f5f9; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; cursor: pointer;">&times;</button>
             </div>
-            <div class="modal-body" style="padding: 0 15px 15px;">
+
+            <!-- Conteúdo Scrollável -->
+            <div style="padding: 16px; overflow-y: auto; flex: 1;">
                 <div id="detailProductImgContainer"></div>
-                <p id="detailProductDesc" style="color: #64748b; font-size: 0.9rem; margin: 10px 0;"></p>
-                <div id="detailAddonGroups" style="margin-top: 20px;">
-                    <!-- Addon groups will be injected here -->
-                </div>
+                <p id="detailProductDesc"
+                    style="color: #64748b; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px;"></p>
+                <div id="detailAddonGroups"></div>
             </div>
-            <div class="cart-footer"
-                style="padding: 15px; background: #fff; border-top: 1px solid #eee; border-radius: 0 0 20px 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div class="quantity-controls"
-                        style="display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 5px 15px; border-radius: 99px;">
-                        <button onclick="changeDetailQuantity(-1)"
-                            style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">-</button>
-                        <span id="detailQuantity" style="font-weight: 700;">1</span>
-                        <button onclick="changeDetailQuantity(1)"
-                            style="border:none; background:none; font-size: 1.2rem; cursor:pointer;">+</button>
+
+            <!-- Footer Fixo (Total e Adicionar) -->
+            <div
+                style="padding: 16px; border-top: 1px solid #f1f5f9; background: #fff; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div
+                        style="display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 6px 12px; border-radius: 100px;">
+                        <button onclick="changeDetailQty(-1)"
+                            style="border:none; background:none; font-size: 1.5rem; color: var(--primary); font-weight: 800; cursor: pointer;">-</button>
+                        <span id="detailQuantity"
+                            style="font-size: 1.1rem; font-weight: 800; min-width: 20px; text-align: center;">1</span>
+                        <button onclick="changeDetailQty(1)"
+                            style="border:none; background:none; font-size: 1.5rem; color: var(--primary); font-weight: 800; cursor: pointer;">+</button>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 0.8rem; color: #64748b; display: block;">Subtotal</span>
                         <span id="detailTotalPrice"
                             style="font-size: 1.2rem; font-weight: 800; color: var(--primary);">R$ 0,00</span>
                     </div>

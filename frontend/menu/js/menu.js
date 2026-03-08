@@ -514,6 +514,7 @@ let detailQuantity = 1;
 window.openProductDetail = (product) => {
     currentBaseProduct = product;
     detailQuantity = 1;
+    selectedAddonState = {}; // Resetar estado ao abrir novo produto
     document.getElementById('detailQuantity').textContent = detailQuantity;
     document.getElementById('detailProductName').textContent = product.name;
     document.getElementById('detailProductDesc').textContent = product.description || '';
@@ -558,39 +559,59 @@ function renderDetailAddons(groups) {
         }
 
         return `
-            <div class="addon-group" style="margin-bottom: 20px; border: 1px solid #f1f5f9; padding: 15px; border-radius: 12px; background: #fafafa;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="width: 100%;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h4 style="margin:0; font-size: 1rem; color: #1e293b;">${g.name}</h4>
-                            ${g.isRequired ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Obrigatório</span>' : '<span style="background: #f1f5f9; color: #64748b; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Opcional</span>'}
-                        </div>
-                        <p style="margin: 4px 0 10px; font-size: 0.8rem; color: #64748b; font-weight: 500;">
-                            ${instruction}
-                        </p>
+            <div class="addon-group" style="margin-bottom: 24px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="background: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin:0; font-size: 1rem; color: #1e293b; font-weight: 700;">${g.name}</h4>
+                        <p style="margin: 2px 0 0; font-size: 0.75rem; color: #64748b; font-weight: 500;">${instruction}</p>
                     </div>
+                    ${g.isRequired ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">Obrigatório</span>' : ''}
                 </div>
-                <div class="addon-options" id="options-group-${g.id}">
+                <div class="addon-options" id="options-group-${g.id}" style="padding: 0 16px;">
                     ${g.addons.map(a => `
-                        <label style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <input type="${g.maxChoices === 1 ? 'radio' : 'checkbox'}" 
-                                       name="group-${g.id}" 
-                                       value="${a.id}" 
-                                       data-price="${a.price}" 
-                                       data-name="${a.name}"
-                                       onchange="validateAddonChoice(${g.id}, ${g.maxChoices}, this); updateDetailTotal();"
-                                       style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
-                                <span style="font-size: 0.95rem; color: #334155;">${a.name}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+                            <div style="flex: 1; padding-right: 12px;">
+                                <div style="font-size: 0.95rem; color: #334155; font-weight: 600;">${a.name}</div>
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 2px;">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                             </div>
-                            <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary);">+ ${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                        </label>
+                            <div style="display: flex; align-items: center; gap: 12px; background: #f1f5f9; padding: 4px 8px; border-radius: 100px;">
+                                <button onclick="changeAddonQty(${g.id}, ${a.id}, -1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: var(--primary); font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">-</button>
+                                <span id="addon-qty-${a.id}" style="font-size: 1rem; font-weight: 700; min-width: 15px; text-align: center;">0</span>
+                                <button onclick="changeAddonQty(${g.id}, ${a.id}, 1, ${g.maxChoices})" style="width: 28px; height: 28px; border: none; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; color: white; font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">+</button>
+                            </div>
+                        </div>
                     `).join('')}
                 </div>
             </div>
         `;
     }).join('');
 }
+
+let selectedAddonState = {}; // { addonId: quantity }
+
+window.changeAddonQty = (groupId, addonId, delta, maxGroup) => {
+    const currentQty = selectedAddonState[addonId] || 0;
+    const newQty = Math.max(0, currentQty + delta);
+
+    // Validar máximo do grupo
+    if (delta > 0) {
+        // Encontrar todos os IDs dos adicionais deste grupo
+        const group = currentBaseProduct.addonGroups.find(g => g.id === groupId);
+        const groupAddonIds = group.addons.map(a => a.id);
+        const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (selectedAddonState[id] || 0), 0);
+
+        if (totalInGroup >= maxGroup) {
+            alert(`Você pode escolher no máximo ${maxGroup} itens neste grupo.`);
+            return;
+        }
+    }
+
+    selectedAddonState[addonId] = newQty;
+    const qtySpan = document.getElementById(`addon-qty-${addonId}`);
+    if (qtySpan) qtySpan.textContent = newQty;
+
+    updateDetailTotal();
+};
 
 window.validateAddonChoice = (groupId, max, element) => {
     if (max === 1) return; // Radio handling is native
@@ -601,7 +622,7 @@ window.validateAddonChoice = (groupId, max, element) => {
     }
 };
 
-window.changeDetailQuantity = (delta) => {
+window.changeDetailQty = (delta) => {
     detailQuantity = Math.max(1, detailQuantity + delta);
     document.getElementById('detailQuantity').textContent = detailQuantity;
     updateDetailTotal();
@@ -611,11 +632,15 @@ window.updateDetailTotal = () => {
     if (!currentBaseProduct) return;
     let total = currentBaseProduct.price;
 
-    // Somar adicionais selecionados
-    const selectedAddons = document.querySelectorAll('#detailAddonGroups input:checked');
-    selectedAddons.forEach(input => {
-        total += parseFloat(input.dataset.price);
-    });
+    // Calcular por quantidade selecionada no state
+    if (Object.keys(selectedAddonState).length > 0) {
+        currentBaseProduct.addonGroups.forEach(g => {
+            g.addons.forEach(a => {
+                const qty = selectedAddonState[a.id] || 0;
+                total += (a.price * qty);
+            });
+        });
+    }
 
     const subtotal = total * detailQuantity;
     document.getElementById('detailTotalPrice').textContent = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -624,21 +649,31 @@ window.updateDetailTotal = () => {
 function addSelectedProductToCart() {
     // Validar obrigatórios
     const groups = currentBaseProduct.addonGroups || [];
+    const finalAddons = [];
+
     for (const g of groups) {
-        if (g.isRequired) {
-            const checked = document.querySelectorAll(`input[name="group-${g.id}"]:checked`);
-            if (checked.length < g.minChoices) {
-                alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
-                return;
-            }
+        const groupAddonIds = g.addons.map(a => a.id);
+        const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (selectedAddonState[id] || 0), 0);
+
+        if (g.isRequired && totalInGroup < g.minChoices) {
+            alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
+            return;
         }
+
+        // Adicionar itens finais conforme a quantidade
+        g.addons.forEach(a => {
+            const qty = selectedAddonState[a.id] || 0;
+            for (let i = 0; i < qty; i++) {
+                finalAddons.push({
+                    id: a.id,
+                    name: a.name,
+                    price: a.price
+                });
+            }
+        });
     }
 
-    const selectedAddons = Array.from(document.querySelectorAll('#detailAddonGroups input:checked')).map(input => ({
-        id: parseInt(input.value),
-        name: input.dataset.name,
-        price: parseFloat(input.dataset.price)
-    }));
+    const selectedAddons = finalAddons;
 
     // No SmartPede, itens com adicionais diferentes devem ser entradas separadas no carrinho
     // Para simplificar, vamos gerar um ID único baseado no produto e nos IDs dos adicionais
