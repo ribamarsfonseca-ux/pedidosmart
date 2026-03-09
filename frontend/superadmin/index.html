@@ -534,7 +534,7 @@
 
         async function saveGeoKey(id) {
             const geoKey = document.getElementById('geoKey-' + id).value.trim();
-            const res = await fetch(`/api/super-admin/tenant/${id}`, {
+            const res = await fetch(`/api/super-admin/tenant/${id}/geo-key`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
                 body: JSON.stringify({ geoapifyApiKey: geoKey })

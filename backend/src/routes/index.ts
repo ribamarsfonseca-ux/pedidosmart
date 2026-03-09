@@ -30,6 +30,7 @@ router.get('/super-admin/config', superAdminAuth, superAdmin.getConfigs);
 router.post('/super-admin/config', superAdminAuth, superAdmin.updateConfigs);
 router.post('/super-admin/tenant', superAdminAuth, superAdmin.createTenant);
 router.delete('/super-admin/tenant/:id', superAdminAuth, superAdmin.deleteTenant);
+router.put('/super-admin/tenant/:id/geo-key', superAdminAuth, superAdmin.setTenantGeoKey);
 
 // Protected Admin Routes - Com verificação de assinatura e status
 router.use('/categories', checkSubscription, categoryRoutes);

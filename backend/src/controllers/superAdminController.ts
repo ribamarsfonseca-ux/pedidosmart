@@ -22,7 +22,7 @@ export const getAllTenants = async (req: Request, res: Response): Promise<void> 
 export const updateTenantStatus = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { active, subscriptionStatus, planType, nextBillingDate, geoapifyApiKey } = req.body;
+        const { active, subscriptionStatus, planType, nextBillingDate } = req.body;
 
         const tenant = await prisma.tenant.update({
             where: { id: parseInt(id as string) },
@@ -30,14 +30,31 @@ export const updateTenantStatus = async (req: Request, res: Response): Promise<v
                 active,
                 subscriptionStatus,
                 planType,
-                nextBillingDate: nextBillingDate ? new Date(nextBillingDate) : undefined,
-                geoapifyApiKey: geoapifyApiKey || ""
+                nextBillingDate: nextBillingDate ? new Date(nextBillingDate) : undefined
             }
         });
 
         res.json({ message: 'Status do restaurante atualizado', tenant });
     } catch (error) {
+        console.error('Update Tenant Status Error:', error);
         res.status(500).json({ error: 'Erro ao atualizar restaurante' });
+    }
+};
+
+export const setTenantGeoKey = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { geoapifyApiKey } = req.body;
+
+        const tenant = await prisma.tenant.update({
+            where: { id: parseInt(id as string) },
+            data: { geoapifyApiKey: geoapifyApiKey ?? '' }
+        });
+
+        res.json({ message: 'Chave Geoapify atualizada', tenant });
+    } catch (error) {
+        console.error('Set GeoKey Error:', error);
+        res.status(500).json({ error: 'Erro ao atualizar chave Geoapify' });
     }
 };
 
