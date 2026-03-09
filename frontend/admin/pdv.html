@@ -474,9 +474,22 @@
     <div id="login-screen">
         <div class="login-box">
             <h1 style="text-align: center; margin-bottom: 0.5rem;">🚀 SmartPede</h1>
-            <p style="text-align: center; color: var(--gray); margin-bottom: 2.5rem;">Acesse o Frente de Caixa
+            <p style="text-align: center; color: var(--gray); margin-bottom: 1.5rem;">Acesse o Frente de Caixa
                 Profissional</p>
-            <form onsubmit="handlePDVLogin(event)">
+
+            <!-- Seletor de modo de login -->
+            <div
+                style="display: flex; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                <button id="tab-pdv" onclick="switchLoginTab('pdv')"
+                    style="flex:1; padding: 10px; border:none; background: var(--dark); color:white; font-weight: 700; cursor:pointer; font-size:0.85rem;">🔑
+                    Operador PDV</button>
+                <button id="tab-employee" onclick="switchLoginTab('employee')"
+                    style="flex:1; padding: 10px; border:none; background: #f1f5f9; color: var(--gray); font-weight: 600; cursor:pointer; font-size:0.85rem;">👤
+                    Funcionário</button>
+            </div>
+
+            <!-- Form 1: Login pelo Slug + Senha PDV (Padrão) -->
+            <form id="form-pdv" onsubmit="handlePDVLogin(event)">
                 <div class="form-group">
                     <label>URL DA LOJA (SLUG)</label>
                     <input type="text" id="pdv-slug" placeholder="ex: pizzaria-do-ze" required>
@@ -486,6 +499,23 @@
                     <input type="password" id="pdv-pass" placeholder="Definida nas configurações do Admin" required>
                 </div>
                 <button type="submit" class="btn btn-primary" style="padding: 1.2rem;">ENTRAR NO TERMINAL</button>
+            </form>
+
+            <!-- Form 2: Login de Funcionário (e-mail + senha) -->
+            <form id="form-employee" onsubmit="handleEmployeeLogin(event)" style="display:none;">
+                <div class="form-group">
+                    <label>URL DA LOJA (SLUG)</label>
+                    <input type="text" id="emp-slug" placeholder="ex: pizzaria-do-ze" required>
+                </div>
+                <div class="form-group">
+                    <label>E-MAIL DO FUNCIONÁRIO</label>
+                    <input type="email" id="emp-email" placeholder="funcionario@loja.com" required>
+                </div>
+                <div class="form-group">
+                    <label>SENHA</label>
+                    <input type="password" id="emp-pass" placeholder="Sua senha de acesso" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 1.2rem;">ENTRAR COMO FUNCIONÁRIO</button>
             </form>
         </div>
     </div>
@@ -645,6 +675,56 @@
                 finishOrder();
             }
         });
+
+        function switchLoginTab(tab) {
+            const formPdv = document.getElementById('form-pdv');
+            const formEmp = document.getElementById('form-employee');
+            const tabPdv = document.getElementById('tab-pdv');
+            const tabEmp = document.getElementById('tab-employee');
+
+            if (tab === 'pdv') {
+                formPdv.style.display = 'block';
+                formEmp.style.display = 'none';
+                tabPdv.style.background = 'var(--dark)';
+                tabPdv.style.color = 'white';
+                tabEmp.style.background = '#f1f5f9';
+                tabEmp.style.color = 'var(--gray)';
+            } else {
+                formPdv.style.display = 'none';
+                formEmp.style.display = 'block';
+                tabEmp.style.background = 'var(--dark)';
+                tabEmp.style.color = 'white';
+                tabPdv.style.background = '#f1f5f9';
+                tabPdv.style.color = 'var(--gray)';
+            }
+        }
+
+        async function handleEmployeeLogin(e) {
+            e.preventDefault();
+            const slug = document.getElementById('emp-slug').value.trim();
+            const email = document.getElementById('emp-email').value.trim();
+            const password = document.getElementById('emp-pass').value.trim();
+
+            try {
+                const res = await fetch(`${API_URL}/users/pdv-login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug: slug.toLowerCase(), email, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('pdv_token', data.token);
+                    localStorage.setItem('pdv_tenant', JSON.stringify(data.tenant));
+                    if (data.attendantName) {
+                        localStorage.setItem('pdv_attendant', data.attendantName);
+                    }
+                    showMain();
+                } else {
+                    alert('❌ ' + (data.error || 'Credenciais inválidas.'));
+                }
+            } catch (err) { alert('Erro na conexão com o servidor.'); }
+        }
 
         async function handlePDVLogin(e) {
             e.preventDefault();
