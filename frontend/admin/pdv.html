@@ -535,7 +535,7 @@
             </div>
         </header>
 
-        <section class="pdv-container">
+        <section class="pdv-container" id="pdv-catalog-container" style="display: none;">
             <div class="search-box">
                 <input type="text" id="pdv-search" class="search-input"
                     placeholder="🔍 Buscar produto por nome ou código..." onkeyup="filterProducts()">
@@ -549,6 +549,16 @@
                 <!-- Produtos renderizados aqui via JS -->
                 <p>Carregando catálogo...</p>
             </div>
+        </section>
+
+        <!-- TELA INICIAL DO ATENDIMENTO (Oculta o catálogo até iniciar) -->
+        <section class="pdv-container" id="pdv-welcome-container"
+            style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; border-radius: 20px; text-align: center; padding: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1.5rem;">👋</div>
+            <h2 style="color: var(--primary); font-weight: 800; margin-bottom: 0.5rem;">Iniciar Atendimento</h2>
+            <p style="color: var(--gray); max-width: 300px; margin-bottom: 2rem;">Selecione a mesa e o cliente ao lado
+                para começar a lançar os produtos.</p>
+            <div style="width: 80px; height: 4px; background: var(--primary); border-radius: 10px; opacity: 0.2;"></div>
         </section>
 
         <aside class="cart-sidebar">
@@ -597,9 +607,20 @@
                     style="display: none; margin-bottom: 1rem; padding: 10px; background: #d1fae5; border-radius: 8px; font-weight: 700; color: #065f46; text-align: center;">
                     TROCO: <span id="cart-change">R$ 0,00</span>
                 </div>
-                <button id="btn-finish" class="btn btn-success" onclick="finishOrder()">FINALIZAR VENDA (F10)</button>
-                <button id="btn-kitchen" class="btn btn-primary" style="display: none; margin-top: 10px;"
-                    onclick="sendToKitchen()">ENVIAR PARA COZINHA</button>
+
+                <!-- BOTÃO INICIAR ATENDIMENTO (Novo Fluxo) -->
+                <button id="btn-start-order" class="btn btn-primary" onclick="startOrder()"
+                    style="margin-bottom: 10px; background: var(--primary); padding: 1.2rem;">🚀 INICIAR
+                    ATENDIMENTO</button>
+
+                <div id="order-action-buttons" style="display: none;">
+                    <button id="btn-finish" class="btn btn-success" onclick="finishOrder()"
+                        style="margin-bottom: 10px;">FINALIZAR VENDA (F10)</button>
+                    <button id="btn-kitchen" class="btn btn-primary" style="margin-top: 5px; width: 100%;"
+                        onclick="sendToKitchen()">ENVIAR PARA COZINHA</button>
+                    <button class="btn btn-outline" style="margin-top: 10px; border-color: #ef4444; color: #ef4444;"
+                        onclick="cancelOrderProcess()">CANCELAR ATENDIMENTO</button>
+                </div>
             </div>
         </aside>
 
@@ -824,13 +845,11 @@
                             order.items.forEach(item => {
                                 const prod = products.find(p => p.id === item.productId);
                                 if (prod) {
-                                    // Mapear adicionais que já vieram do banco
                                     const itemAddons = (item.addons || []).map(ia => ({
                                         id: ia.addonId,
                                         name: ia.addon?.name || "Adicional",
                                         price: ia.unitPrice
                                     }));
-
                                     combinedItems.push({
                                         ...prod,
                                         qty: item.quantity,
@@ -844,9 +863,49 @@
                         currentTableOrderIds = activeOrders.map(o => o.id);
                         cart = combinedItems;
                         renderCart();
+                        // Se tem pedido, pula direto para o catálogo
+                        startOrder(true);
+                    } else {
+                        cancelOrderProcess(); // Se não tem pedido, volta pro estado inicial
                     }
                 }
             } catch (e) { console.error('Erro ao carregar consumo da mesa'); }
+        }
+
+        function startOrder(skipReset = false) {
+            const catalog = document.getElementById('pdv-catalog-container');
+            const welcome = document.getElementById('pdv-welcome-container');
+            const btnStart = document.getElementById('btn-start-order');
+            const actionButtons = document.getElementById('order-action-buttons');
+
+            catalog.style.display = 'block';
+            welcome.style.display = 'none';
+            btnStart.style.display = 'none';
+            actionButtons.style.display = 'block';
+
+            if (!skipReset) {
+                cart = [];
+                renderCart();
+            }
+        }
+
+        function cancelOrderProcess() {
+            const catalog = document.getElementById('pdv-catalog-container');
+            const welcome = document.getElementById('pdv-welcome-container');
+            const btnStart = document.getElementById('btn-start-order');
+            const actionButtons = document.getElementById('order-action-buttons');
+
+            catalog.style.display = 'none';
+            welcome.style.display = 'flex';
+            btnStart.style.display = 'block';
+            actionButtons.style.display = 'none';
+
+            cart = [];
+            currentTableOrderIds = [];
+            renderCart();
+            document.getElementById('cart-table').value = "";
+            document.getElementById('cart-customer').value = "";
+            document.getElementById('table-status-info').style.display = 'none';
         }
 
         function renderCategories() {
