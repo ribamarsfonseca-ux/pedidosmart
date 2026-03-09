@@ -662,6 +662,11 @@
                 if (res.ok) {
                     localStorage.setItem('pdv_token', data.token);
                     localStorage.setItem('pdv_tenant', JSON.stringify(data.tenant));
+                    if (data.attendantName) {
+                        localStorage.setItem('pdv_attendant', data.attendantName);
+                    } else {
+                        localStorage.removeItem('pdv_attendant');
+                    }
                     showMain();
                 } else {
                     alert('Credenciais inválidas. Verifique no painel admin.');
@@ -671,7 +676,14 @@
 
         async function showMain() {
             tenant = JSON.parse(localStorage.getItem('pdv_tenant'));
-            document.getElementById('pdv-store-name').textContent = tenant.name.toUpperCase();
+            const attendant = localStorage.getItem('pdv_attendant');
+
+            let displayName = tenant.name.toUpperCase();
+            if (attendant) {
+                displayName += ` (Op: ${attendant.toUpperCase()})`;
+            }
+            document.getElementById('pdv-store-name').textContent = displayName;
+
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-pdv').style.display = 'grid';
 
@@ -1182,6 +1194,7 @@
                 fulfillmentType: 'dine_in',
                 tableId: selectedTableId,
                 status: 'preparing',
+                attendantName: localStorage.getItem('pdv_attendant') || null,
                 items: newItems.map(i => ({
                     productId: i.id,
                     quantity: i.qty,
@@ -1236,6 +1249,7 @@
                 paymentMethod: document.getElementById('cart-payment').value,
                 tableId: selectedTableId,
                 status: 'finished',
+                attendantName: localStorage.getItem('pdv_attendant') || null,
                 items: cart.filter(i => !i.fromOrder).map(i => ({
                     productId: i.id,
                     quantity: i.qty,

@@ -462,6 +462,11 @@
                             <p class="tenant-info">📅 Cadastro: ${new Date(t.createdAt).toLocaleDateString('pt-BR')}</p>
                             <p class="tenant-info">🗓 Vencimento: ${t.nextBillingDate ? new Date(t.nextBillingDate).toLocaleDateString('pt-BR') : 'N/A'}</p>
                             <p class="tenant-info">🛒 ${t._count?.orders || 0} pedidos | 📦 ${t._count?.products || 0} produtos</p>
+                            <div style="margin-top: 8px; display: flex; align-items: center; gap: 5px;">
+                                <label style="margin:0; font-size:0.75rem;">🗺️ Chave Geoapify:</label>
+                                <input type="text" id="geoKey-${t.id}" value="${t.geoapifyApiKey || ''}" placeholder="Chave Exclusiva do Lojista" style="width:200px; padding:4px; font-size:0.75rem;">
+                                <button onclick="saveGeoKey(${t.id})" class="btn-sm" style="padding:4px 8px; background:#f1f5f9; border:1px solid #cbd5e1;">Salvar</button>
+                            </div>
                         </div>
                         <div>${getBadge(t)}</div>
                     </div>
@@ -525,6 +530,20 @@
             });
             if (res.ok) { alert('Assinatura renovada!'); loadTenants(); }
             else alert('Erro ao renovar assinatura.');
+        }
+
+        async function saveGeoKey(id) {
+            const geoKey = document.getElementById('geoKey-' + id).value.trim();
+            const res = await fetch(`/api/super-admin/tenant/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-admin-password': masterPass },
+                body: JSON.stringify({ geoapifyApiKey: geoKey })
+            });
+            if (res.ok) {
+                alert('Chave Geoapify atualizada para o lojista!');
+            } else {
+                alert('Erro ao atualizar chave Geoapify.');
+            }
         }
 
         function openResetModal(id, name) {

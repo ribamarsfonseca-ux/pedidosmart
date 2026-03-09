@@ -21,7 +21,8 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
             couponCode,
             tableNumber,
             tableId: bodyTableId,
-            status
+            status,
+            attendantName // Canal/funcionário: "online", "balcão", nome do funcionário
         } = req.body;
 
         if (!tenantId || !customerName || !customerPhone || !items || !items.length) {
@@ -158,6 +159,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
                 status: status || 'pending',
                 fulfillmentType: fulfillmentType || 'delivery',
                 paymentMethod: paymentMethod || 'money',
+                attendantName: attendantName || null,
                 addressStreet,
                 addressNumber,
                 addressDistrict,
@@ -512,5 +514,70 @@ export const requestCancellation = async (req: Request, res: Response): Promise<
         res.json({ message: 'Solicitação de cancelamento enviada com sucesso.', order: updatedOrder });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao solicitar cancelamento' });
+    }
+};
+
+// Protected Admin Route: Delete ALL order history (with admin password verification)
+export const deleteAllOrders = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        const { adminPassword } = req.body;
+        if (!adminPassword) {
+            res.status(400).json({ error: 'Senha do administrador é obrigatória.' });
+            return;
+        }
+
+        // Validar senha do admin
+        const adminUser = await prisma.user.findFirst({ where: { tenantId, role: 'admin' } });
+        if (!adminUser) { res.status(404).json({ error: 'Administrador não encontrado.' }); return; }
+
+        const bcrypt = require('bcryptjs');
+        const valid = await bcrypt.compare(adminPassword, adminUser.password);
+        if (!valid) { res.status(401).json({ error: 'Senha incorreta. Operação não autorizada.' }); return; }
+
+        const result = await prisma.order.deleteMany({ where: { tenantId } });
+
+        res.json({ message: `Histórico zerado com sucesso. ${result.count} pedido(s) removido(s).` });
+    } catch (error) {
+        console.error('Delete All Orders Error:', error);
+        res.status(500).json({ error: 'Erro ao zerar histórico.' });
+    }
+};
+
+// Protected Admin Route: Delete today's order history (with admin password verification)
+export const deleteDailyOrders = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        if (!tenantId) { res.status(401).json({ error: 'Não autorizado' }); return; }
+
+        const { adminPassword } = req.body;
+        if (!adminPassword) {
+            res.status(400).json({ error: 'Senha do administrador é obrigatória.' });
+            return;
+        }
+
+        // Validar senha do admin
+        const adminUser = await prisma.user.findFirst({ where: { tenantId, role: 'admin' } });
+        if (!adminUser) { res.status(404).json({ error: 'Administrador não encontrado.' }); return; }
+
+        const bcrypt = require('bcryptjs');
+        const valid = await bcrypt.compare(adminPassword, adminUser.password);
+        if (!valid) { res.status(401).json({ error: 'Senha incorreta. Operação não autorizada.' }); return; }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const result = await prisma.order.deleteMany({
+            where: { tenantId, createdAt: { gte: today, lt: tomorrow } }
+        });
+
+        res.json({ message: `Histórico do dia zerado. ${result.count} pedido(s) removido(s).` });
+    } catch (error) {
+        console.error('Delete Daily Orders Error:', error);
+        res.status(500).json({ error: 'Erro ao zerar histórico do dia.' });
     }
 };

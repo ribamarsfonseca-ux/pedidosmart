@@ -37,6 +37,7 @@ model Tenant {
   instagramUrl       String?
   facebookUrl        String?
   contactEmail       String?
+  geoapifyApiKey     String?
   pdvPassword        String?  // Senha para o Frente de Caixa (PDV)
   
   // Logistics v2 (Geoapify)
@@ -248,6 +249,7 @@ model Order {
   // v3 Fields
   fulfillmentType String   @default("delivery") // delivery, pickup, dine_in, counter
   paymentMethod   String   @default("money")    // pix, card, money
+  attendantName   String?  // Canal/funcionário que atendeu: "online", "balcão", "João Silva"
   addressStreet   String?
   addressNumber   String?
   addressDistrict String?

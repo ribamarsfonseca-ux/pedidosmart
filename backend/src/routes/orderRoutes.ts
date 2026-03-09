@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrders, updateOrderStatus, getOrderPublicStatus, exportOrdersBackup } from '../controllers/orderController';
+import { createOrder, getOrders, updateOrderStatus, getOrderPublicStatus, exportOrdersBackup, deleteAllOrders, deleteDailyOrders } from '../controllers/orderController';
 import { authenticateToken } from '../middlewares/auth';
 
 const router = Router();
@@ -20,5 +20,9 @@ router.get('/crm/customers/export', authenticateToken, require('../controllers/o
 router.get('/:id/receipt', authenticateToken, require('../controllers/orderController').getThermalReceipt);
 router.put('/:id/status', updateOrderStatus);
 router.patch('/:id/status', updateOrderStatus);
+
+// Admin Deletion Routes (Protegidas por senha no body, ver controller)
+router.delete('/delete-all', deleteAllOrders);
+router.delete('/delete-daily', deleteDailyOrders);
 
 export default router;

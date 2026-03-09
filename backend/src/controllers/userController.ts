@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key';
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -95,5 +98,62 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: 'Erro ao excluir usuário' });
+    }
+};
+
+// Public Route: Funcionário faz login no PDV
+export const loginUserPDV = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, password, slug } = req.body;
+
+        if (!email || !password || !slug) {
+            res.status(400).json({ error: 'E-mail, senha e slug da loja são obrigatórios' });
+            return;
+        }
+
+        const tenant = await prisma.tenant.findUnique({ where: { slug: slug.toLowerCase() } });
+        if (!tenant) {
+            res.status(401).json({ error: 'Loja não encontrada' });
+            return;
+        }
+
+        if (!tenant.active) {
+            res.status(403).json({ error: 'Esta loja está bloqueada. Contate o administrador.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        // Valida se o usuário existe e se pertence à loja (tenant) que está tentando acessar
+        if (!user || user.tenantId !== tenant.id) {
+            res.status(401).json({ error: 'Credenciais inválidas para esta loja' });
+            return;
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            res.status(401).json({ error: 'Credenciais inválidas' });
+            return;
+        }
+
+        // Criar nome do atendente (se não tiver nome explícito até pegar primeira parte do email)
+        const attendantName = email.split('@')[0];
+
+        // O Token vai com role: user.role e attendantName
+        const token = jwt.sign(
+            { tenantId: tenant.id, role: user.role, userId: user.id, attendantName },
+            JWT_SECRET,
+            { expiresIn: '12h' }
+        );
+
+        res.json({
+            message: 'Acesso PDV autorizado',
+            tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+            attendantName,
+            token
+        });
+    } catch (error) {
+        console.error('Login User PDV Error:', error);
+        res.status(500).json({ error: 'Erro ao processar login de funcionário' });
     }
 };

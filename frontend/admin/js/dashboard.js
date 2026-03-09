@@ -342,7 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         
         <div class="glass-card" style="margin-top: 1rem;">
-            <h3>Histórico de Vendas Diárias</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Histórico de Vendas Diárias</h3>
+                <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; font-size: 0.8rem; padding: 4px 10px;" onclick="promptZerarHoje()">🗑️ Zerar Hoje</button>
+            </div>
             <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;" id="salesHistoryList">
                 <p class="text-secondary" style="font-size: 0.9rem;">Processando vendas passadas...</p>
             </div>
@@ -460,6 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>📍 ${translateFulfillment(order.fulfillmentType)}</span>
                             ${order.fulfillmentType === 'delivery' ? `<span class="text-secondary">| ${order.addressDistrict || 'Bairro ñ inf.'}</span>` : ''}
                         </div>
+                        ${order.attendantName ? `<div style="font-size: 0.75rem; color: #6366f1; margin-top: 5px; font-weight: 600;">👨‍💼 Atendido por: ${order.attendantName}</div>` : ''}
                         
                         <div class="order-items-list">
                             ${order.items.map(item => `
@@ -494,6 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHistoryView() {
         return `
             <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0;">Histórico Completo</h3>
+                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; width: auto; font-size: 0.85rem;" onclick="promptZerarTodoHistorico()">🗑️ Zerar Todo Histórico</button>
+                </div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -501,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <th style="padding: 1rem 0.5rem;"># Pedido</th>
                                 <th style="padding: 1rem 0.5rem;">Data / Hora</th>
                                 <th style="padding: 1rem 0.5rem;">Cliente</th>
-                                <th style="padding: 1rem 0.5rem;">Tipo / Pgto</th>
+                                <th style="padding: 1rem 0.5rem;">Canal/Operador</th>
                                 <th style="padding: 1rem 0.5rem;">Total</th>
                                 <th style="padding: 1rem 0.5rem;">Status</th>
                             </tr>
@@ -532,7 +540,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="text-secondary">#${order.orderNumber || order.id}</td>
                     <td>${new Date(order.createdAt).toLocaleDateString()}</td>
                     <td>${order.customerName}</td>
-                    <td>${translateFulfillment(order.fulfillmentType)} / ${translatePayment(order.paymentMethod)}</td>
+                    <td>
+                        <div style="font-weight: 600;">${translateFulfillment(order.fulfillmentType)} / ${translatePayment(order.paymentMethod)}</div>
+                        <div style="font-size: 0.75rem; color: #6366f1; margin-top: 2px;">${order.attendantName ? `👨‍💼 Op: ${order.attendantName}` : '🌐 Online Cardápio'}</div>
+                    </td>
                     <td class="text-secondary" style="font-size: 0.8rem;">
                         ${order.items.map(item => `${item.quantity}x ${item.product.name}`).join(', ').substring(0, 50)}...
                     </td>
@@ -626,10 +637,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.promptZerarHoje = () => {
+        renderModal('Zerar Histórico de Hoje', `
+            <div class="alert alert-danger" style="background:#fee2e2; color:#b91c1c; padding:15px; border-radius:8px; margin-bottom:15px; font-weight: 600;">
+                ⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL. Todos os pedidos criados HOJE serão apagados permanentemente do sistema (isso inclui relatórios e financeiro).
+            </div>
+            <div class="form-group">
+                <label>Senha do Administrador para Confirmar</label>
+                <input type="password" id="adminConfirmDeletePass" placeholder="Digite sua senha de login" style="width: 100%;">
+            </div>
+        `, 'Zerar Pedidos de Hoje', async () => {
+            const pass = document.getElementById('adminConfirmDeletePass').value;
+            if (!pass) throw new Error('A senha é obrigatória');
+
+            const res = await apiFetch('/orders/delete-daily', {
+                method: 'DELETE',
+                body: JSON.stringify({ adminPassword: pass })
+            });
+            alert(res.message);
+            initHomeView();
+        });
+    };
+
+    window.promptZerarTodoHistorico = () => {
+        renderModal('Zerar TODO Histórico de Vendas', `
+            <div class="alert alert-danger" style="background:#fee2e2; color:#b91c1c; padding:15px; border-radius:8px; margin-bottom:15px; font-weight: 600;">
+                🚨 ALERTA CRÍTICO: Você está prestes a apagar TODOS os pedidos da história desta loja. Esta ação não tem volta e limpará todo o financeiro atrelado a eles.
+            </div>
+            <div class="form-group">
+                <label>Senha do Administrador para Confirmar</label>
+                <input type="password" id="adminConfirmDeleteAllPass" placeholder="Digite sua senha de login" style="width: 100%;">
+            </div>
+        `, 'Apagar Todo Histórico Agora', async () => {
+            const pass = document.getElementById('adminConfirmDeleteAllPass').value;
+            if (!pass) throw new Error('A senha é obrigatória');
+
+            const res = await apiFetch('/orders/delete-all', {
+                method: 'DELETE',
+                body: JSON.stringify({ adminPassword: pass })
+            });
+            alert(res.message);
+            initHistoryView();
+        });
+    };
+
     function renderCatalogView() {
         return `
-            <div style="display: flex; gap: 1.5rem;">
-                <!-- Categories Sidebar -->
+            < div style = "display: flex; gap: 1.5rem;" >
+                < !--Categories Sidebar-- >
                 <div style="flex: 0 0 300px;">
                     <div class="glass-card">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -642,20 +697,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- Products Area -->
-                <div style="flex: 1;">
-                    <div class="glass-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 id="currentCategoryTitle">Todos os Produtos</h3>
-                            <button class="btn btn-primary" id="addProductBtn" style="width: auto;">+ Novo Produto</button>
-                        </div>
-                        <div id="productsList" class="products-table">
-                            <p class="text-secondary">Selecione uma categoria ou carregue todos.</p>
-                        </div>
-                    </div>
+                <!--Products Area-- >
+        <div style="flex: 1;">
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 id="currentCategoryTitle">Todos os Produtos</h3>
+                    <button class="btn btn-primary" id="addProductBtn" style="width: auto;">+ Novo Produto</button>
+                </div>
+                <div id="productsList" class="products-table">
+                    <p class="text-secondary">Selecione uma categoria ou carregue todos.</p>
                 </div>
             </div>
-        `;
+        </div>
+            </div >
+            `;
     }
 
     window.initCatalogView = async () => {
@@ -671,8 +726,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const categories = await apiFetch('/categories');
             window.categories = categories; // Cache globally for modals
             list.innerHTML = `
-                <div class="category-item active" onclick="filterByCategory(null, this)">Todos os Produtos</div>
-                ${categories.map(c => `
+            < div class= "category-item active" onclick = "filterByCategory(null, this)" > Todos os Produtos</div >
+        ${categories.map(c => `
                     <div class="category-item" onclick="filterByCategory(${c.id}, this)" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>${c.name} <small class="text-secondary">(Ord: ${c.order})</small></span>
                         <div style="display: flex; gap: 5px;">
@@ -680,17 +735,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn-text" onclick="event.stopPropagation(); deleteCategory(${c.id})">&times;</button>
                         </div>
                     </div>
-                `).join('')}
+                `).join('')
+                }
             `;
         } catch (error) {
-            list.innerHTML = `<p class="error">${error.message}</p>`;
+            list.innerHTML = `< p class= "error" > ${error.message}</p > `;
         }
     }
 
     async function loadProducts(categoryId = null) {
         const list = document.getElementById('productsList');
         try {
-            const endpoint = categoryId ? `/products?categoryId=${categoryId}` : '/products';
+            const endpoint = categoryId ? `/ products ? categoryId = ${categoryId}` : '/products';
             const products = await apiFetch(endpoint);
 
             // Front-end filter if API doesn't support query param yet (it will for now display all if endpoint not strictly filtered)
@@ -702,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = `
-                <table class="data-table">
+        < table class= "data-table" >
                     <thead>
                         <tr>
                             <th>Nome</th>
@@ -741,16 +797,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                         `).join('')}
                     </tbody>
-                </table>
+                </table >
             `;
         } catch (error) {
-            list.innerHTML = `<p class="error">${error.message}</p>`;
+            list.innerHTML = `< p class= "error" > ${error.message}</p > `;
         }
     }
 
     window.toggleProductActive = async (productId, active) => {
         try {
-            await apiFetch(`/products/${productId}`, {
+            await apiFetch(`/ products / ${productId}`, {
                 method: 'PUT',
                 body: JSON.stringify({ active })
             });
@@ -771,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openAddCategoryModal = () => {
         renderModal('Nova Categoria', `
-            <div class="form-group">
+        < div class= "form-group" >
                 <label>Nome da Categoria</label>
                 <input type="text" id="newCatName" placeholder="Ex: Bebidas, Pizzas...">
             </div>
@@ -792,7 +848,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditCategoryModal = (cat) => {
         renderModal('Editar Categoria', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Nome da Categoria</label>
                 <input type="text" id="editCatName" value="${cat.name}">
             </div>
@@ -803,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `, 'Salvar Alterações', async () => {
             const name = document.getElementById('editCatName').value;
             const order = parseInt(document.getElementById('editCatOrder').value) || 0;
-            await apiFetch(`/categories/${cat.id}`, {
+            await apiFetch(`/ categories / ${cat.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, order })
             });
@@ -814,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteCategory = async (id) => {
         if (!confirm('Deseja realmente excluir esta categoria e todos os produtos vinculados?')) return;
         try {
-            await apiFetch(`/categories/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ categories / ${id}`, { method: 'DELETE' });
             loadCategories();
             loadProducts();
         } catch (error) {
@@ -829,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderModal('Novo Produto', `
-            <div class="form-group">
+        < div class= "form-group" >
                 <label>Nome do Produto</label>
                 <input type="text" id="pName" required>
             </div>
@@ -904,10 +960,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         container.innerHTML = '<p class="text-secondary" style="font-size: 0.8rem; grid-column: 1/-1;">Nenhum grupo criado. Vá em "Complementos" primeiro.</p>';
                     } else {
                         container.innerHTML = groups.map(g => `
-                            <div style="display: flex; align-items: center; gap: 5px; font-size: 0.85rem;">
-                                <input type="checkbox" value="${g.id}" id="group-${g.id}">
-                                <label for="group-${g.id}" style="margin: 0;">${g.name}</label>
-                            </div>
+            < div style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
+            <input type="checkbox" value="${g.id}" id="group-${g.id}">
+                <label for="group-${g.id}" style="margin: 0;">${g.name}</label>
+            </div>
                         `).join('');
                     }
                 }
@@ -917,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditProductModal = (product) => {
         renderModal('Editar Produto', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Nome do Produto</label>
                 <input type="text" id="pNameEdit" value="${product.name}" required>
             </div>
@@ -975,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 stockQuantity: parseInt(document.getElementById('pStockQtyEdit').value) || 0,
                 productAddonGroupIds: selectedGroups
             };
-            await apiFetch(`/products/${product.id}`, {
+            await apiFetch(`/ products / ${product.id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
@@ -993,10 +1049,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         const currentGroupIds = (product.addonGroups || []).map(g => g.id);
                         container.innerHTML = groups.map(g => `
-                            <div style="display: flex; align-items: center; gap: 5px; font-size: 0.85rem;">
-                                <input type="checkbox" value="${g.id}" id="group-edit-${g.id}" ${currentGroupIds.includes(g.id) ? 'checked' : ''}>
-                                <label for="group-edit-${g.id}" style="margin: 0;">${g.name}</label>
-                            </div>
+        < div style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
+        <input type="checkbox" value="${g.id}" id="group-edit-${g.id}" ${currentGroupIds.includes(g.id) ? 'checked' : ''}>
+            <label for="group-edit-${g.id}" style="margin: 0;">${g.name}</label>
+        </div>
                         `).join('');
                     }
                 }
@@ -1007,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteProduct = async (id) => {
         if (!confirm('Excluir este produto?')) return;
         try {
-            await apiFetch(`/products/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ products / ${id}`, { method: 'DELETE' });
             loadProducts();
         } catch (error) {
             alert(error.message);
@@ -1016,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSettingsView() {
         return `
-            <div class="glass-card">
+        < div class= "glass-card" >
                 <h3>Dados do Restaurante</h3>
                 <div class="form-group mt-4">
                     <label>Nome do Estabelecimento</label>
@@ -1177,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Use esta senha para entrar no sistema de Frente de Caixa (PDV).</p>
                 </div>
                 <button class="btn btn-primary mt-4" onclick="saveSettings()">Salvar Alterações</button>
-            </div>
+            </div >
 
             <div class="glass-card mt-8">
                 <h3 style="margin-top:0;">🔑 Alterar Senha de Acesso</h3>
@@ -1226,10 +1282,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const hours = {};
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         days.forEach(day => {
-            const s1 = document.getElementById(`s1-${day}`).value;
-            const e1 = document.getElementById(`e1-${day}`).value;
-            const s2 = document.getElementById(`s2-${day}`).value;
-            const e2 = document.getElementById(`e2-${day}`).value;
+            const s1 = document.getElementById(`s1 - ${day}`).value;
+            const e1 = document.getElementById(`e1 - ${day}`).value;
+            const s2 = document.getElementById(`s2 - ${day}`).value;
+            const e2 = document.getElementById(`e2 - ${day}`).value;
 
             hours[day] = {
                 shift1: (s1 && e1) ? { start: s1, end: e1 } : null,
@@ -1239,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const openingHours = JSON.stringify(hours);
 
         try {
-            const response = await apiFetch(`/tenants/update`, {
+            const response = await apiFetch(`/ tenants / update`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     logoUrl,
@@ -1316,7 +1372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[id^="color-"]').forEach(el => {
             el.style.border = '3px solid transparent';
         });
-        document.getElementById(`color-${color}`).style.border = '3px solid #fff';
+        document.getElementById(`color - ${color}`).style.border = '3px solid #fff';
     };
 
     function renderOpeningHoursTable(currentHoursJson) {
@@ -1331,7 +1387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         return `
-            <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+        < table style = "width: 100%; font-size: 0.85rem; border-collapse: collapse;" >
                 <thead>
                     <tr style="text-align: left; border-bottom: 2px solid #eee;">
                         <th style="padding: 8px 0;">Dia</th>
@@ -1370,8 +1426,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>
                     `}).join('')}
                 </tbody>
-            </table>
-        `;
+            </table >
+            `;
     }
 
     // toggleTimeInputs precisa estar no window para funcionar nos onchange dentro do innerHTML
@@ -1390,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 8. Action Functions
     window.printOrder = (id) => {
         const token = localStorage.getItem('auth_token');
-        const url = `/api/orders/${id}/receipt?token=${token}`;
+        const url = `/ api / orders / ${id} / receipt ? token = ${token}`;
         window.open(url, '_blank');
     };
 
@@ -1399,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reason === null) return;
 
         try {
-            await apiFetch(`/orders/${id}/status`, {
+            await apiFetch(`/ orders / ${id} / status`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     status: 'cancelled',
@@ -1463,7 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     badgeEl.textContent = pendingCount;
                 } else {
                     const link = document.querySelector('a[data-page="orders"]');
-                    link.insertAdjacentHTML('beforeend', `<span class="pending-badge" style="background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;">${pendingCount}</span>`);
+                    link.insertAdjacentHTML('beforeend', `< span class= "pending-badge" style = "background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;" > ${pendingCount}</span > `);
                 }
             } else if (badgeEl) {
                 badgeEl.remove();
@@ -1473,18 +1529,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderAddonsView() {
         return `
-            <div style="display: flex; gap: 1.5rem; flex-direction: column;">
-                <div class="glass-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                        <h3>Grupos de Complementos</h3>
-                        <button class="btn btn-primary" style="width: auto;" onclick="openAddAddonGroupModal()">+ Novo Grupo</button>
-                    </div>
-                    <div id="addonGroupsList">
-                        <p class="text-secondary">Carregando...</p>
-                    </div>
-                </div>
+        < div style = "display: flex; gap: 1.5rem; flex-direction: column;" >
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3>Grupos de Complementos</h3>
+                <button class="btn btn-primary" style="width: auto;" onclick="openAddAddonGroupModal()">+ Novo Grupo</button>
             </div>
-        `;
+            <div id="addonGroupsList">
+                <p class="text-secondary">Carregando...</p>
+            </div>
+        </div>
+            </div >
+            `;
     }
 
     window.initAddonsView = async () => {
@@ -1502,28 +1558,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = groups.map(g => `
-                <div class="glass-card" style="margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                        <div>
-                            <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
-                            <p class="text-secondary" style="font-size: 0.85rem;">
-                                ${g.isRequired ? '<span class="badge" style="background:#fee2e2; color:#ef4444; padding: 2px 8px; border-radius: 4px;">Obrigatório</span>' : '<span class="badge" style="padding: 2px 8px; border-radius: 4px;">Opcional</span>'}
-                                <span style="margin-left: 10px;">Mín: ${g.minChoices} | Máx: ${g.maxChoices}</span>
-                            </p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-outline btn-sm" onclick="openEditAddonGroupModal(${JSON.stringify(g).replace(/"/g, '&quot;')})">Editar Grupo</button>
-                            <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: #ef4444;" onclick="deleteAddonGroup(${g.id})">Excluir</button>
-                        </div>
-                    </div>
-                    
-                    <div style="background: #f8fafc; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <span style="font-weight: 700; font-size: 0.9rem; color: #475569;">Items / Opções:</span>
-                            <button class="btn btn-primary btn-sm" style="width: auto; padding: 4px 12px;" onclick="openAddAddonModal(${g.id})">+ Nova Opção</button>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-                            ${g.addons.map(a => `
+            < div class= "glass-card" style = "margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;" >
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
+                    <p class="text-secondary" style="font-size: 0.85rem;">
+                        ${g.isRequired ? '<span class="badge" style="background:#fee2e2; color:#ef4444; padding: 2px 8px; border-radius: 4px;">Obrigatório</span>' : '<span class="badge" style="padding: 2px 8px; border-radius: 4px;">Opcional</span>'}
+                        <span style="margin-left: 10px;">Mín: ${g.minChoices} | Máx: ${g.maxChoices}</span>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline btn-sm" onclick="openEditAddonGroupModal(${JSON.stringify(g).replace(/" /g, '&quot;')})">Editar Grupo</button>
+                <button class="btn btn-outline btn-sm" style="color: #ef4444; border-color: #ef4444;" onclick="deleteAddonGroup(${g.id})">Excluir</button>
+            </div>
+                    </div >
+
+            <div style="background: #f8fafc; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-weight: 700; font-size: 0.9rem; color: #475569;">Items / Opções:</span>
+                    <button class="btn btn-primary btn-sm" style="width: auto; padding: 4px 12px;" onclick="openAddAddonModal(${g.id})">+ Nova Opção</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    ${g.addons.map(a => `
                                 <div style="background: white; border: 1px solid #e2e8f0; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                                     <div>
                                         <div style="font-size: 0.9rem; font-weight: 600; color: #1e293b;">${a.name}</div>
@@ -1535,20 +1591,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </div>
                             `).join('')}
-                            ${g.addons.length === 0 ? '<p class="text-secondary" style="font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 10px;">Nenhuma opção cadastrada neste grupo.</p>' : ''}
-                        </div>
-                    </div>
+                    ${g.addons.length === 0 ? '<p class="text-secondary" style="font-size: 0.85rem; grid-column: 1/-1; text-align: center; padding: 10px;">Nenhuma opção cadastrada neste grupo.</p>' : ''}
                 </div>
+            </div>
+                </div >
             `).join('');
         } catch (error) {
-            if (list) list.innerHTML = `<p class="error">${error.message}</p>`;
+            if (list) list.innerHTML = `< p class= "error" > ${error.message}</p > `;
         }
     }
 
     window.openAddAddonGroupModal = async () => {
         const products = await apiFetch('/products');
         renderModal('Novo Grupo de Complementos', `
-            <div class="form-group">
+        < div class= "form-group" >
                 <label>Nome do Grupo</label>
                 <input type="text" id="groupName" placeholder="Ex: Escolha seu molho, Adicionais extras...">
             </div>
@@ -1597,7 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeIds = (g.products || []).map(p => p.id);
 
         renderModal('Editar Grupo', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Nome do Grupo</label>
                 <input type="text" id="editGroupName" value="${g.name}">
             </div>
@@ -1633,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isRequired = document.getElementById('editGroupRequired').checked;
             const productIds = Array.from(document.querySelectorAll('input[name="product-choice"]:checked')).map(i => parseInt(i.value));
 
-            await apiFetch(`/addons/groups/${g.id}`, {
+            await apiFetch(`/ addons / groups / ${g.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, minChoices, maxChoices, isRequired, productIds })
             });
@@ -1644,14 +1700,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteAddonGroup = async (id) => {
         if (!confirm('Deseja excluir este grupo e todos os seus adicionais?')) return;
         try {
-            await apiFetch(`/addons/groups/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ addons / groups / ${id}`, { method: 'DELETE' });
             loadAddonGroups();
         } catch (e) { alert(e.message); }
     };
 
     window.openAddAddonModal = (groupId) => {
         renderModal('Nova Opção', `
-            <div class="form-group">
+        < div class= "form-group" >
                 <label>Nome da Opção</label>
                 <input type="text" id="addonName" placeholder="Ex: Bacon, Maionese, Extra Queijo...">
             </div>
@@ -1672,7 +1728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditAddonModal = (a) => {
         renderModal('Editar Opção', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Nome da Opção</label>
                 <input type="text" id="editAddonName" value="${a.name}">
             </div>
@@ -1683,7 +1739,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `, 'Salvar Alterações', async () => {
             const name = document.getElementById('editAddonName').value;
             const price = parseFloat(document.getElementById('editAddonPrice').value);
-            await apiFetch(`/addons/${a.id}`, {
+            await apiFetch(`/ addons / ${a.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, price })
             });
@@ -1694,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteAddon = async (id) => {
         if (!confirm('Excluir esta opção?')) return;
         try {
-            await apiFetch(`/addons/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ addons / ${id}`, { method: 'DELETE' });
             loadAddonGroups();
         } catch (e) { alert(e.message); }
     };
@@ -1702,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FINANCE VIEW ---
     function renderFinanceView() {
         return `
-        <div class="grid-cols-3">
+        < div class= "grid-cols-3" >
             <div class="glass-card">
                 <p class="text-secondary">Faturamento (Vendas Online/PDV)</p>
                 <h2 id="fin-totalOrders" style="font-size: 2rem; margin-top: 5px; color: var(--success);">R$ 0,00</h2>
@@ -1718,29 +1774,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div><small>Saídas:</small> <span id="fin-totalOutflow" style="color:var(--primary); font-weight:bold;">R$ 0,00</span></div>
                 </div>
             </div>
-        </div>
+        </div >
 
-        <div class="glass-card mt-6">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3>Fluxo de Caixa (Hoje)</h3>
-                <button onclick="window.initFinanceView()" class="btn btn-outline" style="width:auto; padding: 5px 15px;">🔄 Atualizar</button>
+            <div class="glass-card mt-6">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>Fluxo de Caixa (Hoje)</h3>
+                    <button onclick="window.initFinanceView()" class="btn btn-outline" style="width:auto; padding: 5px 15px;">🔄 Atualizar</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Descrição</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finance-events-table">
+                            <tr><td colspan="4" style="text-align:center;">Carregando movimentações...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Hora</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Descrição</th>
-                        </tr>
-                    </thead>
-                    <tbody id="finance-events-table">
-                        <tr><td colspan="4" style="text-align:center;">Carregando movimentações...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
         `;
     }
 
@@ -1770,14 +1826,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             tbody.innerHTML = events.map(e => `
-                <tr>
+            < tr >
                     <td>${new Date(e.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td><b>${typeMap[e.type] || e.type}</b></td>
                     <td style="color: ${['outflow', 'close'].includes(e.type) ? 'var(--primary)' : 'var(--success)'}; font-weight:bold;">
                         ${e.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </td>
                     <td class="text-secondary">${e.description || '-'}</td>
-                </tr>
+                </tr >
             `).join('');
 
         } catch (e) {
@@ -1788,29 +1844,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- COUPONS VIEW ---
     function renderCouponsView() {
         return `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Seus Cupons de Desconto</h3>
             <button onclick="window.openCreateCouponModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Cupom</button>
-        </div>
-        <div class="glass-card">
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Uso</th>
-                            <th>Expiração</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="coupons-table">
-                        <tr><td colspan="6" style="text-align:center;">Carregando cupons...</td></tr>
-                    </tbody>
-                </table>
+        </div >
+            <div class="glass-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Uso</th>
+                                <th>Expiração</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coupons-table">
+                            <tr><td colspan="6" style="text-align:center;">Carregando cupons...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
         `;
     }
 
@@ -1825,7 +1881,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = coupons.map(c => `
-                <tr>
+            < tr >
                     <td><span class="badge" style="background: var(--primary-light); color: var(--primary); font-weight: bold;">${c.code}</span></td>
                     <td>${c.type === 'percentage' ? 'Porcentagem (%)' : 'Valor Fixo (R$)'}</td>
                     <td><b>${c.type === 'percentage' ? c.value + '%' : c.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
@@ -1834,14 +1890,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <button onclick="window.deleteCoupon(${c.id})" class="btn btn-outline" style="padding: 2px 8px; color: var(--primary); border-color: #fecaca;">Excluir</button>
                     </td>
-                </tr>
+                </tr >
             `).join('');
         } catch (e) { console.error(e); }
     };
 
     window.openCreateCouponModal = () => {
         renderModal('Novo Cupom', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Código do Cupom (Ex: QUERO10)</label>
                 <input type="text" id="couponCode" placeholder="EX: NATAL20" style="text-transform: uppercase;">
             </div>
@@ -1890,7 +1946,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteCoupon = async (id) => {
         if (!confirm('Excluir este cupom definitivamente?')) return;
         try {
-            await apiFetch(`/marketing/coupons/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ marketing / coupons / ${id}`, { method: 'DELETE' });
             loadView('coupons');
         } catch (e) { alert(e.message); }
     };
@@ -1898,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CUSTOMERS VIEW ---
     function renderCustomersView() {
         return `
-        <h3>Sua Base de Clientes</h3>
+        < h3 > Sua Base de Clientes</h3 >
         <p class="text-secondary mb-6">Clientes que já pediram na sua loja.</p>
         <div class="glass-card">
             <div class="table-responsive">
@@ -1932,7 +1988,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = customers.map(c => `
-                <tr>
+            < tr >
                     <td><b>${c.name || 'Cliente'}</b></td>
                     <td>${c.phone}</td>
                     <td>${c._count.orders}</td>
@@ -1940,19 +1996,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <button onclick="window.viewCustomerDetail('${c.phone}')" class="btn btn-outline" style="padding: 2px 8px;">Detalhes</button>
                     </td>
-                </tr>
+                </tr >
             `).join('');
         } catch (e) { console.error(e); }
     };
 
     window.viewCustomerDetail = async (phone) => {
         try {
-            const c = await apiFetch(`/marketing/customers/${phone}`);
+            const c = await apiFetch(`/ marketing / customers / ${phone}`);
             renderModal(`Histórico: ${c.name || c.phone}`, `
-                <div class="text-secondary mb-4">
+        < div class= "text-secondary mb-4" >
                     <p><b>Telefone:</b> ${c.phone}</p>
                     <p><b>Total de Pedidos:</b> ${c.orders.length}</p>
-                </div>
+                </div >
                 <h4>Últimos Pedidos</h4>
                 <div style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
                     ${c.orders.map(o => `
@@ -1975,15 +2031,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TABLES VIEW ---
     function renderTablesView() {
         return `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Suas Mesas (Consumo Local)</h3>
             <button onclick="window.openCreateTableModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Nova Mesa</button>
-        </div>
-        <div class="glass-card">
-            <div id="tables-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
-                <p style="grid-column: 1/-1; text-align:center;">Carregando mesas...</p>
+        </div >
+            <div class="glass-card">
+                <div id="tables-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
+                    <p style="grid-column: 1/-1; text-align:center;">Carregando mesas...</p>
+                </div>
             </div>
-        </div>
         `;
     }
 
@@ -1998,21 +2054,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = tables.map(t => `
-                <div class="glass-card" style="text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
+            < div class= "glass-card" style = "text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;" >
                     <div style="font-size: 2rem; margin-bottom: 10px;">🪑</div>
                     <h4 style="margin:0;">Mesa ${t.number}</h4>
                     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
                         <button onclick="window.viewTableQR('${t.qrCodeUrl}', ${t.number})" class="btn btn-outline" style="font-size: 0.8rem; width: 100%;">Imprimir QR Code</button>
                         <button onclick="window.deleteTable(${t.id})" class="btn btn-outline" style="font-size: 0.8rem; color: #ef4444; border-color: #fecaca; width: 100%;">Excluir</button>
                     </div>
-                </div>
+                </div >
             `).join('');
         } catch (e) { console.error(e); }
     };
 
     window.openCreateTableModal = () => {
         renderModal('Nova Mesa', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>Número da Mesa</label>
                 <input type="number" id="tableNumber" placeholder="Ex: 5">
             </div>
@@ -2027,12 +2083,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewTableQR = (url, number) => {
         renderModal(`QR Code: Mesa ${number}`, `
-            <div style="text-align:center; padding: 10px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
-                <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
-                <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
-                <button onclick="window.printQR();" class="btn btn-primary" style="margin-top: 15px;">🖨️ Simular Impressão</button>
-            </div>
+        < div style = "text-align:center; padding: 10px;" >
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
+            <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
+            <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
+            <button onclick="window.printQR();" class="btn btn-primary" style="margin-top: 15px;">🖨️ Simular Impressão</button>
+        </div>
         `, 'Fechar', () => { });
     };
 
@@ -2041,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const number = document.querySelector('.modal-body b')?.textContent || 'Mesa';
         const win = window.open('', '_blank');
         win.document.write(`
-            <div style="text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
+            < div style = "text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;" >
                 <h1 style="margin-bottom:10px;">SmartPedidos</h1>
                 <h3>FAÇA SEU PEDIDO</h3>
                 <img src="${img.src}" style="width:200px;">
@@ -2055,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteTable = async (id) => {
         if (!confirm('Deseja excluir esta mesa? O QR Code atual deixará de funcionar.')) return;
         try {
-            await apiFetch(`/tables/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ tables / ${id}`, { method: 'DELETE' });
             loadView('tables');
         } catch (e) { alert(e.message); }
     };
@@ -2063,27 +2119,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TEAM VIEW ---
     function renderTeamView() {
         return `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Gestão de Equipe (Funcionários)</h3>
             <button onclick="window.openCreateUserModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Membro</button>
-        </div>
-        <div class="glass-card">
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>E-mail</th>
-                            <th>Cargo/Permissão</th>
-                            <th>Desde</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="team-table">
-                        <tr><td colspan="4" style="text-align:center;">Carregando equipe...</td></tr>
-                    </tbody>
-                </table>
+        </div >
+            <div class="glass-card">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>E-mail</th>
+                                <th>Cargo/Permissão</th>
+                                <th>Desde</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-table">
+                            <tr><td colspan="4" style="text-align:center;">Carregando equipe...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
         `;
     }
 
@@ -2098,21 +2154,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = users.map(u => `
-                <tr>
+            < tr >
                     <td><b>${u.email}</b></td>
                     <td><span class="badge" style="background: ${u.role === 'admin' ? '#dbeafe' : '#fef3c7'}; color: ${u.role === 'admin' ? '#1e40af' : '#92400e'}">${u.role === 'admin' ? 'Administrador' : 'Atendente / Garçom'}</span></td>
                     <td>${new Date(u.createdAt).toLocaleDateString()}</td>
                     <td>
                         <button onclick="window.deleteUser(${u.id})" class="btn btn-outline" style="padding: 2px 8px; color: #ef4444; border-color: #fecaca;">Remover</button>
                     </td>
-                </tr>
+                </tr >
             `).join('');
         } catch (e) { console.error(e); }
     };
 
     window.openCreateUserModal = () => {
         renderModal('Novo Membro da Equipe', `
-            <div class="form-group">
+            < div class= "form-group" >
                 <label>E-mail de Acesso</label>
                 <input type="email" id="userEmail" placeholder="ex: garcom@loja.com">
             </div>
@@ -2142,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteUser = async (id) => {
         if (!confirm('Excluir este acesso definitivamente?')) return;
         try {
-            await apiFetch(`/users/${id}`, { method: 'DELETE' });
+            await apiFetch(`/ users / ${id}`, { method: 'DELETE' });
             loadView('team');
         } catch (e) { alert(e.message); }
     };

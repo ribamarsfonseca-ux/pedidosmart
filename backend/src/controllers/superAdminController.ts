@@ -22,7 +22,7 @@ export const getAllTenants = async (req: Request, res: Response): Promise<void> 
 export const updateTenantStatus = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { active, subscriptionStatus, planType, nextBillingDate } = req.body;
+        const { active, subscriptionStatus, planType, nextBillingDate, geoapifyApiKey } = req.body;
 
         const tenant = await prisma.tenant.update({
             where: { id: parseInt(id as string) },
@@ -30,7 +30,8 @@ export const updateTenantStatus = async (req: Request, res: Response): Promise<v
                 active,
                 subscriptionStatus,
                 planType,
-                nextBillingDate: nextBillingDate ? new Date(nextBillingDate) : undefined
+                nextBillingDate: nextBillingDate ? new Date(nextBillingDate) : undefined,
+                geoapifyApiKey: geoapifyApiKey || ""
             }
         });
 

@@ -143,6 +143,7 @@ export const getTenantBySlug = async (req: Request, res: Response): Promise<void
                 raioMaxKm: true,
                 lat: true,
                 lon: true,
+                geoapifyApiKey: true,
                 categories: {
                     orderBy: { order: 'asc' },
                     include: {
@@ -451,7 +452,8 @@ export const getDeliveryFee = async (req: Request, res: Response): Promise<void>
                 lon: tenant.lon,
                 deliveryFee: tenant.deliveryFee,
                 valorKm: tenant.valorKm,
-                raioMaxKm: tenant.raioMaxKm
+                raioMaxKm: tenant.raioMaxKm,
+                geoapifyApiKey: tenant.geoapifyApiKey
             }
         );
 
