@@ -344,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="glass-card" style="margin-top: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Histórico de Vendas Diárias</h3>
-                <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; font-size: 0.8rem; padding: 4px 10px;" onclick="promptZerarHoje()">🗑️ Zerar Hoje</button>
             </div>
             <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;" id="salesHistoryList">
                 <p class="text-secondary" style="font-size: 0.9rem;">Processando vendas passadas...</p>
@@ -382,17 +381,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const brazilNow = new Date(now.getTime() - (3 * 60 * 60 * 1000));
             const todayISO = brazilNow.toISOString().split('T')[0];
 
-            // Total Vendas Hoje
+            // Total Vendas Hoje (Ignora Estornados)
             const todaySales = finishedOrders.concat(orders.filter(o => o.status === 'completed')).filter(o => {
+                if (o.isVoided) return false;
                 const orderDate = new Date(new Date(o.createdAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().split('T')[0];
                 return orderDate === todayISO;
             });
             const totalSales = todaySales.reduce((acc, curr) => acc + curr.totalAmount, 0);
             document.getElementById('todaySales').textContent = totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            // Histórico de Vendas Diárias
-            const salesByDate = {};
+            // Histórico de Vendas Diárias (Ignora Estornados)
             [...finishedOrders, ...orders.filter(o => o.status === 'completed')].forEach(order => {
+                if (order.isVoided) return;
                 const dateStr = new Date(order.createdAt).toLocaleDateString('pt-BR');
                 if (!salesByDate[dateStr]) salesByDate[dateStr] = { count: 0, total: 0 };
                 salesByDate[dateStr].count += 1;
@@ -500,7 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="glass-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h3 style="margin: 0;">Histórico Completo</h3>
-                    <button class="btn btn-outline" style="border-color: #ef4444; color: #ef4444; width: auto; font-size: 0.85rem;" onclick="promptZerarTodoHistorico()">🗑️ Zerar Todo Histórico</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
@@ -512,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <th style="padding: 1rem 0.5rem;">Canal/Operador</th>
                                 <th style="padding: 1rem 0.5rem;">Total</th>
                                 <th style="padding: 1rem 0.5rem;">Status</th>
+                                <th style="padding: 1rem 0.5rem;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="historyList">
@@ -547,8 +547,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="text-secondary" style="font-size: 0.8rem;">
                         ${order.items.map(item => `${item.quantity}x ${item.product.name}`).join(', ').substring(0, 50)}...
                     </td>
-                    <td class="font-bold">${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                    <td><span class="status-pill" style="background: #eee; color: #666;">${translateStatus(order.status)}</span></td>
+                    <td class="font-bold" style="${order.isVoided ? 'text-decoration: line-through; color: #ef4444;' : ''}">
+                        ${order.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </td>
+                    <td>
+                        <span class="status-pill" style="background: #eee; color: #666;">
+                            ${order.isVoided ? 'ESTORNADO' : translateStatus(order.status)}
+                        </span>
+                    </td>
+                    <td style="padding: 0.5rem;">
+                        ${tenantData.role === 'admin' ? `
+                             <button class="btn btn-outline" 
+                                style="font-size: 0.7rem; padding: 4px 8px; border-color: ${order.isVoided ? 'var(--primary)' : '#ef4444'}; color: ${order.isVoided ? 'var(--primary)' : '#ef4444'};"
+                                onclick="window.toggleVoidOrder(${order.id}, ${!order.isVoided})">
+                                ${order.isVoided ? 'Reativar' : 'Estornar'}
+                             </button>
+                        ` : ''}
+                    </td>
                 </tr>
             `).join('');
         } catch (error) {
@@ -2206,6 +2221,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update every 30 seconds
     setInterval(updatePendingBadge, 30000);
     updatePendingBadge(); // Initial call
+
+    window.toggleVoidOrder = async (orderId, isVoided) => {
+        const action = isVoided ? 'estornar' : 'reativar';
+        if (!confirm(`Deseja realmente ${action} este pedido?`)) return;
+
+        try {
+            const res = await fetch(`${API_URL}/orders/${orderId}/void`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ isVoided })
+            });
+
+            if (res.ok) {
+                alert(`Pedido ${isVoided ? 'estornado' : 'reativado'} com sucesso!`);
+                window.initHistoryView(); // Refresh table
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Erro ao processar estorno.');
+            }
+        } catch (error) {
+            console.error('Toggle Void Error:', error);
+            alert('Erro de conexão ao processar estorno.');
+        }
+    };
+
+    window.promptZerarHoje = () => alert("Função movida para o SuperAdmin por segurança.");
+    window.promptZerarTodoHistorico = () => alert("Função movida para o SuperAdmin por segurança.");
 
     // Init Base View
     loadView('home');

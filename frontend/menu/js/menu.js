@@ -529,6 +529,10 @@ window.openProductDetail = (product) => {
 
     renderDetailAddons(product.addonGroups || []);
     updateDetailTotal();
+
+    const obsField = document.getElementById('productObservation');
+    if (obsField) obsField.value = '';
+
     document.getElementById('productDetailModal').style.display = 'flex';
 
     // Configurar botão de adicionar
@@ -710,12 +714,11 @@ function addSelectedProductToCart() {
         });
     }
 
-    const selectedAddons = finalAddons;
+    const observation = document.getElementById('productObservation')?.value.trim() || '';
 
-    // No SmartPede, itens com adicionais diferentes devem ser entradas separadas no carrinho
-    // Para simplificar, vamos gerar um ID único baseado no produto e nos IDs dos adicionais
-    const addonIdsKey = selectedAddons.map(a => a.id).sort().join('-');
-    const cartItemId = `${currentBaseProduct.id}-${addonIdsKey}`;
+    // No SmartPede, itens com adicionais ou observações diferentes devem ser entradas separadas no carrinho
+    const addonIdsKey = finalAddons.map(a => a.id).sort().join('-');
+    const cartItemId = `${currentBaseProduct.id}-${addonIdsKey}-${btoa(observation).substring(0, 10)}`;
 
     const cartItem = {
         cartItemId,
@@ -724,8 +727,9 @@ function addSelectedProductToCart() {
         price: currentBaseProduct.price,
         imageUrl: currentBaseProduct.imageUrl,
         quantity: detailQuantity,
-        addons: selectedAddons,
-        totalItemPrice: currentBaseProduct.price + selectedAddons.reduce((acc, a) => acc + a.price, 0)
+        addons: finalAddons,
+        observation,
+        totalItemPrice: currentBaseProduct.price + finalAddons.reduce((acc, a) => acc + a.price, 0)
     };
 
     const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
@@ -893,6 +897,11 @@ function renderCartItemsList() {
                 ${item.addons && item.addons.length > 0 ? `
                     <p style="margin: 4px 0; font-size: 0.8rem; color: #64748b; line-height: 1.2;">
                         ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
+                    </p>
+                ` : ''}
+                ${item.observation ? `
+                    <p style="margin: 4px 0; font-size: 0.75rem; color: #f59e0b; font-style: italic;">
+                        Obs: ${item.observation}
                     </p>
                 ` : ''}
                 <div style="margin-top: 8px; font-weight: 700; color: var(--primary);">

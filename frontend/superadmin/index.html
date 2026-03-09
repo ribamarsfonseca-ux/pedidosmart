@@ -478,6 +478,11 @@
                         <button class="btn-sm btn-reset" onclick="openResetModal(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🔑 Resetar Senha</button>
                         <a href="/menu/#${t.slug}" target="_blank" class="btn-sm" style="background:#f1f5f9;color:#475569;text-decoration:none;">👁 Ver Cardápio</a>
                         <button class="btn-sm btn-outline-danger" onclick="deleteTenant(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🗑 Excluir Restaurante</button>
+                        
+                        <div style="width: 100%; border-top: 1px dashed #eee; margin-top: 10px; padding-top: 10px; display: flex; gap: 8px;">
+                            <button class="btn-sm" style="background: #fff; border: 1px solid #ef4444; color: #ef4444;" onclick="clearTenantDailyHistory(${t.id}, '${t.name.replace(/'/g, "\\'")}')">🧹 Zerar Hoje</button>
+                            <button class="btn-sm" style="background: #ef4444; color: #white; border: none; color: white;" onclick="clearTenantFullHistory(${t.id}, '${t.name.replace(/'/g, "\\'")}')">💣 Zerar TODO Histórico</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -543,6 +548,36 @@
                 alert('Chave Geoapify atualizada para o lojista!');
             } else {
                 alert('Erro ao atualizar chave Geoapify.');
+            }
+        }
+
+        async function clearTenantDailyHistory(id, name) {
+            if (!confirm(`Deseja realmente ZERAR os pedidos de HOJE do restaurante "${name}"? Esta ação é irreversível!`)) return;
+            const res = await fetch(`/api/super-admin/tenant/${id}/orders-daily`, {
+                method: 'DELETE',
+                headers: { 'x-admin-password': masterPass }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message || 'Histórico diário zerado com sucesso!');
+                loadTenants();
+            } else {
+                alert('Erro ao zerar histórico diário.');
+            }
+        }
+
+        async function clearTenantFullHistory(id, name) {
+            if (!confirm(`⚠️ ATENÇÃO!\nDeseja realmente APAGAR TODO O HISTÓRICO do restaurante "${name}"? Todos os pedidos serão removidos!`)) return;
+            const res = await fetch(`/api/super-admin/tenant/${id}/orders-all`, {
+                method: 'DELETE',
+                headers: { 'x-admin-password': masterPass }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert(data.message || 'Todo o histórico foi removido com sucesso!');
+                loadTenants();
+            } else {
+                alert('Erro ao zerar histórico completo.');
             }
         }
 

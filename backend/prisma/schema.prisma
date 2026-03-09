@@ -257,6 +257,7 @@ model Order {
   addressState    String?
   addressComplement String?
   
+  isVoided       Boolean  @default(false) // Se o pedido foi estornado/invalidado pelo gerente
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

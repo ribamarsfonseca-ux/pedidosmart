@@ -224,3 +224,38 @@ export const deleteTenant = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ error: 'Erro ao excluir o restaurante' });
     }
 };
+
+export const deleteTenantDailyOrders = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const tenantId = parseInt(id as string);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const result = await prisma.order.deleteMany({
+            where: { tenantId, createdAt: { gte: today, lt: tomorrow } }
+        });
+
+        res.json({ message: `Histórico do dia zerado para o lojista. ${result.count} pedido(s) removido(s).` });
+    } catch (error) {
+        console.error('Superadmin Delete Daily Error:', error);
+        res.status(500).json({ error: 'Erro ao zerar histórico diário.' });
+    }
+};
+
+export const deleteTenantAllOrders = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const tenantId = parseInt(id as string);
+
+        const result = await prisma.order.deleteMany({ where: { tenantId } });
+
+        res.json({ message: `Todo histórico zerado para o lojista. ${result.count} pedido(s) removido(s).` });
+    } catch (error) {
+        console.error('Superadmin Delete All Error:', error);
+        res.status(500).json({ error: 'Erro ao zerar histórico completo.' });
+    }
+};

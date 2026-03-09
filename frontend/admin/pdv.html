@@ -526,8 +526,27 @@
             <div style="display: flex; align-items: center; gap: 20px;">
                 <h3 id="pdv-store-name" style="font-weight: 800; font-size: 1.4rem; color: var(--primary);">MINHA LOJA
                 </h3>
-                <div id="pdv-clock" class="text-secondary">00:00:00</div>
+                <div id="pdv-clock" class="text-secondary" style="font-weight: 600;">00:00:00</div>
             </div>
+
+            <!-- SELETOR DE MESA NO TOPO (CENTRO) -->
+            <div class="header-center"
+                style="flex: 1; display: flex; justify-content: center; gap: 15px; align-items: center;">
+                <div style="display: flex; flex-direction: column; min-width: 250px;">
+                    <label
+                        style="font-size: 0.65rem; font-weight: 800; color: var(--gray); margin-bottom: 2px; text-transform: uppercase;">Mesa
+                        / Local de Atendimento</label>
+                    <select id="cart-table" onchange="handleTableSelection()"
+                        style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--primary); font-weight: 700; background: white; cursor: pointer;">
+                        <option value="">Venda Direta (Balcão)</option>
+                    </select>
+                </div>
+                <div id="table-status-info"
+                    style="display: none; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700;">
+                    <!-- Info da mesa aqui -->
+                </div>
+            </div>
+
             <div style="display: flex; align-items: center; gap: 20px;">
                 <div class="badge-live"><span class="dot"></span> TERMINAL ATIVO</div>
                 <button onclick="logoutPDV()" class="btn btn-outline"
@@ -573,52 +592,56 @@
             </div>
 
             <div class="cart-footer" style="border-top: 1px solid #eee; padding-top: 15px;">
-                <div class="form-group">
-                    <label>MESA / LOCAL</label>
-                    <select id="cart-table" onchange="handleTableSelection()">
-                        <option value="">Venda Direta (Balcão)</option>
-                    </select>
-                </div>
-                <div id="table-status-info"
-                    style="display: none; margin-bottom: 1rem; font-size: 0.85rem; padding: 10px; border-radius: 8px;">
-                    <!-- Info da mesa ocupada aqui -->
-                </div>
-                <div class="form-group">
+                <div class="form-group" id="customer-name-group">
                     <label>CLIENTE (OPCIONAL)</label>
                     <input type="text" id="cart-customer" placeholder="Nome do cliente">
                 </div>
-                <div class="form-group">
-                    <label>FORMA DE PAGAMENTO</label>
-                    <select id="cart-payment">
-                        <option value="money">Dinheiro</option>
-                        <option value="pix">PIX</option>
-                        <option value="card">Cartão</option>
-                    </select>
+
+                <!-- SEÇÃO DE PAGAMENTO (Oculta até o Finalizar) -->
+                <div id="payment-section"
+                    style="display: none; background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0;">
+                    <div class="form-group">
+                        <label>FORMA DE PAGAMENTO</label>
+                        <select id="cart-payment">
+                            <option value="money">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="card">Cartão</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>VALOR RECEBIDO (DINHEIRO)</label>
+                        <input type="number" id="cash-received" placeholder="0,00" oninput="calculateChange()">
+                    </div>
+                    <div id="change-display"
+                        style="display: none; padding: 10px; background: #d1fae5; border-radius: 8px; font-weight: 700; color: #065f46; text-align: center;">
+                        TROCO: <span id="cart-change">R$ 0,00</span>
+                    </div>
                 </div>
+
                 <div class="total-row">
                     <span>TOTAL</span>
                     <span id="cart-total">R$ 0,00</span>
                 </div>
-                <div class="form-group">
-                    <label>VALOR RECEBIDO (DINHEIRO)</label>
-                    <input type="number" id="cash-received" placeholder="0,00" oninput="calculateChange()">
-                </div>
-                <div id="change-display"
-                    style="display: none; margin-bottom: 1rem; padding: 10px; background: #d1fae5; border-radius: 8px; font-weight: 700; color: #065f46; text-align: center;">
-                    TROCO: <span id="cart-change">R$ 0,00</span>
-                </div>
 
-                <!-- BOTÃO INICIAR ATENDIMENTO (Novo Fluxo) -->
-                <button id="btn-start-order" class="btn btn-primary" onclick="startOrder()"
-                    style="margin-bottom: 10px; background: var(--primary); padding: 1.2rem;">🚀 INICIAR
-                    ATENDIMENTO</button>
+                <!-- BOTÕES DE AÇÃO -->
+                <div id="initial-actions">
+                    <button id="btn-start-order" class="btn btn-primary" onclick="startOrder()"
+                        style="margin-bottom: 10px; background: var(--primary); padding: 1.2rem;">🚀 INICIAR
+                        ATENDIMENTO</button>
+                </div>
 
                 <div id="order-action-buttons" style="display: none;">
-                    <button id="btn-finish" class="btn btn-success" onclick="finishOrder()"
-                        style="margin-bottom: 10px;">FINALIZAR VENDA (F10)</button>
+                    <button id="btn-go-to-payment" class="btn btn-success" onclick="showPaymentSection()"
+                        style="margin-bottom: 10px; font-weight: 800;">💰 CONCLUIR E RECEBER (F10)</button>
+
+                    <button id="btn-finish-final" class="btn btn-success" onclick="finishOrder()"
+                        style="display: none; margin-bottom: 10px; background: #059669;">CONFIRMAR PAGAMENTO ✅</button>
+
                     <button id="btn-kitchen" class="btn btn-primary" style="margin-top: 5px; width: 100%;"
-                        onclick="sendToKitchen()">ENVIAR PARA COZINHA</button>
-                    <button class="btn btn-outline" style="margin-top: 10px; border-color: #ef4444; color: #ef4444;"
+                        onclick="sendToKitchen()">📦 ENVIAR PARA COZINHA</button>
+
+                    <button class="btn btn-outline"
+                        style="margin-top: 15px; border-color: #ef4444; color: #ef4444; font-size: 0.8rem;"
                         onclick="cancelOrderProcess()">CANCELAR ATENDIMENTO</button>
                 </div>
             </div>
@@ -659,6 +682,48 @@
         let tenant = null;
         let socket;
         let currentTableOrderIds = [];
+
+        // SISTEMA DE RASCUNHOS (DRAFTS) PARA ATENDIMENTOS SIMULTÂNEOS
+        let drafts = {
+            "balcao": { cart: [], customerName: "", isStarted: false }
+        };
+        let currentMesaId = "balcao";
+
+        function saveCurrentToDraft() {
+            drafts[currentMesaId] = {
+                cart: [...cart],
+                customerName: document.getElementById('cart-customer').value,
+                isStarted: document.getElementById('pdv-catalog-container').style.display === 'block'
+            };
+        }
+
+        function loadFromDraft(id) {
+            if (!drafts[id]) {
+                drafts[id] = { cart: [], customerName: "", isStarted: false };
+            }
+            const d = drafts[id];
+            cart = [...d.cart];
+            document.getElementById('cart-customer').value = d.customerName;
+
+            if (d.isStarted) {
+                document.getElementById('pdv-catalog-container').style.display = 'block';
+                document.getElementById('pdv-welcome-container').style.display = 'none';
+                document.getElementById('initial-actions').style.display = 'none';
+                document.getElementById('order-action-buttons').style.display = 'block';
+            } else {
+                document.getElementById('pdv-catalog-container').style.display = 'none';
+                document.getElementById('pdv-welcome-container').style.display = 'flex';
+                document.getElementById('initial-actions').style.display = 'block';
+                document.getElementById('order-action-buttons').style.display = 'none';
+            }
+
+            // Reset payment section on switch
+            document.getElementById('payment-section').style.display = 'none';
+            document.getElementById('btn-go-to-payment').style.display = 'block';
+            document.getElementById('btn-finish-final').style.display = 'none';
+
+            renderCart();
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('pdv_token');
@@ -875,37 +940,48 @@
         function startOrder(skipReset = false) {
             const catalog = document.getElementById('pdv-catalog-container');
             const welcome = document.getElementById('pdv-welcome-container');
-            const btnStart = document.getElementById('btn-start-order');
+            const btnInitial = document.getElementById('initial-actions');
             const actionButtons = document.getElementById('order-action-buttons');
 
             catalog.style.display = 'block';
             welcome.style.display = 'none';
-            btnStart.style.display = 'none';
+            btnInitial.style.display = 'none';
             actionButtons.style.display = 'block';
 
             if (!skipReset) {
-                cart = [];
                 renderCart();
             }
+            saveCurrentToDraft();
         }
 
         function cancelOrderProcess() {
+            if (!confirm("Deseja realmente cancelar este atendimento?")) return;
+
             const catalog = document.getElementById('pdv-catalog-container');
             const welcome = document.getElementById('pdv-welcome-container');
-            const btnStart = document.getElementById('btn-start-order');
+            const btnInitial = document.getElementById('initial-actions');
             const actionButtons = document.getElementById('order-action-buttons');
 
             catalog.style.display = 'none';
             welcome.style.display = 'flex';
-            btnStart.style.display = 'block';
+            btnInitial.style.display = 'block';
             actionButtons.style.display = 'none';
 
             cart = [];
             currentTableOrderIds = [];
-            renderCart();
-            document.getElementById('cart-table').value = "";
             document.getElementById('cart-customer').value = "";
+
+            saveCurrentToDraft();
+            renderCart();
             document.getElementById('table-status-info').style.display = 'none';
+        }
+
+        function showPaymentSection() {
+            if (cart.length === 0) return alert("Adicione itens ao carrinho primeiro!");
+
+            document.getElementById('payment-section').style.display = 'block';
+            document.getElementById('btn-go-to-payment').style.display = 'none';
+            document.getElementById('btn-finish-final').style.display = 'block';
         }
 
         function renderCategories() {
@@ -1256,34 +1332,23 @@
         }
 
         async function handleTableSelection() {
+            saveCurrentToDraft(); // Salva estado da mesa anterior
+
             const select = document.getElementById('cart-table');
             selectedTableId = select.value ? parseInt(select.value) : null;
+            currentMesaId = selectedTableId || "balcao";
 
-            const btnFinish = document.getElementById('btn-finish');
-            const btnKitchen = document.getElementById('btn-kitchen');
             const info = document.getElementById('table-status-info');
 
-            if (!selectedTableId) {
-                btnFinish.style.display = 'block';
-                btnFinish.textContent = 'FINALIZAR VENDA (F10)';
-                btnKitchen.style.display = 'none';
-                info.style.display = 'none';
+            loadFromDraft(currentMesaId); // Carrega estado da nova mesa
 
-                // Clear cart if it contains items from a previous table order
-                if (cart.some(i => i.fromOrder)) {
-                    cart = [];
-                    renderCart();
-                }
+            if (!selectedTableId) {
+                info.style.display = 'none';
                 return;
             }
 
             const table = allTables.find(t => t.id === selectedTableId);
             if (table && table.isOccupied) {
-                btnFinish.textContent = 'FECHAR CONTA (F10)';
-                btnFinish.style.display = 'block';
-                btnKitchen.style.display = 'block';
-                btnKitchen.textContent = 'ENVIAR PARA COZINHA';
-
                 info.style.display = 'block';
                 info.style.background = '#fee2e2';
                 info.style.color = '#991b1b';
@@ -1292,26 +1357,13 @@
                 await loadTableOrder(selectedTableId);
                 info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Garçom pode adicionar mais itens e enviar cozinha.`;
 
-                // Pular para o catálogo para o garçom escolher mais itens se quiser
-                if (window.innerWidth < 992) switchMobileTab('catalog');
+                // Se carregou do servidor, forçamos o catálogo a abrir
+                startOrder(true);
             } else {
-                // Table is free
-                if (cart.some(i => i.fromOrder)) {
-                    cart = [];
-                    renderCart();
-                }
-
-                // Pular para o catálogo imediatamente para iniciar o atendimento
-                if (window.innerWidth < 992) switchMobileTab('catalog');
-
-                btnFinish.style.display = 'none';
-                btnKitchen.style.display = 'block';
-                btnKitchen.textContent = 'ENVIAR PARA COZINHA';
-
                 info.style.display = 'block';
                 info.style.background = '#d1fae5';
                 info.style.color = '#065f46';
-                info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>. Escolha os itens.`;
+                info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>.`;
             }
         }
 
@@ -1375,8 +1427,8 @@
         async function finishOrder() {
             if (cart.length === 0 && !selectedTableId) return alert('O carrinho está vazio!');
 
-            const btn = document.getElementById('btn-finish');
-            const originalText = btn.textContent;
+            const btn = document.getElementById('btn-finish-final');
+            const originalText = "CONFIRMAR PAGAMENTO ✅";
             btn.disabled = true;
             btn.textContent = 'PROCESSANDO...';
 
@@ -1435,17 +1487,23 @@
                 if (res.ok) {
                     const result = await res.json();
                     alert('✅ Venda finalizada e Mesa liberada!');
+
+                    // Limpar rascunho desta mesa
+                    drafts[currentMesaId] = { cart: [], customerName: "", isStarted: false };
+
                     if (confirm('Deseja imprimir o recibo?')) {
                         window.open(`${API_URL}/orders/${result.order.id}/receipt?token=${token}`, '_blank');
                     }
                     cart = [];
                     currentTableOrderIds = [];
                     document.getElementById('cart-customer').value = '';
-                    document.getElementById('cart-table').value = ""; // Reset selection
+                    document.getElementById('cart-table').value = ""; // Reset no header
                     selectedTableId = null;
+                    currentMesaId = "balcao";
+
                     renderCart();
                     await loadTables();
-                    handleTableSelection();
+                    loadFromDraft(currentMesaId);
                 } else {
                     const err = await res.json();
                     alert('Erro: ' + err.error);

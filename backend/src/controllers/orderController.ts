@@ -581,3 +581,27 @@ export const deleteDailyOrders = async (req: Request, res: Response): Promise<vo
         res.status(500).json({ error: 'Erro ao zerar histórico do dia.' });
     }
 };
+// Protected Admin Route: Mark order as voided (refunded/not counted)
+export const voidOrder = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const tenantId = req.user?.tenantId;
+        const role = req.user?.role;
+        if (!tenantId || role !== 'admin') {
+            res.status(403).json({ error: 'Apenas administradores podem estornar pedidos.' });
+            return;
+        }
+
+        const id = req.params.id;
+        const { isVoided } = req.body;
+
+        const order = await prisma.order.update({
+            where: { id: parseInt(id as string), tenantId },
+            data: { isVoided: !!isVoided }
+        });
+
+        res.json({ message: isVoided ? 'Pedido estornado com sucesso.' : 'Estorno removido.', order });
+    } catch (error) {
+        console.error('Void Order Error:', error);
+        res.status(500).json({ error: 'Erro ao processar estorno.' });
+    }
+};
