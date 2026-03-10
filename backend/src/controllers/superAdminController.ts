@@ -181,6 +181,7 @@ export const createTenant = async (req: Request, res: Response): Promise<void> =
                     slug,
                     ownerName: ownerName || null,
                     whatsapp: whatsapp || null,
+                    contactEmail: adminEmail,
                     active: true,
                     subscriptionStatus: 'active'
                 }

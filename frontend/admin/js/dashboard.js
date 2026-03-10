@@ -698,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCatalogView() {
         return `
-            < div style = "display: flex; gap: 1.5rem;" >
+            < style = "display: flex; gap: 1.5rem;" >
                 < !--Categories Sidebar-- >
                 <div style="flex: 0 0 300px;">
                     <div class="glass-card">
@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const categories = await apiFetch('/categories');
             window.categories = categories; // Cache globally for modals
             list.innerHTML = `
-            < div class= "category-item active" onclick = "filterByCategory(null, this)" > Todos os Produtos</div >
+            < class= "category-item active" onclick = "filterByCategory(null, this)" > Todos os Produtos</div >
         ${categories.map(c => `
                     <div class="category-item" onclick="filterByCategory(${c.id}, this)" style="display: flex; justify-content: space-between; align-items: center;">
                         <span>${c.name} <small class="text-secondary">(Ord: ${c.order})</small></span>
@@ -754,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             `;
         } catch (error) {
-            list.innerHTML = `< p class= "error" > ${error.message}</p > `;
+            list.innerHTML = `< class= "error" > ${error.message}</p > `;
         }
     }
 
@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = `
-        < table class= "data-table" >
+        < class= "data-table" >
                     <thead>
                         <tr>
                             <th>Nome</th>
@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </table >
             `;
         } catch (error) {
-            list.innerHTML = `< p class= "error" > ${error.message}</p > `;
+            list.innerHTML = `< class= "error" > ${error.message}</p > `;
         }
     }
 
@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openAddCategoryModal = () => {
         renderModal('Nova Categoria', `
-        < div class= "form-group" >
+        < class= "form-group" >
                 <label>Nome da Categoria</label>
                 <input type="text" id="newCatName" placeholder="Ex: Bebidas, Pizzas...">
             </div>
@@ -863,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditCategoryModal = (cat) => {
         renderModal('Editar Categoria', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Nome da Categoria</label>
                 <input type="text" id="editCatName" value="${cat.name}">
             </div>
@@ -900,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderModal('Novo Produto', `
-        < div class= "form-group" >
+        < class= "form-group" >
                 <label>Nome do Produto</label>
                 <input type="text" id="pName" required>
             </div>
@@ -975,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         container.innerHTML = '<p class="text-secondary" style="font-size: 0.8rem; grid-column: 1/-1;">Nenhum grupo criado. Vá em "Complementos" primeiro.</p>';
                     } else {
                         container.innerHTML = groups.map(g => `
-            < div style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
+            < style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
             <input type="checkbox" value="${g.id}" id="group-${g.id}">
                 <label for="group-${g.id}" style="margin: 0;">${g.name}</label>
             </div>
@@ -988,7 +988,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditProductModal = (product) => {
         renderModal('Editar Produto', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Nome do Produto</label>
                 <input type="text" id="pNameEdit" value="${product.name}" required>
             </div>
@@ -1064,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         const currentGroupIds = (product.addonGroups || []).map(g => g.id);
                         container.innerHTML = groups.map(g => `
-        < div style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
+        < style = "display: flex; align-items: center; gap: 5px; font-size: 0.85rem;" >
         <input type="checkbox" value="${g.id}" id="group-edit-${g.id}" ${currentGroupIds.includes(g.id) ? 'checked' : ''}>
             <label for="group-edit-${g.id}" style="margin: 0;">${g.name}</label>
         </div>
@@ -1087,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSettingsView() {
         return `
-        < div class= "glass-card" >
+        < class= "glass-card" >
                 <h3>Dados do Restaurante</h3>
                 <div class="form-group mt-4">
                     <label>Nome do Estabelecimento</label>
@@ -1402,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         return `
-        < table style = "width: 100%; font-size: 0.85rem; border-collapse: collapse;" >
+        < style = "width: 100%; font-size: 0.85rem; border-collapse: collapse;" >
                 <thead>
                     <tr style="text-align: left; border-bottom: 2px solid #eee;">
                         <th style="padding: 8px 0;">Dia</th>
@@ -1496,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('A nova senha e a confirmação não coincidem.');
             return;
         }
-        if (newPassword.length < 6) {
+        if (newPassword.length <) {
             alert('A nova senha deve ter no mínimo 6 caracteres.');
             return;
         }
@@ -1534,7 +1534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     badgeEl.textContent = pendingCount;
                 } else {
                     const link = document.querySelector('a[data-page="orders"]');
-                    link.insertAdjacentHTML('beforeend', `< span class= "pending-badge" style = "background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;" > ${pendingCount}</span > `);
+                    link.insertAdjacentHTML('beforeend', `< class= "pending-badge" style = "background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;" > ${pendingCount}</span > `);
                 }
             } else if (badgeEl) {
                 badgeEl.remove();
@@ -1544,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderAddonsView() {
         return `
-        < div style = "display: flex; gap: 1.5rem; flex-direction: column;" >
+        < style = "display: flex; gap: 1.5rem; flex-direction: column;" >
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3>Grupos de Complementos</h3>
@@ -1573,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = groups.map(g => `
-            < div class= "glass-card" style = "margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;" >
+            < class= "glass-card" style = "margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;" >
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
                     <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
@@ -1612,14 +1612,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div >
             `).join('');
         } catch (error) {
-            if (list) list.innerHTML = `< p class= "error" > ${error.message}</p > `;
+            if (list) list.innerHTML = `< class= "error" > ${error.message}</p > `;
         }
     }
 
     window.openAddAddonGroupModal = async () => {
         const products = await apiFetch('/products');
         renderModal('Novo Grupo de Complementos', `
-        < div class= "form-group" >
+        < class= "form-group" >
                 <label>Nome do Grupo</label>
                 <input type="text" id="groupName" placeholder="Ex: Escolha seu molho, Adicionais extras...">
             </div>
@@ -1668,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeIds = (g.products || []).map(p => p.id);
 
         renderModal('Editar Grupo', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Nome do Grupo</label>
                 <input type="text" id="editGroupName" value="${g.name}">
             </div>
@@ -1722,7 +1722,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openAddAddonModal = (groupId) => {
         renderModal('Nova Opção', `
-        < div class= "form-group" >
+        < class= "form-group" >
                 <label>Nome da Opção</label>
                 <input type="text" id="addonName" placeholder="Ex: Bacon, Maionese, Extra Queijo...">
             </div>
@@ -1743,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditAddonModal = (a) => {
         renderModal('Editar Opção', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Nome da Opção</label>
                 <input type="text" id="editAddonName" value="${a.name}">
             </div>
@@ -1773,7 +1773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FINANCE VIEW ---
     function renderFinanceView() {
         return `
-        < div class= "grid-cols-3" >
+        < class= "grid-cols-3" >
             <div class="glass-card">
                 <p class="text-secondary">Faturamento (Vendas Online/PDV)</p>
                 <h2 id="fin-totalOrders" style="font-size: 2rem; margin-top: 5px; color: var(--success);">R$ 0,00</h2>
@@ -1841,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             tbody.innerHTML = events.map(e => `
-            < tr >
+            < >
                     <td>${new Date(e.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td><b>${typeMap[e.type] || e.type}</b></td>
                     <td style="color: ${['outflow', 'close'].includes(e.type) ? 'var(--primary)' : 'var(--success)'}; font-weight:bold;">
@@ -1859,7 +1859,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- COUPONS VIEW ---
     function renderCouponsView() {
         return `
-            < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
+            < style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Seus Cupons de Desconto</h3>
             <button onclick="window.openCreateCouponModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Cupom</button>
         </div >
@@ -1896,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = coupons.map(c => `
-            < tr >
+            < >
                     <td><span class="badge" style="background: var(--primary-light); color: var(--primary); font-weight: bold;">${c.code}</span></td>
                     <td>${c.type === 'percentage' ? 'Porcentagem (%)' : 'Valor Fixo (R$)'}</td>
                     <td><b>${c.type === 'percentage' ? c.value + '%' : c.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b></td>
@@ -1912,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateCouponModal = () => {
         renderModal('Novo Cupom', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Código do Cupom (Ex: QUERO10)</label>
                 <input type="text" id="couponCode" placeholder="EX: NATAL20" style="text-transform: uppercase;">
             </div>
@@ -1969,7 +1969,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CUSTOMERS VIEW ---
     function renderCustomersView() {
         return `
-        < h3 > Sua Base de Clientes</h3 >
+        < > Sua Base de Clientes</h3 >
         <p class="text-secondary mb-6">Clientes que já pediram na sua loja.</p>
         <div class="glass-card">
             <div class="table-responsive">
@@ -2003,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = customers.map(c => `
-            < tr >
+            < >
                     <td><b>${c.name || 'Cliente'}</b></td>
                     <td>${c.phone}</td>
                     <td>${c._count.orders}</td>
@@ -2020,7 +2020,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const c = await apiFetch(`/ marketing / customers / ${phone}`);
             renderModal(`Histórico: ${c.name || c.phone}`, `
-        < div class= "text-secondary mb-4" >
+        < class= "text-secondary mb-4" >
                     <p><b>Telefone:</b> ${c.phone}</p>
                     <p><b>Total de Pedidos:</b> ${c.orders.length}</p>
                 </div >
@@ -2046,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TABLES VIEW ---
     function renderTablesView() {
         return `
-            < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
+            < style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Suas Mesas (Consumo Local)</h3>
             <button onclick="window.openCreateTableModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Nova Mesa</button>
         </div >
@@ -2069,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = tables.map(t => `
-            < div class= "glass-card" style = "text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;" >
+            < class= "glass-card" style = "text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;" >
                     <div style="font-size: 2rem; margin-bottom: 10px;">🪑</div>
                     <h4 style="margin:0;">Mesa ${t.number}</h4>
                     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
@@ -2083,7 +2083,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateTableModal = () => {
         renderModal('Nova Mesa', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>Número da Mesa</label>
                 <input type="number" id="tableNumber" placeholder="Ex: 5">
             </div>
@@ -2098,7 +2098,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewTableQR = (url, number) => {
         renderModal(`QR Code: Mesa ${number}`, `
-        < div style = "text-align:center; padding: 10px;" >
+        < style = "text-align:center; padding: 10px;" >
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
             <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
             <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const number = document.querySelector('.modal-body b')?.textContent || 'Mesa';
         const win = window.open('', '_blank');
         win.document.write(`
-            < div style = "text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;" >
+            < style = "text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;" >
                 <h1 style="margin-bottom:10px;">SmartPedidos</h1>
                 <h3>FAÇA SEU PEDIDO</h3>
                 <img src="${img.src}" style="width:200px;">
@@ -2134,7 +2134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TEAM VIEW ---
     function renderTeamView() {
         return `
-        < div style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
+        < style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" >
             <h3>Gestão de Equipe (Funcionários)</h3>
             <button onclick="window.openCreateUserModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Membro</button>
         </div >
@@ -2169,7 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = users.map(u => `
-            < tr >
+            < >
                     <td><b>${u.email}</b></td>
                     <td><span class="badge" style="background: ${u.role === 'admin' ? '#dbeafe' : '#fef3c7'}; color: ${u.role === 'admin' ? '#1e40af' : '#92400e'}">${u.role === 'admin' ? 'Administrador' : 'Atendente / Garçom'}</span></td>
                     <td>${new Date(u.createdAt).toLocaleDateString()}</td>
@@ -2183,7 +2183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateUserModal = () => {
         renderModal('Novo Membro da Equipe', `
-            < div class= "form-group" >
+            < class= "form-group" >
                 <label>E-mail de Acesso</label>
                 <input type="email" id="userEmail" placeholder="ex: garcom@loja.com">
             </div>

@@ -278,12 +278,12 @@ function renderMenu(data) {
                 const end = parseInt(shift.end.replace(':', ''));
 
                 if (isToday) {
-                    if (end < start) { // Crosses midnight
+                    if (end <) { // Crosses midnight
                         return currentTime >= start;
                     }
                     return currentTime >= start && currentTime <= end;
                 } else { // Yesterday (Early morning check)
-                    if (end < start) { // Crosses midnight
+                    if (end <) { // Crosses midnight
                         return currentTime <= end;
                     }
                     return false;
@@ -303,7 +303,7 @@ function renderMenu(data) {
             if (tHours.start && !tHours.shift1) {
                 const start = parseInt(tHours.start.replace(':', ''));
                 const end = parseInt(tHours.end.replace(':', ''));
-                if (end < start) {
+                if (end <) {
                     if (currentTime >= start) return true;
                 } else {
                     if (currentTime >= start && currentTime <= end) return true;
@@ -312,7 +312,7 @@ function renderMenu(data) {
             if (yHours.start && !yHours.shift1) {
                 const start = parseInt(yHours.start.replace(':', ''));
                 const end = parseInt(yHours.end.replace(':', ''));
-                if (end < start && currentTime <= end) return true;
+                if (end < && currentTime <= end) return true;
             }
 
             return false;
@@ -696,7 +696,7 @@ function addSelectedProductToCart() {
         const groupAddonIds = g.addons.map(a => a.id);
         const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (selectedAddonState[id] || 0), 0);
 
-        if (g.isRequired && totalInGroup < g.minChoices) {
+        if (g.isRequired && totalInGroup <.minChoices) {
             alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
             return;
         }
@@ -704,7 +704,7 @@ function addSelectedProductToCart() {
         // Adicionar itens finais conforme a quantidade
         g.addons.forEach(a => {
             const qty = selectedAddonState[a.id] || 0;
-            for (let i = 0; i < qty; i++) {
+            for (let i = 0; i <; i++) {
                 finalAddons.push({
                     id: a.id,
                     name: a.name,
@@ -1516,7 +1516,7 @@ async function checkout() {
 
     const itemsPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
     const minVal = getMinOrderValue(fulfillmentType);
-    if (itemsPrice < minVal) {
+    if (itemsPrice <) {
         alert(`O valor mínimo dos itens para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
         return;
     }
