@@ -1501,7 +1501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderAddonsView() {
         return `
-        <="display: flex; gap: 1.5rem; flex-direction: column;">
+        <div style="display: flex; gap: 1.5rem; flex-direction: column;">
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3>Grupos de Complementos</h3>
@@ -1530,7 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = groups.map(g => `
-            <="glass-card" style="margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
+            <div class="glass-card" style="margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
                     <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
@@ -1569,14 +1569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `).join('');
         } catch (error) {
-            if (list) list.innerHTML = `<="error"> ${error.message}</p> `;
+            if (list) list.innerHTML = `<p class="error"> ${error.message}</p> `;
         }
     }
 
     window.openAddAddonGroupModal = async () => {
         const products = await apiFetch('/products');
         renderModal('Novo Grupo de Complementos', `
-        <="form-group">
+        <div class="form-group">
                 <label>Nome do Grupo</label>
                 <input type="text" id="groupName" placeholder="Ex: Escolha seu molho, Adicionais extras...">
             </div>
@@ -1625,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeIds = (g.products || []).map(p => p.id);
 
         renderModal('Editar Grupo', `
-            <="form-group">
+            <div class="form-group">
                 <label>Nome do Grupo</label>
                 <input type="text" id="editGroupName" value="${g.name}">
             </div>
@@ -1679,7 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openAddAddonModal = (groupId) => {
         renderModal('Nova Opção', `
-        <="form-group">
+        <div class="form-group">
                 <label>Nome da Opção</label>
                 <input type="text" id="addonName" placeholder="Ex: Bacon, Maionese, Extra Queijo...">
             </div>
@@ -1700,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditAddonModal = (a) => {
         renderModal('Editar Opção', `
-            <="form-group">
+            <div class="form-group">
                 <label>Nome da Opção</label>
                 <input type="text" id="editAddonName" value="${a.name}">
             </div>
@@ -1730,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FINANCE VIEW ---
     function renderFinanceView() {
         return `
-        <="grid-cols-3">
+        <div class="grid-cols-3">
             <div class="glass-card">
                 <p class="text-secondary">Faturamento (Vendas Online/PDV)</p>
                 <h2 id="fin-totalOrders" style="font-size: 2rem; margin-top: 5px; color: var(--success);">R$ 0,00</h2>
@@ -1816,7 +1816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- COUPONS VIEW ---
     function renderCouponsView() {
         return `
-            <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Seus Cupons de Desconto</h3>
             <button onclick="window.openCreateCouponModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Cupom</button>
         </div>
@@ -1869,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateCouponModal = () => {
         renderModal('Novo Cupom', `
-            <="form-group">
+            <div class="form-group">
                 <label>Código do Cupom (Ex: QUERO10)</label>
                 <input type="text" id="couponCode" placeholder="EX: NATAL20" style="text-transform: uppercase;">
             </div>
@@ -1977,7 +1977,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const c = await apiFetch(`/marketing/customers/ ${phone}`);
             renderModal(`Histórico: ${c.name || c.phone}`, `
-        <="text-secondary mb-4">
+        <p class="text-secondary" mb-4">
                     <p><b>Telefone:</b> ${c.phone}</p>
                     <p><b>Total de Pedidos:</b> ${c.orders.length}</p>
                 </div>
@@ -2003,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TABLES VIEW ---
     function renderTablesView() {
         return `
-            <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Suas Mesas (Consumo Local)</h3>
             <button onclick="window.openCreateTableModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Nova Mesa</button>
         </div>
@@ -2026,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = tables.map(t => `
-            <="glass-card" style="text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
+            <div class="glass-card" style="text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
                     <div style="font-size: 2rem; margin-bottom: 10px;">🪑</div>
                     <h4 style="margin:0;">Mesa ${t.number}</h4>
                     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
@@ -2040,7 +2040,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateTableModal = () => {
         renderModal('Nova Mesa', `
-            <="form-group">
+            <div class="form-group">
                 <label>Número da Mesa</label>
                 <input type="number" id="tableNumber" placeholder="Ex: 5">
             </div>
@@ -2055,7 +2055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewTableQR = (url, number) => {
         renderModal(`QR Code: Mesa ${number}`, `
-        <="text-align:center; padding: 10px;">
+        <div style="text-align:center; padding: 10px;">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
             <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
             <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
@@ -2069,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const number = document.querySelector('.modal-body b')?.textContent || 'Mesa';
         const win = window.open('', '_blank');
         win.document.write(`
-            <="text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
+            <div style="text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
                 <h1 style="margin-bottom:10px;">SmartPedidos</h1>
                 <h3>FAÇA SEU PEDIDO</h3>
                 <img src="${img.src}" style="width:200px;">
@@ -2091,7 +2091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TEAM VIEW ---
     function renderTeamView() {
         return `
-        <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Gestão de Equipe (Funcionários)</h3>
             <button onclick="window.openCreateUserModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Membro</button>
         </div>

@@ -12,7 +12,7 @@ let tableNumber = null;
 let map = null;
 let marker = null;
 let favorites = JSON.parse(localStorage.getItem('locationFavorites')) || { home: null, work: null };
-let geoapifyApiKey=''; //Loaded from public configs
+let geoapifyApiKey = ''; //Loaded from public configs
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadPublicConfigs();
@@ -57,7 +57,7 @@ async function loadTenantData() {
     const parts = hostname.split('.');
 
     //If it's something like loja.smartpede.com.br or loja.localhost
-    if (!slug && parts.length>= 2) {
+    if (!slug && parts.length >= 2) {
         const firstPart = parts[0];
         if (firstPart !== 'www' && firstPart !== 'smartpede' && firstPart !== 'localhost') {
             slug = firstPart;
@@ -65,7 +65,7 @@ async function loadTenantData() {
     }
 
     if (!slug) {
-        document.body.innerHTML='<div style="padding: 2rem; text-align: center;"><h1>Loja não encontrada</h1><p>Verifique o link acessado ou use o ID da loja após o #.</p></div>';
+        document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Loja não encontrada</h1><p>Verifique o link acessado ou use o ID da loja após o #.</p></div>';
         return;
     }
 
@@ -82,14 +82,14 @@ async function loadTenantData() {
             setTimeout(() => {
                 const ft = document.getElementById('fulfillmentType');
                 if (ft) {
-                    ft.value='dine_in';
+                    ft.value = 'dine_in';
                     ft.disabled = true; //Lock it
                     toggleAddressFields(); //Update UI
                     //Inform user
                     const cartFooter = document.querySelector('.cart-footer');
                     if (cartFooter) {
                         const alert = document.createElement('div');
-                        alert.style.cssText='background: #f0fdf4; color: #166534; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #bbf7d0;';
+                        alert.style.cssText = 'background: #f0fdf4; color: #166534; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #bbf7d0;';
                         alert.innerHTML = `<strong>📍 Atendimento na Mesa ${tableNumber}</strong><br>Seu pedido será entregue diretamente nesta mesa.`;
                         cartFooter.prepend(alert);
                     }
@@ -97,7 +97,7 @@ async function loadTenantData() {
             }, 500);
         }
 
-        document.getElementById('loading').style.display='none';
+        document.getElementById('loading').style.display = 'none';
         checkOrdersStatus(); //Check on load
         setInterval(checkOrdersStatus, 30000); //Polling every 30s
     } catch (error) {
@@ -135,8 +135,8 @@ function applyTheme(color) {
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    const brightness = (r * 299 + g * 587 + b * 114) /1000;
-    const contrastColor = brightness> 128 ? '#111827' : '#ffffff';
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const contrastColor = brightness > 128 ? '#111827' : '#ffffff';
 
     const style = document.createElement('style');
     style.innerHTML = `
@@ -188,7 +188,7 @@ function renderMenu(data) {
         if (data.description) {
             document.getElementById('restDescriptionModal').textContent = data.description;
         } else {
-            document.getElementById('restDescriptionModal').style.display='none';
+            document.getElementById('restDescriptionModal').style.display = 'none';
         }
 
         if (data.googleMapsUrl) {
@@ -198,29 +198,29 @@ function renderMenu(data) {
         document.getElementById('restPaymentsModal').textContent = data.paymentMethods || 'Pix, Dinheiro, Cartão';
 
         //Redes Sociais e Contato
-        let socialHtml='';
+        let socialHtml = '';
         if (data.instagramUrl) socialHtml += `<a href="${data.instagramUrl}" target="_blank" style="text-decoration: none; font-size: 1.5rem; margin-right: 15px;">📸</a>`;
         if (data.facebookUrl) socialHtml += `<a href="${data.facebookUrl}" target="_blank" style="text-decoration: none; font-size: 1.5rem; margin-right: 15px;">🌐</a>`;
         if (data.contactEmail) socialHtml += `<p style="font-size: 0.85rem; color: #666; margin-top: 5px;">📧 ${data.contactEmail}</p>`;
 
         const socialContainer = document.createElement('div');
-        socialContainer.style.marginTop='15px';
-        socialContainer.style.borderTop='1px solid #eee';
-        socialContainer.style.paddingTop='10px';
-        socialContainer.innerHTML='<strong>Redes Sociais e Contato:</strong><div style="margin-top: 5px;">' + (socialHtml || '<p class="text-secondary">Não informado</p>') + '</div>';
+        socialContainer.style.marginTop = '15px';
+        socialContainer.style.borderTop = '1px solid #eee';
+        socialContainer.style.paddingTop = '10px';
+        socialContainer.innerHTML = '<strong>Redes Sociais e Contato:</strong><div style="margin-top: 5px;">' + (socialHtml || '<p class="text-secondary">Não informado</p>') + '</div>';
 
         //Append or replace? Let's check the container in index.html
         //I'll insert it before the hours table.
         const profileDetails = document.getElementById('profileDetails');
         if (profileDetails && !document.getElementById('socialLinksModal')) {
-            socialContainer.id='socialLinksModal';
+            socialContainer.id = 'socialLinksModal';
             profileDetails.insertBefore(socialContainer, document.getElementById('restHoursTableModal').parentNode);
         }
 
         //Tabela de Horários no Modal
         try {
             if (!data.openingHours || data.openingHours === '[]' || data.openingHours === '{}') {
-                document.getElementById('restHoursTableModal').innerHTML='<p class="text-secondary">Horários não cadastrados.</p>';
+                document.getElementById('restHoursTableModal').innerHTML = '<p class="text-secondary">Horários não cadastrados.</p>';
             } else {
                 const hours = typeof data.openingHours === 'string' ? JSON.parse(data.openingHours) : data.openingHours;
                 const dayLabels = { 'mon': 'Seg:', 'tue': 'Ter:', 'wed': 'Qua:', 'thu': 'Qui:', 'fri': 'Sex:', 'sat': 'Sab:', 'sun': 'Dom:' };
@@ -241,7 +241,7 @@ function renderMenu(data) {
                         return `${h}:${m}h`;
                     };
 
-                    let text='';
+                    let text = '';
                     if (h.shift1) text += `${formatTime(h.shift1.start)} às ${formatTime(h.shift1.end)}`;
                     if (h.shift2) text += (text ? ' / ' : '') + `${formatTime(h.shift2.start)} às ${formatTime(h.shift2.end)}`;
 
@@ -257,7 +257,7 @@ function renderMenu(data) {
             }
         } catch (e) {
             console.error('Erro ao renderizar horários no modal:', e);
-            document.getElementById('restHoursTableModal').textContent='Horários não disponíveis no momento.';
+            document.getElementById('restHoursTableModal').textContent = 'Horários não disponíveis no momento.';
         }
     };
     populateProfile();
@@ -278,12 +278,12 @@ function renderMenu(data) {
                 const end = parseInt(shift.end.replace(':', ''));
 
                 if (isToday) {
-                    if (end <) { //Crosses midnight
-                        return currentTime>= start;
+                    if (end < start) { //Crosses midnight
+                        return currentTime >= start;
                     }
-                    return currentTime>= start && currentTime <= end;
+                    return currentTime >= start && currentTime <= end;
                 } else { //Yesterday (Early morning check)
-                    if (end <) { //Crosses midnight
+                    if (end < start) { //Crosses midnight
                         return currentTime <= end;
                     }
                     return false;
@@ -303,16 +303,16 @@ function renderMenu(data) {
             if (tHours.start && !tHours.shift1) {
                 const start = parseInt(tHours.start.replace(':', ''));
                 const end = parseInt(tHours.end.replace(':', ''));
-                if (end <) {
-                    if (currentTime>= start) return true;
+                if (end < start) {
+                    if (currentTime >= start) return true;
                 } else {
-                    if (currentTime>= start && currentTime <= end) return true;
+                    if (currentTime >= start && currentTime <= end) return true;
                 }
             }
             if (yHours.start && !yHours.shift1) {
                 const start = parseInt(yHours.start.replace(':', ''));
                 const end = parseInt(yHours.end.replace(':', ''));
-                if (end <&& currentTime <= end) return true;
+                if (end < start && currentTime <= end) return true;
             }
 
             return false;
@@ -350,25 +350,25 @@ function renderMenu(data) {
 
         //Horário ao lado do status, mesma linha, fonte menor para mobile
         hoursEl.textContent = ` ${text}`;
-        hoursEl.style.fontSize='0.78rem';
-        hoursEl.style.color='#4B5563';
-        hoursEl.style.fontWeight='500';
-        hoursEl.style.whiteSpace='nowrap';
-        hoursEl.style.overflow='hidden';
-        hoursEl.style.textOverflow='ellipsis';
+        hoursEl.style.fontSize = '0.78rem';
+        hoursEl.style.color = '#4B5563';
+        hoursEl.style.fontWeight = '500';
+        hoursEl.style.whiteSpace = 'nowrap';
+        hoursEl.style.overflow = 'hidden';
+        hoursEl.style.textOverflow = 'ellipsis';
 
         //v5 Status Bar White Text
         statusEl.innerHTML = `<span style="color: white;">${isOpen ? 'Aberto' : 'Fechado'}</span>`;
         statusEl.style.background = isOpen ? '#10B981' : '#EF4444';
-        statusEl.style.display='inline-block';
-        statusEl.style.marginRight='5px';
+        statusEl.style.display = 'inline-block';
+        statusEl.style.marginRight = '5px';
 
         //Remover tempo do cabeçalho
-        if (estimatedTimeEl) estimatedTimeEl.style.display='none';
+        if (estimatedTimeEl) estimatedTimeEl.style.display = 'none';
 
     } catch (e) {
         console.error('Erro ao renderizar horários:', e);
-        hoursEl.textContent=' • Consulte nossos horários';
+        hoursEl.textContent = ' • Consulte nossos horários';
     }
 
     //Logo
@@ -383,10 +383,10 @@ function renderMenu(data) {
     const menuContent = document.getElementById('menuContent');
 
     //Filter categories with active products
-    const validCategories = data.categories.filter(cat => cat.products.length> 0);
+    const validCategories = data.categories.filter(cat => cat.products.length > 0);
 
     if (validCategories.length === 0) {
-        menuContent.innerHTML='<div style="text-align: center; padding: 3rem;">O cardápio está vazio no momento.</div>';
+        menuContent.innerHTML = '<div style="text-align: center; padding: 3rem;">O cardápio está vazio no momento.</div>';
         return;
     }
 
@@ -449,12 +449,12 @@ window.filterProducts = () => {
             if (matches) visibleCount++;
         });
 
-        section.style.display = visibleCount> 0 ? 'block' : 'none';
+        section.style.display = visibleCount > 0 ? 'block' : 'none';
 
         //Sync category pills
         const catId = section.id;
         const pill = document.querySelector(`[onclick*="${catId}"]`);
-        if (pill) pill.style.display = visibleCount> 0 ? 'inline-block' : 'none';
+        if (pill) pill.style.display = visibleCount > 0 ? 'inline-block' : 'none';
     });
 };
 
@@ -471,15 +471,15 @@ window.switchTab = (tab, el) => {
     //UI Updates
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
-        item.style.color='#888';
+        item.style.color = '#888';
     });
     el.classList.add('active');
-    el.style.color='var(--primary)';
+    el.style.color = 'var(--primary)';
 
     if (tab === 'home') {
         const searchInput = document.getElementById('productSearch');
         if (searchInput) {
-            searchInput.value='';
+            searchInput.value = '';
             filterProducts();
         }
         closeCart();
@@ -522,18 +522,18 @@ window.openProductDetail = (product) => {
     const imgContainer = document.getElementById('detailProductImgContainer');
     if (product.imageUrl) {
         imgContainer.innerHTML = `<img src="${product.imageUrl}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 10px;">`;
-        imgContainer.style.display='block';
+        imgContainer.style.display = 'block';
     } else {
-        imgContainer.style.display='none';
+        imgContainer.style.display = 'none';
     }
 
     renderDetailAddons(product.addonGroups || []);
     updateDetailTotal();
 
     const obsField = document.getElementById('productObservation');
-    if (obsField) obsField.value='';
+    if (obsField) obsField.value = '';
 
-    document.getElementById('productDetailModal').style.display='flex';
+    document.getElementById('productDetailModal').style.display = 'flex';
 
     //Configurar botão de adicionar
     const btn = document.getElementById('addWithAddonsBtn');
@@ -541,22 +541,22 @@ window.openProductDetail = (product) => {
 };
 
 window.closeProductDetailModal = () => {
-    document.getElementById('productDetailModal').style.display='none';
+    document.getElementById('productDetailModal').style.display = 'none';
     currentBaseProduct = null;
 };
 
 function renderDetailAddons(groups) {
     const container = document.getElementById('detailAddonGroups');
     if (!groups || groups.length === 0) {
-        container.innerHTML='';
+        container.innerHTML = '';
         return;
     }
 
     container.innerHTML = groups.map(g => {
-        let instruction='';
+        let instruction = '';
         if (g.minChoices === g.maxChoices) {
             instruction = `Escolha exatamente ${g.minChoices}`;
-        } else if (g.minChoices> 0) {
+        } else if (g.minChoices > 0) {
             instruction = `Escolha de ${g.minChoices} a ${g.maxChoices}`;
         } else {
             instruction = `Escolha até ${g.maxChoices}`;
@@ -574,7 +574,7 @@ function renderDetailAddons(groups) {
                 <div class="addon-options" id="options-group-${g.id}" style="padding: 0 16px; background: white;">
                     ${g.addons.map(a => {
             const currentQty = selectedAddonState[a.id] || 0;
-            const isSelected = currentQty> 0;
+            const isSelected = currentQty > 0;
             return `
                         <div id="addon-item-${a.id}" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f1f5f9; background: ${isSelected ? '#fff8f1' : 'white'};">
                             <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
@@ -603,13 +603,13 @@ window.changeAddonQty = (groupId, addonId, delta, maxGroup) => {
     const newQty = Math.max(0, currentQty + delta);
 
     //Validar máximo do grupo
-    if (delta> 0) {
+    if (delta > 0) {
         //Encontrar todos os IDs dos adicionais deste grupo
         const group = currentBaseProduct.addonGroups.find(g => g.id === groupId);
         const groupAddonIds = group.addons.map(a => a.id);
         const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (selectedAddonState[id] || 0), 0);
 
-        if (totalInGroup>= maxGroup) {
+        if (totalInGroup >= maxGroup) {
             alert(`Você pode escolher no máximo ${maxGroup} itens neste grupo.`);
             return;
         }
@@ -623,7 +623,7 @@ window.changeAddonQty = (groupId, addonId, delta, maxGroup) => {
     if (group) {
         const addon = group.addons.find(a => a.id === addonId);
         if (addon) {
-            const isSelected = newQty> 0;
+            const isSelected = newQty > 0;
             const container = document.getElementById(`addon-item-${addonId}`);
             if (container) {
                 container.style.backgroundColor = isSelected ? '#fff8f1' : '';
@@ -657,7 +657,7 @@ window.changeAddonQty = (groupId, addonId, delta, maxGroup) => {
 window.validateAddonChoice = (groupId, max, element) => {
     if (max === 1) return; //Radio handling is native
     const checked = document.querySelectorAll(`input[name="group-${groupId}"]:checked`);
-    if (checked.length> max) {
+    if (checked.length > max) {
         element.checked = false;
         alert(`Você pode escolher no máximo ${max} opções para este grupo.`);
     }
@@ -674,7 +674,7 @@ window.updateDetailTotal = () => {
     let total = currentBaseProduct.price;
 
     //Calcular por quantidade selecionada no state
-    if (Object.keys(selectedAddonState).length> 0) {
+    if (Object.keys(selectedAddonState).length > 0) {
         currentBaseProduct.addonGroups.forEach(g => {
             g.addons.forEach(a => {
                 const qty = selectedAddonState[a.id] || 0;
@@ -696,7 +696,7 @@ function addSelectedProductToCart() {
         const groupAddonIds = g.addons.map(a => a.id);
         const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (selectedAddonState[id] || 0), 0);
 
-        if (g.isRequired && totalInGroup <.minChoices) {
+        if (g.isRequired && totalInGroup < g.minChoices) {
             alert(`Por favor, selecione pelo menos ${g.minChoices} opção(ões) em "${g.name}"`);
             return;
         }
@@ -704,7 +704,7 @@ function addSelectedProductToCart() {
         //Adicionar itens finais conforme a quantidade
         g.addons.forEach(a => {
             const qty = selectedAddonState[a.id] || 0;
-            for (let i = 0; i <; i++) {
+            for (let i = 0; i < qty; i++) {
                 finalAddons.push({
                     id: a.id,
                     name: a.name,
@@ -733,7 +733,7 @@ function addSelectedProductToCart() {
     };
 
     const existingIndex = cart.findIndex(item => item.cartItemId === cartItemId);
-    if (existingIndex> -1) {
+    if (existingIndex > -1) {
         cart[existingIndex].quantity += detailQuantity;
     } else {
         cart.push(cartItem);
@@ -751,11 +751,11 @@ async function refreshMyOrders() {
     const orderIds = JSON.parse(localStorage.getItem('my_orders') || '[]');
 
     if (orderIds.length === 0) {
-        list.innerHTML='<p class="text-secondary">Nenhum pedido realizado recentemente.</p>';
+        list.innerHTML = '<p class="text-secondary">Nenhum pedido realizado recentemente.</p>';
         return;
     }
 
-    list.innerHTML='<p class="text-secondary">Atualizando status...</p>';
+    list.innerHTML = '<p class="text-secondary">Atualizando status...</p>';
 
     try {
         const orders = [];
@@ -785,7 +785,7 @@ async function refreshMyOrders() {
         `).join('');
 
     } catch (e) {
-        list.innerHTML='<p class="error">Erro ao atualizar status. Tente novamente.</p>';
+        list.innerHTML = '<p class="error">Erro ao atualizar status. Tente novamente.</p>';
     }
 }
 
@@ -801,7 +801,7 @@ function translateStatus(status) {
 
 //CART LOGIC
 function addToCart(product) {
-    if (product.addonGroups && product.addonGroups.length> 0) {
+    if (product.addonGroups && product.addonGroups.length > 0) {
         openProductDetail(product);
         return;
     }
@@ -829,19 +829,19 @@ function addToCart(product) {
     const btn = event.target;
     if (btn && btn.classList.contains('btn-add')) {
         const original = btn.textContent;
-        btn.textContent='✓';
-        btn.style.background='#10B981';
+        btn.textContent = '✓';
+        btn.style.background = '#10B981';
         setTimeout(() => {
             btn.textContent = original;
-            btn.style.background='';
+            btn.style.background = '';
         }, 1000);
     }
 }
 
 function removeFromCart(cartItemId) {
     const index = cart.findIndex(item => item.cartItemId === cartItemId);
-    if (index> -1) {
-        if (cart[index].quantity> 1) {
+    if (index > -1) {
+        if (cart[index].quantity > 1) {
             cart[index].quantity -= 1;
         } else {
             cart.splice(index, 1);
@@ -858,13 +858,13 @@ function updateCartUI() {
     const navCount = document.getElementById('navCartCount');
     if (navCount) {
         navCount.textContent = totalItems;
-        navCount.style.display = totalItems> 0 ? 'block' : 'none';
+        navCount.style.display = totalItems > 0 ? 'block' : 'none';
     }
 
     //v5 Floating Bar Above Nav
     const v5Bar = document.getElementById('cartBarAboveNav');
     if (v5Bar) {
-        v5Bar.style.display = totalItems> 0 ? 'block' : 'none';
+        v5Bar.style.display = totalItems > 0 ? 'block' : 'none';
         document.getElementById('floatingCartItems').textContent = totalItems;
         document.getElementById('floatingCartTotal').textContent = totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -872,7 +872,7 @@ function updateCartUI() {
     //Atualiza a lista visual do modal e botões de +/- em tempo real
     renderCartItemsList();
 
-    if (totalItems> 0) {
+    if (totalItems > 0) {
         const count = document.getElementById('cartCount');
         if (count) count.textContent = totalItems;
         updateCartTotalUI();
@@ -886,7 +886,7 @@ function renderCartItemsList() {
     if (!list) return;
 
     if (cart.length === 0) {
-        list.innerHTML='<p class="text-secondary" style="text-align:center; padding: 20px;">Carrinho vazio</p>';
+        list.innerHTML = '<p class="text-secondary" style="text-align:center; padding: 20px;">Carrinho vazio</p>';
         return;
     }
 
@@ -894,7 +894,7 @@ function renderCartItemsList() {
         <div class="cart-item" style="display: flex; gap: 12px; padding: 15px 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start;">
             <div style="flex: 1;">
                 <h4 style="margin: 0; font-size: 0.95rem; color: #1e293b;">${item.name}</h4>
-                ${item.addons && item.addons.length> 0 ? `
+                ${item.addons && item.addons.length > 0 ? `
                     <p style="margin: 4px 0; font-size: 0.8rem; color: #64748b; line-height: 1.2;">
                         ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
                     </p>
@@ -934,13 +934,13 @@ async function checkOrdersStatus() {
     if (!statusDot) return;
 
     if (orderIds.length === 0) {
-        statusDot.style.display='none';
+        statusDot.style.display = 'none';
         return;
     }
 
     try {
         let hasActive = false;
-        let lastStatus='pending';
+        let lastStatus = 'pending';
 
         //Check only the most recent order for the dot color
         const lastId = orderIds[orderIds.length - 1];
@@ -952,10 +952,10 @@ async function checkOrdersStatus() {
         }
 
         if (hasActive) {
-            statusDot.style.display='block';
+            statusDot.style.display = 'block';
             statusDot.style.background = getStatusColor(lastStatus);
         } else {
-            statusDot.style.display='none';
+            statusDot.style.display = 'none';
         }
     } catch (e) {
         console.error('Error checking orders', e);
@@ -970,36 +970,36 @@ function openCart() {
     //Inserir Tempos Estimados ao lado de "Meu Pedido" (Refinado)
     const cartHeader = modal.querySelector('h2');
     if (cartHeader && restaurant) {
-        let timesHtml='';
+        let timesHtml = '';
         if (restaurant.estimatedTimePickup) timesHtml += `<span style="font-size: 0.75rem; color: #4B5563; background: #F3F4F6; padding: 4px 8px; border-radius: 6px; margin-left: 15px;">🛍️ ${restaurant.estimatedTimePickup}</span>`;
         if (restaurant.estimatedTimeDelivery) timesHtml += `<span style="font-size: 0.75rem; color: #4B5563; background: #F3F4F6; padding: 4px 8px; border-radius: 6px; margin-left: 8px;">🛵 ${restaurant.estimatedTimeDelivery}</span>`;
         if (timesHtml) {
             cartHeader.innerHTML = `Meu Pedido ${timesHtml}`;
-            cartHeader.style.display='flex';
-            cartHeader.style.alignItems='center';
-            cartHeader.style.flexWrap='wrap';
-            cartHeader.style.gap='5px';
+            cartHeader.style.display = 'flex';
+            cartHeader.style.alignItems = 'center';
+            cartHeader.style.flexWrap = 'wrap';
+            cartHeader.style.gap = '5px';
         }
     }
 
     renderCartItemsList(); //A lista é gerada por essa função agora
     updateCartTotalUI(); //Centralizar total
 
-    modal.style.display='flex';
-    document.body.style.overflow='hidden';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
 
 function closeCart() {
-    document.getElementById('cartModal').style.display='none';
-    document.body.style.overflow='';
+    document.getElementById('cartModal').style.display = 'none';
+    document.body.style.overflow = '';
     //Sync Bottom Nav UI if closing via X button
     const navCart = document.getElementById('nav-cart');
     const navHome = document.getElementById('nav-home');
     if (navCart.classList.contains('active')) {
         navCart.classList.remove('active');
-        navCart.style.color='#888';
+        navCart.style.color = '#888';
         navHome.classList.add('active');
-        navHome.style.color='var(--primary)';
+        navHome.style.color = 'var(--primary)';
     }
 }
 
@@ -1071,8 +1071,8 @@ window.openLocationModal = () => {
     const modal = document.getElementById('locationModal');
     if (!modal) return;
 
-    modal.style.display='flex';
-    document.body.style.overflow='hidden';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
     setTimeout(() => {
         initLocationMap();
@@ -1115,7 +1115,7 @@ window.openLocationModal = () => {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
                     const val = districtInput.value.trim();
-                    if (val.length>= 3) {
+                    if (val.length >= 3) {
                         searchLocationFromFields(true); //true = silent search
                     }
                 }, 800);
@@ -1125,8 +1125,8 @@ window.openLocationModal = () => {
 };
 
 window.closeLocationModal = () => {
-    document.getElementById('locationModal').style.display='none';
-    document.body.style.overflow='';
+    document.getElementById('locationModal').style.display = 'none';
+    document.body.style.overflow = '';
 };
 
 function initLocationMap() {
@@ -1138,7 +1138,7 @@ function initLocationMap() {
     const defaultLat = restaurant?.lat || -23.55052;
     const defaultLon = restaurant?.lon || -46.633308;
     //Proteção contra fallback legado (sem lat/lon)
-    const startPos = (userLocation && typeof userLocation.lat !=="undefined")
+    const startPos = (userLocation && typeof userLocation.lat !== "undefined")
         ? [userLocation.lat, userLocation.lon]
         : [defaultLat, defaultLon];
 
@@ -1166,7 +1166,7 @@ async function reverseGeocodeStructured(lat, lon) {
         const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${geoapifyApiKey}`;
         const res = await fetch(url).then(r => r.json());
 
-        if (res.features && res.features.length> 0) {
+        if (res.features && res.features.length > 0) {
             const props = res.features[0].properties;
 
             const district = props.suburb || props.district || '';
@@ -1231,7 +1231,7 @@ window.searchLocationFromFields = async (silent = false) => {
 
     const btn = document.querySelector('button[onclick="searchLocationFromFields()"]');
     if (btn) {
-        btn.innerHTML='Buscando... ⏳';
+        btn.innerHTML = 'Buscando... ⏳';
         btn.disabled = true;
     }
 
@@ -1267,7 +1267,7 @@ window.searchLocationFromFields = async (silent = false) => {
 
             try {
                 const streetRes = await fetch(streetUrl).then(r => r.json());
-                if (streetRes.features && streetRes.features.length> 0) {
+                if (streetRes.features && streetRes.features.length > 0) {
                     finalLat = streetRes.features[0].properties.lat;
                     finalLon = streetRes.features[0].properties.lon;
                     if (streetRes.features[0].properties.street) {
@@ -1307,7 +1307,7 @@ window.searchLocationFromFields = async (silent = false) => {
         if (!silent) alert("Ocorreu um erro de rede ao tentar localizar o endereço.");
     } finally {
         if (btn) {
-            btn.innerHTML='🔍 Localizar Bairro/Rua no Mapa';
+            btn.innerHTML = '🔍 Localizar Bairro/Rua no Mapa';
             btn.disabled = false;
         }
     }
@@ -1335,10 +1335,10 @@ window.selectFavorite = (type) => {
 
 window.clearLocation = () => {
     //1. Limpa os campos do Modal (exceto UF e Cidade Base, que vêm da loja idealmente)
-    document.getElementById('modalDistrict').value='';
-    document.getElementById('modalStreet').value='';
-    document.getElementById('modalNumber').value='';
-    document.getElementById('modalComplement').value='';
+    document.getElementById('modalDistrict').value = '';
+    document.getElementById('modalStreet').value = '';
+    document.getElementById('modalNumber').value = '';
+    document.getElementById('modalComplement').value = '';
 
     //2. Limpa variáveis de estado e armazenamento
     userLocation = null;
@@ -1347,10 +1347,10 @@ window.clearLocation = () => {
 
     //3. Reseta os labels no Frontend
     const headerLabel = document.getElementById('currentAddressLabel');
-    if (headerLabel) headerLabel.textContent='Escolher localização...';
+    if (headerLabel) headerLabel.textContent = 'Escolher localização...';
 
     const checkoutLabel = document.getElementById('checkoutAddressLabel');
-    if (checkoutLabel) checkoutLabel.textContent='Ajustar no mapa...';
+    if (checkoutLabel) checkoutLabel.textContent = 'Ajustar no mapa...';
 
     //4. Se tiver mapa, tenta voltar pro centro base da loja
     if (map && marker) {
@@ -1455,19 +1455,19 @@ window.applyCoupon = async () => {
         const data = await res.json();
         if (!res.ok) {
             msg.textContent = data.error;
-            msg.style.color='#ef4444';
-            msg.style.display='block';
+            msg.style.color = '#ef4444';
+            msg.style.display = 'block';
             appliedCoupon = null;
         } else {
             appliedCoupon = { code: code.toUpperCase(), ...data };
             msg.textContent = `Cupom aplicado! Desconto de ${data.type === 'percentage' ? data.value + '%' : 'R$ ' + data.value.toFixed(2)}`;
-            msg.style.color='#10b981';
-            msg.style.display='block';
+            msg.style.color = '#10b981';
+            msg.style.display = 'block';
         }
         updateCartTotalUI();
     } catch (e) {
-        msg.textContent='Erro ao validar cupom.';
-        msg.style.display='block';
+        msg.textContent = 'Erro ao validar cupom.';
+        msg.style.display = 'block';
     }
 };
 
@@ -1480,7 +1480,7 @@ function updateCartTotalUI() {
     let discount = 0;
     if (appliedCoupon) {
         if (appliedCoupon.type === 'percentage') {
-            discount = itemsPrice * (appliedCoupon.value/100);
+            discount = itemsPrice * (appliedCoupon.value / 100);
         } else {
             discount = appliedCoupon.value;
         }
@@ -1491,10 +1491,10 @@ function updateCartTotalUI() {
 
     if (modalTotal) {
         let breakDown = `R$ ${finalTotal.toFixed(2).replace('.', ',')}`;
-        if (fee> 0 || discount> 0) {
+        if (fee > 0 || discount > 0) {
             let details = `(Itens: R$ ${itemsPrice.toFixed(2).replace('.', ',')}`;
-            if (fee> 0) details += ` + Entrega: R$ ${fee.toFixed(2).replace('.', ',')}`;
-            if (discount> 0) details += ` - Desconto: R$ ${discount.toFixed(2).replace('.', ',')}`;
+            if (fee > 0) details += ` + Entrega: R$ ${fee.toFixed(2).replace('.', ',')}`;
+            if (discount > 0) details += ` - Desconto: R$ ${discount.toFixed(2).replace('.', ',')}`;
             details += `)`;
             breakDown += ` <small class="text-secondary" style="font-weight: 400; font-size: 0.8rem; display:block;">${details}</small>`;
         }
@@ -1516,7 +1516,7 @@ async function checkout() {
 
     const itemsPrice = cart.reduce((acc, item) => acc + (item.totalItemPrice * item.quantity), 0);
     const minVal = getMinOrderValue(fulfillmentType);
-    if (itemsPrice <) {
+    if (itemsPrice < minVal) {
         alert(`O valor mínimo dos itens para ${translateFulfillment(fulfillmentType)} é ${minVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Adicione mais itens ao seu carrinho.`);
         return;
     }
@@ -1545,7 +1545,7 @@ async function checkout() {
 
     try {
         btn.disabled = true;
-        btn.textContent='Enviando pedido...';
+        btn.textContent = 'Enviando pedido...';
 
         //1. Persist in Database
         const orderData = {
@@ -1599,7 +1599,7 @@ async function checkout() {
         message += `*Itens:*\n`;
         cart.forEach(item => {
             message += `- ${item.quantity}x ${item.name} (${(item.totalItemPrice * item.quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
-            if (item.addons && item.addons.length> 0) {
+            if (item.addons && item.addons.length > 0) {
                 item.addons.forEach(a => {
                     message += `  └ + ${a.name} (${a.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})\n`;
                 });
@@ -1607,7 +1607,7 @@ async function checkout() {
         });
 
         message += `\n*Subtotal:* ${itemsPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
-        if (fee> 0) message += `*Taxa de Entrega:* ${fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+        if (fee > 0) message += `*Taxa de Entrega:* ${fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
         message += `*TOTAL: ${totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}*\n`;
         message += `--------------------------\n`;
         message += `_Pedido realizado via SmartPede_`;
@@ -1633,7 +1633,7 @@ async function checkout() {
         alert('Erro ao processar pedido: ' + error.message);
     } finally {
         btn.disabled = false;
-        btn.textContent='Finalizar Pedido pelo WhatsApp';
+        btn.textContent = 'Finalizar Pedido pelo WhatsApp';
     }
 }
 //CANCELLATION REQUEST
