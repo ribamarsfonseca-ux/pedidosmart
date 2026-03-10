@@ -320,6 +320,8 @@
             <input type="text" id="newTenantOwner" placeholder="Ex: João Silva" style="margin-bottom:0.8rem;">
             <label>E-mail Admin</label>
             <input type="email" id="newTenantEmail" placeholder="admin@loja.com" style="margin-bottom:0.8rem;">
+            <label>WhatsApp / Contato</label>
+            <input type="text" id="newTenantWhatsapp" placeholder="Ex: 5598988838223" style="margin-bottom:0.8rem;">
             <label>Senha Provisória</label>
             <input type="password" id="newTenantPassword" placeholder="Mínimo 6 caracteres"
                 style="margin-bottom:1.5rem;">
@@ -614,6 +616,7 @@
             document.getElementById('newTenantSlug').value = '';
             document.getElementById('newTenantOwner').value = '';
             document.getElementById('newTenantEmail').value = '';
+            document.getElementById('newTenantWhatsapp').value = '';
             document.getElementById('newTenantPassword').value = '';
             document.getElementById('newTenantModal').style.display = 'flex';
         }
@@ -641,6 +644,7 @@
                         name,
                         slug,
                         ownerName: document.getElementById('newTenantOwner').value.trim(),
+                        whatsapp: document.getElementById('newTenantWhatsapp').value.trim(),
                         adminEmail,
                         adminPassword
                     })

@@ -153,7 +153,7 @@ export const updateConfigs = async (req: Request, res: Response): Promise<void> 
 
 export const createTenant = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, slug, ownerName, adminEmail, adminPassword } = req.body;
+        const { name, slug, ownerName, whatsapp, adminEmail, adminPassword } = req.body;
 
         if (!name || !slug || !adminEmail || !adminPassword) {
             res.status(400).json({ error: 'Todos os campos obrigatórios (nome, slug, email, senha) não foram preenchidos' });
@@ -176,7 +176,14 @@ export const createTenant = async (req: Request, res: Response): Promise<void> =
 
         const result = await prisma.$transaction(async (tx) => {
             const tenant = await tx.tenant.create({
-                data: { name, slug, ownerName: ownerName || null, active: true, subscriptionStatus: 'active' }
+                data: {
+                    name,
+                    slug,
+                    ownerName: ownerName || null,
+                    whatsapp: whatsapp || null,
+                    active: true,
+                    subscriptionStatus: 'active'
+                }
             });
 
             await tx.user.create({
