@@ -10,7 +10,7 @@ const formatImageUrl = (url) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Auth Check
+    //1. Auth Check
     const token = localStorage.getItem('auth_token');
     const tenantDataRaw = localStorage.getItem('tenant_data');
 
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let tenantData = JSON.parse(tenantDataRaw);
     let socket;
 
-    // 1.1 Socket.io Setup
+    //1.1 Socket.io Setup
     function setupSocket() {
         if (typeof io === 'undefined') return;
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Novo pedido recebido via Socket:', order);
             playNotificationSound();
             if (activePage === 'orders') {
-                initOrdersView(); // Recarregar lista se estiver na página de pedidos
+                initOrdersView(); //Recarregar lista se estiver na página de pedidos
             }
             updatePendingBadge();
         });
@@ -58,10 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && data.tenant) {
                 tenantData = data.tenant;
                 localStorage.setItem('tenant_data', JSON.stringify(tenantData));
-                // Update header if already in DOM
+                //Update header if already in DOM
                 const nameDisplay = document.getElementById('tenantNameDisplay');
                 if (nameDisplay) nameDisplay.innerHTML = `${renderLogo()} ${tenantData.name}`;
-                checkActiveStatus(); // Verificar status após atualizar
+                checkActiveStatus(); //Verificar status após atualizar
             }
         } catch (e) {
             console.error('Erro ao atualizar dados do lojista:', e);
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkActiveStatus() {
         if (tenantData && tenantData.active === false) {
-            // Se inativo, buscar dados do dev para mostrar suporte
+            //Se inativo, buscar dados do dev para mostrar suporte
             let devData = {};
             try {
                 const res = await fetch('/api/tenants/public-configs');
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. Setup Base UI Elements
+    //2. Setup Base UI Elements
     const renderLogo = () => {
         if (tenantData.logoUrl) {
             return `<img src="${formatImageUrl(tenantData.logoUrl)}" alt="${tenantData.name}" style="height: 40px; margin-right: 10px; border-radius: 4px;" onerror="this.onerror=null; this.outerHTML='<div style=\\'width:40px;height:40px;margin-right:10px;border-radius:4px;background:#eee;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#666;\\'>${tenantData.name.charAt(0).toUpperCase()}</div>';">`;
@@ -115,19 +115,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('tenantNameDisplay').innerHTML = `${renderLogo()} ${tenantData.name}`;
     const publicMenuLink = document.getElementById('publicMenuLink');
-    // Consider dynamic domain instead of local path later
+    //Consider dynamic domain instead of local path later
     publicMenuLink.href = `../menu/index.html#${tenantData.slug}`;
 
-    // Logout
+    //Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('tenant_data');
         window.location.href = 'index.html';
     });
 
-    // 3. Simple SPA Navigation logic
-    refreshTenantData(); // Fetch fresh data in background
-    checkActiveStatus(); // Primeira verificação com dados do localStorage
+    //3. Simple SPA Navigation logic
+    refreshTenantData(); //Fetch fresh data in background
+    checkActiveStatus(); //Primeira verificação com dados do localStorage
 
     const navLinks = document.querySelectorAll('.sidebar-nav a');
     const contentArea = document.getElementById('app-content');
@@ -199,12 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadView(pageId) {
         activePage = pageId;
-        // Update Active Nav State
+        //Update Active Nav State
         navLinks.forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector(`.sidebar-nav a[data-page="${pageId}"]`);
         if (activeLink) activeLink.classList.add('active');
 
-        // Update Headers
+        //Update Headers
         const viewConfig = views[pageId];
         if (!viewConfig) {
             console.error(`View "${pageId}" não configurada em dashboard.js.`);
@@ -213,31 +213,31 @@ document.addEventListener('DOMContentLoaded', () => {
         pageTitle.textContent = viewConfig.title;
         pageSubtitle.textContent = viewConfig.subtitle;
 
-        // Clear and Render
+        //Clear and Render
         contentArea.innerHTML = '<div class="loading-state"><p>Carregando...</p></div>';
 
-        // Timeout to simulate transition
+        //Timeout to simulate transition
         setTimeout(() => {
             contentArea.innerHTML = viewConfig.render();
-            // Call post render logic if it exists on window
+            //Call post render logic if it exists on window
             if (window[`init${pageId.charAt(0).toUpperCase() + pageId.slice(1)}View`]) {
                 window[`init${pageId.charAt(0).toUpperCase() + pageId.slice(1)}View`]();
             }
         }, 100);
     }
 
-    // Bind clicks to navigation
+    //Bind clicks to navigation
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const pageId = e.target.closest('a').dataset.page;
-            if (!pageId) return; // Permite que links com onclick (KDS) funcionem normalmente
+            if (!pageId) return; //Permite que links com onclick (KDS) funcionem normalmente
 
             e.preventDefault();
             loadView(pageId);
         });
     });
 
-    // 4. API Helpers
+    //4. API Helpers
     async function apiFetch(endpoint, options = {}) {
         const token = localStorage.getItem('auth_token');
         const defaultHeaders = {
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(`${API_URL}/orders/backup?type=${type}&token=${token}`, '_blank');
     };
 
-    // 5. Shared UI Components
+    //5. Shared UI Components
     function renderModal(title, content, actionBtnText, onAction) {
         const modalId = `modal-${Math.random().toString(36).substr(2, 9)}`;
         const modalHtml = `
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 6. View Renderers
+    //6. View Renderers
     function renderHomeView() {
         return `
         <div class="grid-cols-3">
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.copyMenuLink = () => {
         const copyText = document.getElementById("linkToCopy");
-        copyText.type = 'text'; // temporarily un-hide for mobile copy
+        copyText.type = 'text'; //temporarily un-hide for mobile copy
         copyText.select();
         copyText.setSelectionRange(0, 99999);
         try {
@@ -376,12 +376,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const finishedOrders = orders.filter(o => o.status === 'finished');
 
-            // Data de hoje ajustada para fuso de Brasília (UTC-3)
+            //Data de hoje ajustada para fuso de Brasília (UTC-3)
             const now = new Date();
             const brazilNow = new Date(now.getTime() - (3 * 60 * 60 * 1000));
             const todayISO = brazilNow.toISOString().split('T')[0];
 
-            // Total Vendas Hoje (Ignora Estornados)
+            //Total Vendas Hoje (Ignora Estornados)
             const todaySales = finishedOrders.concat(orders.filter(o => o.status === 'completed')).filter(o => {
                 if (o.isVoided) return false;
                 const orderDate = new Date(new Date(o.createdAt).getTime() - (3 * 60 * 60 * 1000)).toISOString().split('T')[0];
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalSales = todaySales.reduce((acc, curr) => acc + curr.totalAmount, 0);
             document.getElementById('todaySales').textContent = totalSales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            // Histórico de Vendas Diárias (Ignora Estornados)
+            //Histórico de Vendas Diárias (Ignora Estornados)
             [...finishedOrders, ...orders.filter(o => o.status === 'completed')].forEach(order => {
                 if (order.isVoided) return;
                 const dateStr = new Date(order.createdAt).toLocaleDateString('pt-BR');
@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!list) return;
         try {
             const orders = await apiFetch('/orders');
-            // Filtrar apenas os ativos (não finalizados/cancelados)
+            //Filtrar apenas os ativos (não finalizados/cancelados)
             const activeOrders = orders.filter(o => !['finished', 'cancelled', 'completed'].includes(o.status));
 
             if (activeOrders.length === 0) {
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <thead>
                             <tr style="border-bottom: 2px solid var(--background); color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase;">
                                 <th style="padding: 1rem 0.5rem;"># Pedido</th>
-                                <th style="padding: 1rem 0.5rem;">Data / Hora</th>
+                                <th style="padding: 1rem 0.5rem;">Data/Hora</th>
                                 <th style="padding: 1rem 0.5rem;">Cliente</th>
                                 <th style="padding: 1rem 0.5rem;">Canal/Operador</th>
                                 <th style="padding: 1rem 0.5rem;">Total</th>
@@ -696,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const list = document.getElementById('categoriesList');
         try {
             const categories = await apiFetch('/categories');
-            window.categories = categories; // Cache globally for modals
+            window.categories = categories; //Cache globally for modals
             list.innerHTML = `
             <div class="category-item active" onclick="filterByCategory(null, this)">Todos os Produtos</div>
         ${categories.map(c => `
@@ -718,10 +718,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadProducts(categoryId = null) {
         const list = document.getElementById('productsList');
         try {
-            const endpoint = categoryId ? `/ products ? categoryId = ${categoryId}` : '/products';
+            const endpoint = categoryId ? `/products ? categoryId = ${categoryId}` : '/products';
             const products = await apiFetch(endpoint);
 
-            // Front-end filter if API doesn't support query param yet (it will for now display all if endpoint not strictly filtered)
+            //Front-end filter if API doesn't support query param yet (it will for now display all if endpoint not strictly filtered)
             const filtered = categoryId ? products.filter(p => p.categoryId === categoryId) : products;
 
             if (filtered.length === 0) {
@@ -778,15 +778,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleProductActive = async (productId, active) => {
         try {
-            await apiFetch(`/ products / ${productId}`, {
+            await apiFetch(`/products/ ${productId}`, {
                 method: 'PUT',
                 body: JSON.stringify({ active })
             });
-            // Update local state without full reload
+            //Update local state without full reload
             loadProducts();
         } catch (error) {
             alert('Erro ao mudar status: ' + error.message);
-            loadProducts(); // Sync back
+            loadProducts(); //Sync back
         }
     };
 
@@ -831,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `, 'Salvar Alterações', async () => {
             const name = document.getElementById('editCatName').value;
             const order = parseInt(document.getElementById('editCatOrder').value) || 0;
-            await apiFetch(`/ categories / ${cat.id}`, {
+            await apiFetch(`/categories/ ${cat.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, order })
             });
@@ -842,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteCategory = async (id) => {
         if (!confirm('Deseja realmente excluir esta categoria e todos os produtos vinculados?')) return;
         try {
-            await apiFetch(`/ categories / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/categories/ ${id}`, { method: 'DELETE' });
             loadCategories();
             loadProducts();
         } catch (error) {
@@ -922,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadProducts();
         });
 
-        // Load addon groups into modal asynchronously
+        //Load addon groups into modal asynchronously
         setTimeout(async () => {
             try {
                 const groups = await apiFetch('/addons/groups');
@@ -1003,14 +1003,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 stockQuantity: parseInt(document.getElementById('pStockQtyEdit').value) || 0,
                 productAddonGroupIds: selectedGroups
             };
-            await apiFetch(`/ products / ${product.id}`, {
+            await apiFetch(`/products/ ${product.id}`, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
             loadProducts();
         });
 
-        // Load addon groups into modal asynchronously
+        //Load addon groups into modal asynchronously
         setTimeout(async () => {
             try {
                 const groups = await apiFetch('/addons/groups');
@@ -1035,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteProduct = async (id) => {
         if (!confirm('Excluir este produto?')) return;
         try {
-            await apiFetch(`/ products / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/products/ ${id}`, { method: 'DELETE' });
             loadProducts();
         } catch (error) {
             alert(error.message);
@@ -1055,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="set-logo" value="${tenantData.logoUrl || ''}" placeholder="https://exemplo.com/logo.png">
                 </div>
                 <div class="form-group">
-                    <label>Sobre a Empresa / Descrição</label>
+                    <label>Sobre a Empresa/Descrição</label>
                     <textarea id="set-description" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; height: 80px;" placeholder="Conte um pouco sobre sua empresa para seus clientes...">${tenantData.description || ''}</textarea>
                 </div>
                 <div class="settings-section">
@@ -1077,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <input type="number" id="delivery-fee" step="0.01" value="${tenantData.deliveryFee || 0}">
                         </div>
                         <div class="form-group">
-                            <label>Valor p/ KM (R$)</label>
+                            <label>Valor p/KM (R$)</label>
                             <input type="number" id="set-valor-km" step="0.01" value="${tenantData.valorKm || 0}">
                         </div>
                         <div class="form-group">
@@ -1168,20 +1168,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">Variáveis disponíveis: {cliente}, {tipo}, {pedido}</p>
                 </div>
                 <div class="form-group">
-                    <label>Tempos Estimados (Ex: 30-40 min / 1:30h)</label>
+                    <label>Tempos Estimados (Ex: 30-40 min/1:30h)</label>
                     <div class="grid-cols-2" style="gap: 10px;">
                         <div>
                             <small>Entrega/Retirada (Pick-up)</small>
-                            <input type="text" id="set-estimated-time-pickup" value="${tenantData.estimatedTimePickup || ''}" placeholder="Ex: 30-40 min / 1:00h">
+                            <input type="text" id="set-estimated-time-pickup" value="${tenantData.estimatedTimePickup || ''}" placeholder="Ex: 30-40 min/1:00h">
                         </div>
                         <div>
                             <small>Delivery (Entrega em casa)</small>
-                            <input type="text" id="set-estimated-time-delivery" value="${tenantData.estimatedTimeDelivery || ''}" placeholder="Ex: 40-50 min / 1:30h">
+                            <input type="text" id="set-estimated-time-delivery" value="${tenantData.estimatedTimeDelivery || ''}" placeholder="Ex: 40-50 min/1:30h">
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Avisos Rápidos / Promoções (Exclusivo para o Recibo do WhatsApp)</label>
+                    <label>Avisos Rápidos/Promoções (Exclusivo para o Recibo do WhatsApp)</label>
                     <input type="text" id="set-extra-info" value="${tenantData.extraInfo || ''}" placeholder="Ex: Promoção de hoje: Compre 1 leve 2! | Entregas em 40 min ⏰">
                     <p style="font-size: 0.75rem; color: #888; margin-top: 4px;">Este campo aparecerá apenas no comprovante de pedido enviado ao seu WhatsApp.</p>
                 </div>
@@ -1250,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const lon = parseFloat(document.getElementById('set-lon').value) || null;
         const acceptDelivery = document.getElementById('set-accept-delivery').checked;
 
-        // Coletar horários (v5: 2 turnos)
+        //Coletar horários (v5: 2 turnos)
         const hours = {};
         const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
         days.forEach(day => {
@@ -1267,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const openingHours = JSON.stringify(hours);
 
         try {
-            const response = await apiFetch(`/ tenants / update`, {
+            const response = await apiFetch(`/tenants/update`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     logoUrl,
@@ -1300,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.error) throw new Error(response.error);
 
-            // Atualiza os dados locais para refletir o que foi salvo
+            //Atualiza os dados locais para refletir o que foi salvo
             tenantData.pdvPassword = document.getElementById('set-pdv-password').value.trim();
             localStorage.setItem('tenant_data', JSON.stringify(tenantData));
 
@@ -1323,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tenantData.extraInfo = document.getElementById('set-extra-info').value;
             tenantData.estimatedTimeDelivery = estimatedTimeDelivery;
             tenantData.estimatedTimePickup = estimatedTimePickup;
-            tenantData.pdvPassword = document.getElementById('set-pdv-password').value; // Novo campo
+            tenantData.pdvPassword = document.getElementById('set-pdv-password').value; //Novo campo
             tenantData.acceptDelivery = acceptDelivery;
             tenantData.valorKm = valorKm;
             tenantData.raioMaxKm = raioMaxKm;
@@ -1340,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.selectThemeColor = (color) => {
         document.getElementById('set-color').value = color;
-        // Visual feedback
+        //Visual feedback
         document.querySelectorAll('[id^="color-"]').forEach(el => {
             el.style.border = '3px solid transparent';
         });
@@ -1359,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         return `
-        < = "width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+        <="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
                 <thead>
                     <tr style="text-align: left; border-bottom: 2px solid #eee;">
                         <th style="padding: 8px 0;">Dia</th>
@@ -1402,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
     }
 
-    // toggleTimeInputs precisa estar no window para funcionar nos onchange dentro do innerHTML
+    //toggleTimeInputs precisa estar no window para funcionar nos onchange dentro do innerHTML
     window.toggleTimeInputs = (day, shift) => {
         const chk = document.getElementById('chk' + shift + '-' + day);
         const s = document.getElementById('s' + shift + '-' + day);
@@ -1415,10 +1415,10 @@ document.addEventListener('DOMContentLoaded', () => {
         e.style.opacity = active ? '1' : '0.5';
     };
 
-    // 8. Action Functions
+    //8. Action Functions
     window.printOrder = (id) => {
         const token = localStorage.getItem('auth_token');
-        const url = `/ api / orders / ${id} / receipt ? token = ${token}`;
+        const url = `/api/orders/ ${id} /receipt ? token = ${token}`;
         window.open(url, '_blank');
     };
 
@@ -1427,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reason === null) return;
 
         try {
-            await apiFetch(`/ orders / ${id} / status`, {
+            await apiFetch(`/orders/ ${id} /status`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     status: 'cancelled',
@@ -1479,7 +1479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 7. Dynamic Badges
+    //7. Dynamic Badges
     async function updatePendingBadge() {
         try {
             const orders = await apiFetch('/orders');
@@ -1491,7 +1491,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     badgeEl.textContent = pendingCount;
                 } else {
                     const link = document.querySelector('a[data-page="orders"]');
-                    link.insertAdjacentHTML('beforeend', `<= "pending-badge" style = "background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;"> ${pendingCount}</span> `);
+                    link.insertAdjacentHTML('beforeend', `<="pending-badge" style="background:var(--primary); color:white; border-radius:10px; padding:2px 8px; font-size:0.75rem; margin-left:8px; font-weight:700;"> ${pendingCount}</span> `);
                 }
             } else if (badgeEl) {
                 badgeEl.remove();
@@ -1501,7 +1501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderAddonsView() {
         return `
-        < = "display: flex; gap: 1.5rem; flex-direction: column;">
+        <="display: flex; gap: 1.5rem; flex-direction: column;">
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3>Grupos de Complementos</h3>
@@ -1530,7 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             list.innerHTML = groups.map(g => `
-            <= "glass-card" style = "margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
+            <="glass-card" style="margin-bottom: 1rem; border: 1px solid var(--border); box-shadow: none;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
                     <h4 style="margin: 0; font-size: 1.1rem;">${g.name}</h4>
@@ -1547,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div style="background: #f8fafc; border-radius: 12px; padding: 1.25rem; border: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <span style="font-weight: 700; font-size: 0.9rem; color: #475569;">Items / Opções:</span>
+                    <span style="font-weight: 700; font-size: 0.9rem; color: #475569;">Items/Opções:</span>
                     <button class="btn btn-primary btn-sm" style="width: auto; padding: 4px 12px;" onclick="openAddAddonModal(${g.id})">+ Nova Opção</button>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
@@ -1569,14 +1569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `).join('');
         } catch (error) {
-            if (list) list.innerHTML = `<= "error"> ${error.message}</p> `;
+            if (list) list.innerHTML = `<="error"> ${error.message}</p> `;
         }
     }
 
     window.openAddAddonGroupModal = async () => {
         const products = await apiFetch('/products');
         renderModal('Novo Grupo de Complementos', `
-        <= "form-group">
+        <="form-group">
                 <label>Nome do Grupo</label>
                 <input type="text" id="groupName" placeholder="Ex: Escolha seu molho, Adicionais extras...">
             </div>
@@ -1625,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeIds = (g.products || []).map(p => p.id);
 
         renderModal('Editar Grupo', `
-            <= "form-group">
+            <="form-group">
                 <label>Nome do Grupo</label>
                 <input type="text" id="editGroupName" value="${g.name}">
             </div>
@@ -1661,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isRequired = document.getElementById('editGroupRequired').checked;
             const productIds = Array.from(document.querySelectorAll('input[name="product-choice"]:checked')).map(i => parseInt(i.value));
 
-            await apiFetch(`/ addons / groups / ${g.id}`, {
+            await apiFetch(`/addons/groups/ ${g.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, minChoices, maxChoices, isRequired, productIds })
             });
@@ -1672,14 +1672,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteAddonGroup = async (id) => {
         if (!confirm('Deseja excluir este grupo e todos os seus adicionais?')) return;
         try {
-            await apiFetch(`/ addons / groups / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/addons/groups/ ${id}`, { method: 'DELETE' });
             loadAddonGroups();
         } catch (e) { alert(e.message); }
     };
 
     window.openAddAddonModal = (groupId) => {
         renderModal('Nova Opção', `
-        <= "form-group">
+        <="form-group">
                 <label>Nome da Opção</label>
                 <input type="text" id="addonName" placeholder="Ex: Bacon, Maionese, Extra Queijo...">
             </div>
@@ -1700,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditAddonModal = (a) => {
         renderModal('Editar Opção', `
-            <= "form-group">
+            <="form-group">
                 <label>Nome da Opção</label>
                 <input type="text" id="editAddonName" value="${a.name}">
             </div>
@@ -1711,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `, 'Salvar Alterações', async () => {
             const name = document.getElementById('editAddonName').value;
             const price = parseFloat(document.getElementById('editAddonPrice').value);
-            await apiFetch(`/ addons / ${a.id}`, {
+            await apiFetch(`/addons/ ${a.id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ name, price })
             });
@@ -1722,7 +1722,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteAddon = async (id) => {
         if (!confirm('Excluir esta opção?')) return;
         try {
-            await apiFetch(`/ addons / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/addons/ ${id}`, { method: 'DELETE' });
             loadAddonGroups();
         } catch (e) { alert(e.message); }
     };
@@ -1730,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FINANCE VIEW ---
     function renderFinanceView() {
         return `
-        <= "grid-cols-3">
+        <="grid-cols-3">
             <div class="glass-card">
                 <p class="text-secondary">Faturamento (Vendas Online/PDV)</p>
                 <h2 id="fin-totalOrders" style="font-size: 2rem; margin-top: 5px; color: var(--success);">R$ 0,00</h2>
@@ -1777,13 +1777,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await apiFetch('/cash-register/daily-summary');
             const { summary, events } = data;
 
-            // Update Summaries
+            //Update Summaries
             document.getElementById('fin-totalOrders').textContent = summary.totalOrders.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('fin-currentBalance').textContent = summary.currentBalance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('fin-totalInflow').textContent = summary.totalInflow.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('fin-totalOutflow').textContent = summary.totalOutflow.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            // Render Table
+            //Render Table
             const tbody = document.getElementById('finance-events-table');
             if (events.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--secondary);">Nenhuma movimentação manual registrada hoje.</td></tr>';
@@ -1816,7 +1816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- COUPONS VIEW ---
     function renderCouponsView() {
         return `
-            < = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Seus Cupons de Desconto</h3>
             <button onclick="window.openCreateCouponModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Cupom</button>
         </div>
@@ -1869,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateCouponModal = () => {
         renderModal('Novo Cupom', `
-            <= "form-group">
+            <="form-group">
                 <label>Código do Cupom (Ex: QUERO10)</label>
                 <input type="text" id="couponCode" placeholder="EX: NATAL20" style="text-transform: uppercase;">
             </div>
@@ -1918,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteCoupon = async (id) => {
         if (!confirm('Excluir este cupom definitivamente?')) return;
         try {
-            await apiFetch(`/ marketing / coupons / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/marketing/coupons/ ${id}`, { method: 'DELETE' });
             loadView('coupons');
         } catch (e) { alert(e.message); }
     };
@@ -1975,9 +1975,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewCustomerDetail = async (phone) => {
         try {
-            const c = await apiFetch(`/ marketing / customers / ${phone}`);
+            const c = await apiFetch(`/marketing/customers/ ${phone}`);
             renderModal(`Histórico: ${c.name || c.phone}`, `
-        <= "text-secondary mb-4">
+        <="text-secondary mb-4">
                     <p><b>Telefone:</b> ${c.phone}</p>
                     <p><b>Total de Pedidos:</b> ${c.orders.length}</p>
                 </div>
@@ -2003,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TABLES VIEW ---
     function renderTablesView() {
         return `
-            < = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Suas Mesas (Consumo Local)</h3>
             <button onclick="window.openCreateTableModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Nova Mesa</button>
         </div>
@@ -2026,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = tables.map(t => `
-            <= "glass-card" style = "text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
+            <="glass-card" style="text-align:center; padding: 20px; border: 1px solid #eee; transition: transform 0.2s; cursor: default;">
                     <div style="font-size: 2rem; margin-bottom: 10px;">🪑</div>
                     <h4 style="margin:0;">Mesa ${t.number}</h4>
                     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
@@ -2040,7 +2040,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateTableModal = () => {
         renderModal('Nova Mesa', `
-            <= "form-group">
+            <="form-group">
                 <label>Número da Mesa</label>
                 <input type="number" id="tableNumber" placeholder="Ex: 5">
             </div>
@@ -2055,7 +2055,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.viewTableQR = (url, number) => {
         renderModal(`QR Code: Mesa ${number}`, `
-        < = "text-align:center; padding: 10px;">
+        <="text-align:center; padding: 10px;">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">
             <p style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;">MESA ${number}</p>
             <p class="text-secondary" style="font-size: 0.85rem;">Imprima este código e coloque na mesa para o cliente pedir diretamente.</p>
@@ -2069,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const number = document.querySelector('.modal-body b')?.textContent || 'Mesa';
         const win = window.open('', '_blank');
         win.document.write(`
-            < = "text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
+            <="text-align:center; font-family: sans-serif; padding: 40px; border: 2px dashed #ccc; width: 300px; margin: auto;">
                 <h1 style="margin-bottom:10px;">SmartPedidos</h1>
                 <h3>FAÇA SEU PEDIDO</h3>
                 <img src="${img.src}" style="width:200px;">
@@ -2083,7 +2083,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteTable = async (id) => {
         if (!confirm('Deseja excluir esta mesa? O QR Code atual deixará de funcionar.')) return;
         try {
-            await apiFetch(`/ tables / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/tables/ ${id}`, { method: 'DELETE' });
             loadView('tables');
         } catch (e) { alert(e.message); }
     };
@@ -2091,7 +2091,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TEAM VIEW ---
     function renderTeamView() {
         return `
-        < = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3>Gestão de Equipe (Funcionários)</h3>
             <button onclick="window.openCreateUserModal()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">+ Novo Membro</button>
         </div>
@@ -2126,9 +2126,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             tbody.innerHTML = users.map(u => `
-            <>
+            <tr>
                     <td><b>${u.email}</b></td>
-                    <td><span class="badge" style="background: ${u.role === 'admin' ? '#dbeafe' : '#fef3c7'}; color: ${u.role === 'admin' ? '#1e40af' : '#92400e'}">${u.role === 'admin' ? 'Administrador' : 'Atendente / Garçom'}</span></td>
+                    <td><span class="badge" style="background: ${u.role === 'admin' ? '#dbeafe' : '#fef3c7'}; color: ${u.role === 'admin' ? '#1e40af' : '#92400e'}">${u.role === 'admin' ? 'Administrador' : 'Atendente/Garçom'}</span></td>
                     <td>${new Date(u.createdAt).toLocaleDateString()}</td>
                     <td>
                         <button onclick="window.deleteUser(${u.id})" class="btn btn-outline" style="padding: 2px 8px; color: #ef4444; border-color: #fecaca;">Remover</button>
@@ -2140,7 +2140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openCreateUserModal = () => {
         renderModal('Novo Membro da Equipe', `
-            <= "form-group">
+            <div class="form-group">
                 <label>E-mail de Acesso</label>
                 <input type="email" id="userEmail" placeholder="ex: garcom@loja.com">
             </div>
@@ -2151,7 +2151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="form-group">
                 <label>Permissão</label>
                 <select id="userRole">
-                    <option value="attendant" selected>Atendente / Garçom (Apenas Operacional)</option>
+                    <option value="attendant" selected>Atendente/Garçom (Apenas Operacional)</option>
                     <option value="admin">Administrador (Gestão Total)</option>
                 </select>
             </div>
@@ -2170,14 +2170,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteUser = async (id) => {
         if (!confirm('Excluir este acesso definitivamente?')) return;
         try {
-            await apiFetch(`/ users / ${id}`, { method: 'DELETE' });
+            await apiFetch(`/users/ ${id}`, { method: 'DELETE' });
             loadView('team');
         } catch (e) { alert(e.message); }
     };
 
-    // Update every 30 seconds
+    //Update every 30 seconds
     setInterval(updatePendingBadge, 30000);
-    updatePendingBadge(); // Initial call
+    updatePendingBadge(); //Initial call
 
     window.toggleVoidOrder = async (orderId, isVoided) => {
         const action = isVoided ? 'estornar' : 'reativar';
@@ -2195,7 +2195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.ok) {
                 alert(`Pedido ${isVoided ? 'estornado' : 'reativado'} com sucesso!`);
-                window.initHistoryView(); // Refresh table
+                window.initHistoryView(); //Refresh table
             } else {
                 const err = await res.json();
                 alert(err.error || 'Erro ao processar estorno.');
@@ -2209,6 +2209,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.promptZerarHoje = () => alert("Função movida para o SuperAdmin por segurança.");
     window.promptZerarTodoHistorico = () => alert("Função movida para o SuperAdmin por segurança.");
 
-    // Init Base View
+    //Init Base View
     loadView('home');
 });
