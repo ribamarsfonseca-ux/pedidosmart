@@ -677,7 +677,7 @@
         };
         let products = [];
         let categories = [];
-        let currentCategoryId='all';
+        let currentCategoryId = 'all';
         let cart = [];
         let tenant = null;
         let socket;
@@ -687,7 +687,7 @@
         let drafts = {
             "balcao": { cart: [], customerName: "", isStarted: false }
         };
-        let currentMesaId="balcao";
+        let currentMesaId = "balcao";
 
         function saveCurrentToDraft() {
             drafts[currentMesaId] = {
@@ -706,21 +706,21 @@
             document.getElementById('cart-customer').value = d.customerName;
 
             if (d.isStarted) {
-                document.getElementById('pdv-catalog-container').style.display='block';
-                document.getElementById('pdv-welcome-container').style.display='none';
-                document.getElementById('initial-actions').style.display='none';
-                document.getElementById('order-action-buttons').style.display='block';
+                document.getElementById('pdv-catalog-container').style.display = 'block';
+                document.getElementById('pdv-welcome-container').style.display = 'none';
+                document.getElementById('initial-actions').style.display = 'none';
+                document.getElementById('order-action-buttons').style.display = 'block';
             } else {
-                document.getElementById('pdv-catalog-container').style.display='none';
-                document.getElementById('pdv-welcome-container').style.display='flex';
-                document.getElementById('initial-actions').style.display='block';
-                document.getElementById('order-action-buttons').style.display='none';
+                document.getElementById('pdv-catalog-container').style.display = 'none';
+                document.getElementById('pdv-welcome-container').style.display = 'flex';
+                document.getElementById('initial-actions').style.display = 'block';
+                document.getElementById('order-action-buttons').style.display = 'none';
             }
 
             //Reset payment section on switch
-            document.getElementById('payment-section').style.display='none';
-            document.getElementById('btn-go-to-payment').style.display='block';
-            document.getElementById('btn-finish-final').style.display='none';
+            document.getElementById('payment-section').style.display = 'none';
+            document.getElementById('btn-go-to-payment').style.display = 'block';
+            document.getElementById('btn-finish-final').style.display = 'none';
 
             renderCart();
         }
@@ -742,12 +742,12 @@
             const btnNavCart = document.getElementById('btn-nav-cart');
 
             if (tab === 'cart') {
-                container.style.display='none';
+                container.style.display = 'none';
                 cartSidebar.classList.add('active');
                 btnNavCart.classList.add('active');
                 btnNavCatalog.classList.remove('active');
             } else {
-                container.style.display='block';
+                container.style.display = 'block';
                 cartSidebar.classList.remove('active');
                 btnNavCatalog.classList.add('active');
                 btnNavCart.classList.remove('active');
@@ -769,19 +769,19 @@
             const tabEmp = document.getElementById('tab-employee');
 
             if (tab === 'pdv') {
-                formPdv.style.display='block';
-                formEmp.style.display='none';
-                tabPdv.style.background='var(--dark)';
-                tabPdv.style.color='white';
-                tabEmp.style.background='#f1f5f9';
-                tabEmp.style.color='var(--gray)';
+                formPdv.style.display = 'block';
+                formEmp.style.display = 'none';
+                tabPdv.style.background = 'var(--dark)';
+                tabPdv.style.color = 'white';
+                tabEmp.style.background = '#f1f5f9';
+                tabEmp.style.color = 'var(--gray)';
             } else {
-                formPdv.style.display='none';
-                formEmp.style.display='block';
-                tabEmp.style.background='var(--dark)';
-                tabEmp.style.color='white';
-                tabPdv.style.background='#f1f5f9';
-                tabPdv.style.color='var(--gray)';
+                formPdv.style.display = 'none';
+                formEmp.style.display = 'block';
+                tabEmp.style.background = 'var(--dark)';
+                tabEmp.style.color = 'white';
+                tabPdv.style.background = '#f1f5f9';
+                tabPdv.style.color = 'var(--gray)';
             }
         }
 
@@ -841,17 +841,29 @@
         }
 
         async function showMain() {
-            tenant = JSON.parse(localStorage.getItem('pdv_tenant'));
+            try {
+                const tenantData = localStorage.getItem('pdv_tenant');
+                if (!tenantData) throw new Error("Tenant não encontrado");
+                tenant = JSON.parse(tenantData);
+            } catch (e) {
+                console.error("Dados de tenant corrompidos:", e);
+                localStorage.removeItem('pdv_token');
+                localStorage.removeItem('pdv_tenant');
+                location.reload();
+                return;
+            }
+
             const attendant = localStorage.getItem('pdv_attendant');
 
-            let displayName = tenant.name.toUpperCase();
+            let displayName = (tenant.name || "Minha Loja").toUpperCase();
             if (attendant) {
                 displayName += ` (Op: ${attendant.toUpperCase()})`;
             }
-            document.getElementById('pdv-store-name').textContent = displayName;
+            const nameEl = document.getElementById('pdv-store-name');
+            if (nameEl) nameEl.textContent = displayName;
 
-            document.getElementById('login-screen').style.display='none';
-            document.getElementById('main-pdv').style.display='grid';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-pdv').style.display = 'grid';
 
             setupSocket();
             await loadProducts();
@@ -904,7 +916,7 @@
                 });
                 if (res.ok) {
                     const activeOrders = await res.json();
-                    if (activeOrders.length> 0) {
+                    if (activeOrders.length > 0) {
                         const combinedItems = [];
                         activeOrders.forEach(order => {
                             order.items.forEach(item => {
@@ -943,10 +955,10 @@
             const btnInitial = document.getElementById('initial-actions');
             const actionButtons = document.getElementById('order-action-buttons');
 
-            catalog.style.display='block';
-            welcome.style.display='none';
-            btnInitial.style.display='none';
-            actionButtons.style.display='block';
+            catalog.style.display = 'block';
+            welcome.style.display = 'none';
+            btnInitial.style.display = 'none';
+            actionButtons.style.display = 'block';
 
             if (!skipReset) {
                 renderCart();
@@ -962,26 +974,26 @@
             const btnInitial = document.getElementById('initial-actions');
             const actionButtons = document.getElementById('order-action-buttons');
 
-            catalog.style.display='none';
-            welcome.style.display='flex';
-            btnInitial.style.display='block';
-            actionButtons.style.display='none';
+            catalog.style.display = 'none';
+            welcome.style.display = 'flex';
+            btnInitial.style.display = 'block';
+            actionButtons.style.display = 'none';
 
             cart = [];
             currentTableOrderIds = [];
-            document.getElementById('cart-customer').value="";
+            document.getElementById('cart-customer').value = "";
 
             saveCurrentToDraft();
             renderCart();
-            document.getElementById('table-status-info').style.display='none';
+            document.getElementById('table-status-info').style.display = 'none';
         }
 
         function showPaymentSection() {
             if (cart.length === 0) return alert("Adicione itens ao carrinho primeiro!");
 
-            document.getElementById('payment-section').style.display='block';
-            document.getElementById('btn-go-to-payment').style.display='none';
-            document.getElementById('btn-finish-final').style.display='block';
+            document.getElementById('payment-section').style.display = 'block';
+            document.getElementById('btn-go-to-payment').style.display = 'none';
+            document.getElementById('btn-finish-final').style.display = 'block';
         }
 
         function renderCategories() {
@@ -1005,7 +1017,7 @@
             const displayList = list || products; //Fallback to all if no list provided (though filterProducts will handle it)
 
             if (displayList.length === 0) {
-                grid.innerHTML='<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray);">Nenhum produto encontrado.</p>';
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--gray);">Nenhum produto encontrado.</p>';
                 return;
             }
 
@@ -1037,7 +1049,7 @@
             const product = products.find(p => p.id === productId);
 
             //Se tiver adicionais, abre o modal
-            if (product.addonGroups && product.addonGroups.length> 0) {
+            if (product.addonGroups && product.addonGroups.length > 0) {
                 openAddonModal(product);
                 return;
             }
@@ -1060,11 +1072,11 @@
             document.getElementById('addon-modal-title').textContent = product.name;
             renderPdvAddonGroups(product.addonGroups);
             updateAddonModalTotal();
-            document.getElementById('pdv-addon-modal').style.display='flex';
+            document.getElementById('pdv-addon-modal').style.display = 'flex';
         }
 
         function closeAddonModal() {
-            document.getElementById('pdv-addon-modal').style.display='none';
+            document.getElementById('pdv-addon-modal').style.display = 'none';
             currentAddonProduct = null;
             pdvAddonState = {};
         }
@@ -1072,7 +1084,7 @@
         function renderPdvAddonGroups(groups) {
             const container = document.getElementById('pdv-addon-groups');
             container.innerHTML = groups.map(g => {
-                let instruction = g.minChoices> 0 ? `Escolha pelo menos ${g.minChoices}` : `Escolha até ${g.maxChoices}`;
+                let instruction = g.minChoices > 0 ? `Escolha pelo menos ${g.minChoices}` : `Escolha até ${g.maxChoices}`;
                 return `
                 <div style="margin-bottom: 24px; background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -1080,7 +1092,7 @@
                             <h4 style="margin:0; font-size: 1rem; color: #1e293b; font-weight: 700;">${g.name}</h4>
                             <p style="margin: 2px 0 0; font-size: 0.75rem; color: #64748b; font-weight: 500;">${instruction}</p>
                         </div>
-                        ${g.minChoices> 0 ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">Obrigatório</span>' : ''}
+                        ${g.minChoices > 0 ? '<span style="background: #fee2e2; color: #ef4444; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;">Obrigatório</span>' : ''}
                     </div>
                     ${g.addons.map(a => {
                     const currentQty = pdvAddonState[a.id] || 0;
@@ -1107,12 +1119,12 @@
             const currentQty = pdvAddonState[addonId] || 0;
             const newQty = Math.max(0, currentQty + delta);
 
-            if (delta> 0) {
+            if (delta > 0) {
                 const group = currentAddonProduct.addonGroups.find(g => g.id === groupId);
                 const groupAddonIds = group.addons.map(a => a.id);
                 const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (pdvAddonState[id] || 0), 0);
 
-                if (totalInGroup>= maxGroup) {
+                if (totalInGroup >= maxGroup) {
                     alert(`Máximo de ${maxGroup} itens neste grupo.`);
                     return;
                 }
@@ -1130,7 +1142,7 @@
             document.getElementById('addon-modal-title').textContent = product.name;
             renderPdvAddonGroups(product.addonGroups);
             updateAddonModalTotal();
-            document.getElementById('pdv-addon-modal').style.display='flex';
+            document.getElementById('pdv-addon-modal').style.display = 'flex';
         }
 
         function updateAddonModalTotal() {
@@ -1153,14 +1165,14 @@
                 const groupAddonIds = g.addons.map(a => a.id);
                 const totalInGroup = groupAddonIds.reduce((sum, id) => sum + (pdvAddonState[id] || 0), 0);
 
-                if (g.minChoices> 0 && totalInGroup <g.minChoices) {
+                if (g.minChoices > 0 && totalInGroup < g.minChoices) {
                     alert(`Selecione pelo menos ${g.minChoices} em "${g.name}"`);
                     return;
                 }
 
                 g.addons.forEach(a => {
                     const qty = pdvAddonState[a.id] || 0;
-                    for (let i = 0; i <qty; i++) {
+                    for (let i = 0; i < qty; i++) {
                         selectedAddons.push({ id: a.id, name: a.name, price: a.price });
                     }
                 });
@@ -1184,7 +1196,7 @@
 
             closeAddonModal();
             renderCart();
-            if (window.innerWidth <992) switchMobileTab('cart');
+            if (window.innerWidth < 992) switchMobileTab('cart');
         }
 
         function updateQty(uniqueId, delta) {
@@ -1213,22 +1225,22 @@
             const display = document.getElementById('change-display');
             const changeSpan = document.getElementById('cart-change');
 
-            if (received> total) {
+            if (received > total) {
                 const change = received - total;
                 changeSpan.textContent = change.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                display.style.display='block';
+                display.style.display = 'block';
             } else {
-                display.style.display='none';
+                display.style.display = 'none';
             }
         }
 
         function renderCart() {
             const list = document.getElementById('cart-items');
             if (cart.length === 0) {
-                list.innerHTML='<p class="text-secondary" style="text-align: center; margin-top: 2rem;">Carrinho Vazio</p>';
-                document.getElementById('cart-total').textContent='R$ 0,00';
-                document.getElementById('change-display').style.display='none';
-                document.getElementById('cash-received').value='';
+                list.innerHTML = '<p class="text-secondary" style="text-align: center; margin-top: 2rem;">Carrinho Vazio</p>';
+                document.getElementById('cart-total').textContent = 'R$ 0,00';
+                document.getElementById('change-display').style.display = 'none';
+                document.getElementById('cash-received').value = '';
                 return;
             }
 
@@ -1236,9 +1248,9 @@
             const newItems = cart.filter(i => !i.fromOrder);
             const prevItems = cart.filter(i => i.fromOrder);
 
-            let html="";
+            let html = "";
 
-            if (prevItems.length> 0) {
+            if (prevItems.length > 0) {
                 html += `<div style="background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Consumo Anterior</div>`;
                 html += prevItems.map(item => {
                     const subtotal = item.price * item.qty;
@@ -1256,7 +1268,7 @@
                 html += `<hr style="margin: 15px 0; border: none; border-top: 1px dashed #cbd5e1;">`;
             }
 
-            if (newItems.length> 0) {
+            if (newItems.length > 0) {
                 html += `<div style="background: #fff; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid var(--primary);">Novos Itens</div>`;
                 html += newItems.map(item => {
                     let itemBasePrice = item.price;
@@ -1273,7 +1285,7 @@
                         <div class="cart-item" style="border-left: 3px solid var(--primary); background: #fff;">
                             <div class="cart-item-info">
                                 <h5 style="margin-bottom: 2px;">${item.name}</h5>
-                                ${item.addons && item.addons.length> 0 ? `
+                                ${item.addons && item.addons.length > 0 ? `
                                     <div style="font-size: 0.75rem; color: var(--gray); margin-bottom: 4px; line-height: 1.2;">
                                         ${item.addons.map(a => `+ ${a.name}`).join('<br>')}
                                     </div>
@@ -1324,7 +1336,7 @@
         function renderTableSelect() {
             const select = document.getElementById('cart-table');
             const currentVal = select.value;
-            select.innerHTML='<option value="">Venda Direta (Balcão)</option>';
+            select.innerHTML = '<option value="">Venda Direta (Balcão)</option>';
             allTables.forEach(t => {
                 const status = t.isOccupied ? '🔴 OCUPADA' : '🟢 LIVRE';
                 select.innerHTML += `<option value="${t.id}" ${currentVal == t.id ? 'selected' : ''}>Mesa ${t.number} (${status})</option>`;
@@ -1343,15 +1355,15 @@
             loadFromDraft(currentMesaId); //Carrega estado da nova mesa
 
             if (!selectedTableId) {
-                info.style.display='none';
+                info.style.display = 'none';
                 return;
             }
 
             const table = allTables.find(t => t.id === selectedTableId);
             if (table && table.isOccupied) {
-                info.style.display='block';
-                info.style.background='#fee2e2';
-                info.style.color='#991b1b';
+                info.style.display = 'block';
+                info.style.background = '#fee2e2';
+                info.style.color = '#991b1b';
                 info.innerHTML = `⚠️ <strong>Mesa ${table.number} Ocupada</strong>. Carregando consumo...`;
 
                 await loadTableOrder(selectedTableId);
@@ -1360,9 +1372,9 @@
                 //Se carregou do servidor, forçamos o catálogo a abrir
                 startOrder(true);
             } else {
-                info.style.display='block';
-                info.style.background='#d1fae5';
-                info.style.color='#065f46';
+                info.style.display = 'block';
+                info.style.background = '#d1fae5';
+                info.style.color = '#065f46';
                 info.innerHTML = `✅ <strong>Mesa ${table?.number} Disponível</strong>.`;
             }
         }
@@ -1373,7 +1385,7 @@
 
             const btn = document.getElementById('btn-kitchen');
             btn.disabled = true;
-            btn.textContent='ENVIANDO...';
+            btn.textContent = 'ENVIANDO...';
 
             const newItems = cart.filter(i => !i.fromOrder);
             if (newItems.length === 0) return alert('Não há novos itens para enviar à cozinha.');
@@ -1407,14 +1419,14 @@
                     //Reset para o garçom poder atender outra mesa
                     cart = [];
                     selectedTableId = null;
-                    document.getElementById('cart-table').value="";
-                    document.getElementById('cart-customer').value="";
+                    document.getElementById('cart-table').value = "";
+                    document.getElementById('cart-customer').value = "";
 
                     renderCart();
                     await loadTables();
                     await handleTableSelection();
 
-                    if (window.innerWidth <992) switchMobileTab('catalog');
+                    if (window.innerWidth < 992) switchMobileTab('catalog');
                 }
                 else {
                     const err = await res.json();
@@ -1428,9 +1440,9 @@
             if (cart.length === 0 && !selectedTableId) return alert('O carrinho está vazio!');
 
             const btn = document.getElementById('btn-finish-final');
-            const originalText="CONFIRMAR PAGAMENTO ✅";
+            const originalText = "CONFIRMAR PAGAMENTO ✅";
             btn.disabled = true;
-            btn.textContent='PROCESSANDO...';
+            btn.textContent = 'PROCESSANDO...';
 
             const payload = {
                 tenantId: tenant.id,
@@ -1452,7 +1464,7 @@
                 const token = localStorage.getItem('pdv_token');
 
                 //If there are existing orders for this table, finish them first
-                if (selectedTableId && currentTableOrderIds.length> 0) {
+                if (selectedTableId && currentTableOrderIds.length > 0) {
                     const statusPromises = currentTableOrderIds.map(orderId =>
                         fetch(`${API_URL}/orders/${orderId}/status`, {
                             method: 'PUT',
@@ -1468,7 +1480,7 @@
                     alert('✅ Mesa liberada e consumo finalizado!');
                     cart = [];
                     currentTableOrderIds = [];
-                    document.getElementById('cart-table').value=""; //Reset selection
+                    document.getElementById('cart-table').value = ""; //Reset selection
                     selectedTableId = null;
                     renderCart();
                     await loadTables();
@@ -1496,10 +1508,10 @@
                     }
                     cart = [];
                     currentTableOrderIds = [];
-                    document.getElementById('cart-customer').value='';
-                    document.getElementById('cart-table').value=""; //Reset no header
+                    document.getElementById('cart-customer').value = '';
+                    document.getElementById('cart-table').value = ""; //Reset no header
                     selectedTableId = null;
-                    currentMesaId="balcao";
+                    currentMesaId = "balcao";
 
                     renderCart();
                     await loadTables();
@@ -1522,19 +1534,19 @@
         }
 
         //Cash Register Functions
-        let currentCashType='inflow';
+        let currentCashType = 'inflow';
 
         function openCashModal(type) {
             currentCashType = type;
             const title = type === 'inflow' ? 'Reforço de Caixa 💰' : 'Sangria de Caixa 💸';
             document.getElementById('modal-title').textContent = title;
-            document.getElementById('cash-modal').style.display='flex';
+            document.getElementById('cash-modal').style.display = 'flex';
         }
 
         function closeCashModal() {
-            document.getElementById('cash-modal').style.display='none';
-            document.getElementById('cash-amount').value='';
-            document.getElementById('cash-desc').value='';
+            document.getElementById('cash-modal').style.display = 'none';
+            document.getElementById('cash-amount').value = '';
+            document.getElementById('cash-desc').value = '';
         }
 
         async function submitCashEvent() {

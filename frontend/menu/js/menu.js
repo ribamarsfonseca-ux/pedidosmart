@@ -5,13 +5,27 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 //Global State
 let cart = [];
 let restaurant = null;
-let userLocation = JSON.parse(localStorage.getItem('userLocation')) || null;
+let userLocation = null;
+try {
+    userLocation = JSON.parse(localStorage.getItem('userLocation')) || null;
+} catch (e) {
+    console.warn('userLocation corrompido, resetando...');
+    localStorage.removeItem('userLocation');
+}
+
 let calculatedDeliveryFee = 0;
 let appliedCoupon = null; // { code, type, value }
 let tableNumber = null;
 let map = null;
 let marker = null;
-let favorites = JSON.parse(localStorage.getItem('locationFavorites')) || { home: null, work: null };
+
+let favorites = { home: null, work: null };
+try {
+    favorites = JSON.parse(localStorage.getItem('locationFavorites')) || { home: null, work: null };
+} catch (e) {
+    console.warn('favorites corrompido, resetando...');
+    localStorage.removeItem('locationFavorites');
+}
 let geoapifyApiKey = ''; //Loaded from public configs
 
 document.addEventListener('DOMContentLoaded', async () => {
